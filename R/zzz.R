@@ -3,6 +3,9 @@
 #' @keywords internal
 "_PACKAGE"
 
+#' @useDynLib spesim, .registration = TRUE
+#' @importFrom Rcpp evalCpp
+
 # ---- Graphics & plotting ----
 # Bring in all ggplot2 so helpers like ggplot(), aes(), labs(), ylim(),
 # theme_bw(), geom_*(), scale_*(), etc. are available package-wide.
@@ -41,8 +44,6 @@
 # ---- sf helpers used unqualified in a few places ----
 # (Most sf calls are qualified, but st_drop_geometry() is sometimes unqualified.)
 #' @importFrom sf st_drop_geometry
-
-NULL
 
 # Silence R CMD check for NSE column names used in dplyr/ggplot2
 utils::globalVariables(c(

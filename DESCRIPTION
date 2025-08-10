@@ -24,6 +24,7 @@ BugReports: https://github.com/yourname/spesim/issues
 Depends: 
     R (>= 4.1)
 Imports: 
+    Rcpp (>= 1.0.0),
     sf,
     ggplot2,
     dplyr,
@@ -37,6 +38,8 @@ Imports:
     colorspace,
     tibble,
     scales
+LinkingTo:
+    Rcpp
 Suggests: 
     devtools,
     spatstat.random,
