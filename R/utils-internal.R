@@ -91,12 +91,22 @@
 #'
 #' @keywords internal
 .has_cpp_thomas <- function() {
-  isTRUE(is.function(get0("rthomas_bbox_cpp", mode = "function")))
+  f <- get0("rthomas_bbox_cpp", envir = asNamespace("spesim"), inherits = FALSE)
+  isTRUE(is.function(f))
 }
 
 #' Detect availability of the fast Strauss engine
 #'
 #' @keywords internal
 .has_cpp_strauss <- function() {
-  isTRUE(is.function(get0("rstrauss_bbox_cpp", mode = "function")))
+  f <- get0("rstrauss_bbox_cpp", envir = asNamespace("spesim"), inherits = FALSE)
+  isTRUE(is.function(f))
+}
+
+#' Detect availability of the fast Geyer engine
+#'
+#' @keywords internal
+.has_cpp_geyer <- function() {
+  f <- get0("rgeyer_bbox_cpp", envir = asNamespace("spesim"), inherits = FALSE)
+  isTRUE(is.function(f))
 }

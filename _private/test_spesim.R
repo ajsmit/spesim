@@ -8,7 +8,6 @@ run_spatial_simulation(
 )
 
 
-
 P <- load_config("inst/examples/spesim_init_complete.txt")
 
 

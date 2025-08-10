@@ -318,28 +318,44 @@ simulate_points_dispatch <- function(kind, domain, n_target, args = list()) {
       }
     },
     strauss = {
-      r <- .nz(args$OTHERS_R, .nz(args$r, 1))
-      g <- .nz(args$OTHERS_GAMMA, .nz(args$gamma, 0.2))
       if (.has_cpp_strauss()) {
-        simulate_points_strauss_fast(domain, n_target,
-          r = r, gamma = g,
-          sweeps = .nz(args$sweeps, 2000)
+        simulate_points_strauss_fast(
+          domain, n_target,
+          r = .nz(args$OTHERS_R, .nz(args$r, 1)),
+          gamma = .nz(args$OTHERS_GAMMA, .nz(args$gamma, 0.2))
         )
       } else {
-        # fallback to your existing spatstat-based function
-        simulate_points_strauss(domain, n_target,
+        simulate_points_strauss( # your existing slow fallback (spatstat or R)
+          domain, n_target,
           beta = .nz(args$OTHERS_BETA, args$beta),
-          gamma = g, r = r
+          gamma = .nz(args$OTHERS_GAMMA, .nz(args$gamma, 0.2)),
+          r = .nz(args$OTHERS_R, .nz(args$r, 1))
         )
       }
     },
-    geyer = simulate_points_geyer(
-      domain, n_target,
-      beta = .nz(args$OTHERS_BETA, args$beta),
-      gamma = .nz(args$OTHERS_GAMMA, .nz(args$gamma, 1.5)),
-      r = .nz(args$OTHERS_R, .nz(args$r, 1)),
-      sat = .nz(args$OTHERS_S, .nz(args$sat, 2))
-    ),
+    geyer = {
+      if (kind == "geyer" && .has_cpp_geyer()) {
+        message("[spesim] Geyer: using fast Rcpp engine")
+        return(simulate_points_geyer_fast(
+          domain, n_target,
+          r = .nz(args$OTHERS_R, .nz(args$r, 1)),
+          gamma = .nz(args$OTHERS_GAMMA, .nz(args$gamma, 1.5)),
+          sat = as.integer(.nz(args$OTHERS_S, .nz(args$sat, 2))),
+          sweeps = .nz(args$sweeps, 2000),
+          burnin = .nz(args$burnin, 200),
+          thin = .nz(args$thin, 1)
+        ))
+      } else {
+        # keep your existing spatstat-based or R fallback
+        simulate_points_geyer(
+          domain, n_target,
+          beta = .nz(args$OTHERS_BETA, args$beta),
+          gamma = .nz(args$OTHERS_GAMMA, .nz(args$gamma, 1.5)),
+          r = .nz(args$OTHERS_R, .nz(args$r, 1)),
+          sat = .nz(args$OTHERS_S, .nz(args$sat, 2))
+        )
+      }
+    },
     stop("simulate_points_dispatch: unknown spatial process: ", kind)
   )
 }

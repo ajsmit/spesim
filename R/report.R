@@ -298,8 +298,9 @@ generate_full_report <- function(res) {
   ## --- Computation Notes -----------------------------------------------------
   proc_A <- tolower(as.character(res$P$SPATIAL_PROCESS_A %||% "poisson"))
   proc_O <- tolower(as.character(res$P$SPATIAL_PROCESS_OTHERS %||% "poisson"))
-  fast_thomas_available <- isTRUE(exists("rthomas_bbox_cpp", mode = "function"))
-  fast_strauss_available <- isTRUE(exists("rstrauss_bbox_cpp", mode = "function"))
+  fast_thomas_available <- .has_cpp_thomas()
+  fast_strauss_available <- .has_cpp_strauss()
+  fast_geyer_available <- .has_cpp_geyer()
 
   note_A <- sprintf(
     "  Dominant (A) process: %s%s",
@@ -320,6 +321,8 @@ generate_full_report <- function(res) {
       if (fast_thomas_available) " -- fast Rcpp engine detected" else " -- spatstat-based fallback"
     } else if (identical(proc_O, "strauss")) {
       if (fast_strauss_available) " -- fast Rcpp engine detected" else " -- spatstat-based fallback"
+    } else if (identical(proc_O, "geyer")) {
+      if (fast_geyer_available) " -- fast Rcpp engine detected" else " -- spatstat-based fallback"
     } else {
       ""
     }

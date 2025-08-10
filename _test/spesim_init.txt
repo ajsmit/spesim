@@ -33,7 +33,7 @@ A_MEAN_OFFSPRING   = 12
 A_CLUSTER_SCALE    = 1.2
 
 # ---- Other species (B.. etc.) process --------------------------------
-SPATIAL_PROCESS_OTHERS = strauss
+SPATIAL_PROCESS_OTHERS = geyer
 # For Strauss:
 #   OTHERS_BETA  — baseline intensity (points per area). If NA, derived to hit total N_others.
 #   OTHERS_R     — interaction radius
