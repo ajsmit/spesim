@@ -41,7 +41,7 @@
 # Simulators (spatstat-free)
 # ---------------------------------------------------------------------
 
-#' Simulate locations via a Thomas (Gaussian Neyman–Scott) process
+#' Simulate point locations via a Thomas (Gaussian Neyman–Scott) process
 #'
 #' Parent–offspring clustering without external dependencies:
 #' parents are sampled uniformly inside \code{domain}; each parent
