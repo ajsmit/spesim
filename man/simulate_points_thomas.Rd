@@ -2,7 +2,7 @@
 % Please edit documentation in R/pointprocess.R
 \name{simulate_points_thomas}
 \alias{simulate_points_thomas}
-\title{Simulate locations via a Thomas (Gaussian Neyman–Scott) process}
+\title{Simulate point locations via a Thomas (Gaussian Neyman–Scott) process}
 \usage{
 simulate_points_thomas(domain, n_target, kappa = NULL, mu = 10, sigma = 1)
 }

@@ -265,6 +265,9 @@ simulate_points_dispatch <- function(kind, domain, n_target, args = list()) {
   kind <- tolower(.nz(kind, "poisson"))
   crs_dom <- sf::st_crs(domain)
 
+  use_fast_thomas <- .has_cpp_thomas()
+  use_fast_strauss <- .has_cpp_strauss()
+
   if (n_target <= 0L) {
     return(sf::st_sf(geometry = sf::st_sfc(crs = crs_dom)))
   }
@@ -314,12 +317,22 @@ simulate_points_dispatch <- function(kind, domain, n_target, args = list()) {
         )
       }
     },
-    strauss = simulate_points_strauss(
-      domain, n_target,
-      beta = .nz(args$OTHERS_BETA, args$beta),
-      gamma = .nz(args$OTHERS_GAMMA, .nz(args$gamma, 0.2)),
-      r = .nz(args$OTHERS_R, .nz(args$r, 1))
-    ),
+    strauss = {
+      r <- .nz(args$OTHERS_R, .nz(args$r, 1))
+      g <- .nz(args$OTHERS_GAMMA, .nz(args$gamma, 0.2))
+      if (.has_cpp_strauss()) {
+        simulate_points_strauss_fast(domain, n_target,
+          r = r, gamma = g,
+          sweeps = .nz(args$sweeps, 2000)
+        )
+      } else {
+        # fallback to your existing spatstat-based function
+        simulate_points_strauss(domain, n_target,
+          beta = .nz(args$OTHERS_BETA, args$beta),
+          gamma = g, r = r
+        )
+      }
+    },
     geyer = simulate_points_geyer(
       domain, n_target,
       beta = .nz(args$OTHERS_BETA, args$beta),

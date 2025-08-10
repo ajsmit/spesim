@@ -10,6 +10,26 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// rstrauss_bbox_cpp
+NumericMatrix rstrauss_bbox_cpp(int n, double xmin, double xmax, double ymin, double ymax, double r, double gamma, int sweeps, int burnin, int thin);
+RcppExport SEXP _spesim_rstrauss_bbox_cpp(SEXP nSEXP, SEXP xminSEXP, SEXP xmaxSEXP, SEXP yminSEXP, SEXP ymaxSEXP, SEXP rSEXP, SEXP gammaSEXP, SEXP sweepsSEXP, SEXP burninSEXP, SEXP thinSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< double >::type xmin(xminSEXP);
+    Rcpp::traits::input_parameter< double >::type xmax(xmaxSEXP);
+    Rcpp::traits::input_parameter< double >::type ymin(yminSEXP);
+    Rcpp::traits::input_parameter< double >::type ymax(ymaxSEXP);
+    Rcpp::traits::input_parameter< double >::type r(rSEXP);
+    Rcpp::traits::input_parameter< double >::type gamma(gammaSEXP);
+    Rcpp::traits::input_parameter< int >::type sweeps(sweepsSEXP);
+    Rcpp::traits::input_parameter< int >::type burnin(burninSEXP);
+    Rcpp::traits::input_parameter< int >::type thin(thinSEXP);
+    rcpp_result_gen = Rcpp::wrap(rstrauss_bbox_cpp(n, xmin, xmax, ymin, ymax, r, gamma, sweeps, burnin, thin));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rthomas_bbox_cpp
 NumericMatrix rthomas_bbox_cpp(double kappa, double mu, double sigma, double xmin, double ymin, double xmax, double ymax, int max_points);
 RcppExport SEXP _spesim_rthomas_bbox_cpp(SEXP kappaSEXP, SEXP muSEXP, SEXP sigmaSEXP, SEXP xminSEXP, SEXP yminSEXP, SEXP xmaxSEXP, SEXP ymaxSEXP, SEXP max_pointsSEXP) {
@@ -30,6 +50,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_spesim_rstrauss_bbox_cpp", (DL_FUNC) &_spesim_rstrauss_bbox_cpp, 10},
     {"_spesim_rthomas_bbox_cpp", (DL_FUNC) &_spesim_rthomas_bbox_cpp, 8},
     {NULL, NULL, 0}
 };
