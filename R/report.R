@@ -24,7 +24,7 @@
 #'     \code{species} column. Used for tallies and alpha snapshots.}
 #'   \item{\code{quadrats}}{An \code{sf} POLYGON layer with \code{quadrat_id};
 #'     used to compute per-site alpha summaries.}
-#'   \item{\code{abund_matrix}}{A site eqn{\times} species abundance table (first column
+#'   \item{\code{abund_matrix}}{A site \eqn{\times} species abundance table (first column
 #'     \code{site}; remaining columns are species counts), typically returned by
 #'     \code{\link{create_abundance_matrix}}().}
 #'   \item{\code{site_coords}}{A data frame with columns \code{site}, \code{x},
@@ -57,9 +57,12 @@
 #'         the data.
 #'   \item \strong{Computation Notes:} which baseline point-process models were
 #'         requested for the dominant and other species (\code{SPATIAL_PROCESS_A},
-#'         \code{SPATIAL_PROCESS_OTHERS}), and whether the \emph{fast} Thomas
-#'         engine (\code{rthomas_bbox_cpp}) was used (available) or the
-#'         \emph{fallback} spatstat-based simulator applies.
+#'         \code{SPATIAL_PROCESS_OTHERS}), and whether the fast Rcpp engines were
+#'         used when applicable:
+#'         \itemize{
+#'           \item Thomas: \code{rthomas_bbox_cpp} (fast) or spatstat-based fallback
+#'           \item Strauss: \code{rstrauss_bbox_cpp} (fast) or spatstat-based fallback
+#'         }
 #' }
 #'
 #' Internally, this routine relies on base summaries, \pkg{sf} for spatial
@@ -91,6 +94,8 @@
 #' cat(generate_full_report(res))
 #' }
 generate_full_report <- function(res) {
+  `%||%` <- function(a, b) if (!is.null(a)) a else b
+
   .opt_to_units <- function(opt, gname) {
     switch(gname,
       "temperature" = opt * 30 - 2,
@@ -293,17 +298,17 @@ generate_full_report <- function(res) {
   ## --- Computation Notes -----------------------------------------------------
   proc_A <- tolower(as.character(res$P$SPATIAL_PROCESS_A %||% "poisson"))
   proc_O <- tolower(as.character(res$P$SPATIAL_PROCESS_OTHERS %||% "poisson"))
-  fast_thomas_available <- isTRUE(exists("rthomas_bbox_cpp", mode = "function"))
+  fast_thomas_available <- .has_cpp_thomas()
+  fast_strauss_available <- .has_cpp_strauss()
+  fast_geyer_available <- .has_cpp_geyer()
 
   note_A <- sprintf(
     "  Dominant (A) process: %s%s",
     proc_A,
     if (identical(proc_A, "thomas")) {
-      if (fast_thomas_available) {
-        " -- fast Rcpp engine detected"
-      } else {
-        " -- spatstat-based fallback"
-      }
+      if (fast_thomas_available) " -- fast Rcpp engine detected" else " -- spatstat-based fallback"
+    } else if (identical(proc_A, "strauss")) {
+      if (fast_strauss_available) " -- fast Rcpp engine detected" else " -- spatstat-based fallback"
     } else {
       ""
     }
@@ -313,11 +318,11 @@ generate_full_report <- function(res) {
     "  Others process: %s%s",
     proc_O,
     if (identical(proc_O, "thomas")) {
-      if (fast_thomas_available) {
-        " -- fast Rcpp engine detected"
-      } else {
-        " -- spatstat-based fallback"
-      }
+      if (fast_thomas_available) " -- fast Rcpp engine detected" else " -- spatstat-based fallback"
+    } else if (identical(proc_O, "strauss")) {
+      if (fast_strauss_available) " -- fast Rcpp engine detected" else " -- spatstat-based fallback"
+    } else if (identical(proc_O, "geyer")) {
+      if (fast_geyer_available) " -- fast Rcpp engine detected" else " -- spatstat-based fallback"
     } else {
       ""
     }

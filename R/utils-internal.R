@@ -86,3 +86,27 @@
   if (any(is.na(vals_num))) stop("Could not parse named pairs: ", paste(items[is.na(vals_num)], collapse = ", "))
   stats::setNames(vals_num, trimws(nms))
 }
+
+#' Detect availability of the fast Thomas engine
+#'
+#' @keywords internal
+.has_cpp_thomas <- function() {
+  f <- get0("rthomas_bbox_cpp", envir = asNamespace("spesim"), inherits = FALSE)
+  isTRUE(is.function(f))
+}
+
+#' Detect availability of the fast Strauss engine
+#'
+#' @keywords internal
+.has_cpp_strauss <- function() {
+  f <- get0("rstrauss_bbox_cpp", envir = asNamespace("spesim"), inherits = FALSE)
+  isTRUE(is.function(f))
+}
+
+#' Detect availability of the fast Geyer engine
+#'
+#' @keywords internal
+.has_cpp_geyer <- function() {
+  f <- get0("rgeyer_bbox_cpp", envir = asNamespace("spesim"), inherits = FALSE)
+  isTRUE(is.function(f))
+}
