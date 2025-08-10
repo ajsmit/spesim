@@ -14,6 +14,7 @@ Thumbs.db
 
 # Private or large folders
 ^_private($|/)
+^_test($|/)
 
 # Continuous integration configs
 ^\.github$
