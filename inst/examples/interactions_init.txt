@@ -1,0 +1,3 @@
+# Either provide a matrix csv or an edgelist csv. Or set AUTO=true for a toy rule.
+INTERACTION_RADIUS = 2
+AUTO = true

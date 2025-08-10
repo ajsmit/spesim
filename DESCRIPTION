@@ -1,0 +1,49 @@
+Package: spesim
+Title: Spatial Sampling Simulation for Heterogeneous Ecological Communities
+Version: 0.1.0
+Authors@R: 
+    c(person(given = "AJ",
+             family = "Smit",
+             role = c("aut", "cre"),
+             email = "ajsmit@uwc.ac.za",
+             comment = c(ORCID = "0000-0002-3799-6126")))
+Description: Simulate and visualise spatial community sampling within an
+    irregular domain. Species distributions are generated from a Fisher
+    log-series and can include environmental filtering (multiple gradients),
+    dominant-species clustering, and local interspecific interactions. Multiple
+    quadrat placement schemes are provided (random, tiled, systematic, transect,
+    Voronoi) to emulate common field designs. The package writes site-by-species
+    abundance matrices and per-quadrat environmental summaries, and produces
+    publication-quality maps and analysis panels (rank–abundance, occupancy–
+    abundance, species–area, distance–decay, rarefaction). A single high-level
+    runner orchestrates the full workflow from configuration files to figures
+    and a human-readable report.
+License: MIT + file LICENSE
+URL: https://github.com/yourname/spesim
+BugReports: https://github.com/yourname/spesim/issues
+Depends: 
+    R (>= 4.1)
+Imports: 
+    sf,
+    ggplot2,
+    dplyr,
+    tidyr,
+    viridis,
+    stringr,
+    patchwork,
+    FNN,
+    RANN,
+    vegan,
+    colorspace,
+    tibble,
+    scales
+Suggests: 
+    devtools,
+    spatstat.random,
+    spatstat.geom,
+    spatstat.explore,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2

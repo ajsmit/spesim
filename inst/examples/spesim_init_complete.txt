@@ -1,0 +1,138 @@
+# =====================================================================
+# spesim_init_complete.txt — Example configuration for the 'spesim' package
+# ---------------------------------------------------------------------
+# Notes:
+# - Lines starting with '#' are comments.
+# - Values are parsed from lines of the form: KEY = value
+# - Vectors may be comma-separated (A,B,C) or R-style c(A, B, C).
+# - Named entries may be given as name:value (e.g., A:0.55).
+# - Hex colours are preserved if you QUOTE them, e.g. "#22223b".
+# - Do not place trailing comments AFTER a value on the same line.
+# =====================================================================
+
+# --- Reproducibility --------------------------------------------------
+SEED = 77
+
+# --- Output prefix (timestamp is appended automatically) --------------
+# May include a directory component; it will be created if missing.
+OUTPUT_PREFIX = out/run
+
+# --- Community size and composition ----------------------------------
+N_INDIVIDUALS = 2500        # total individuals (all species)
+N_SPECIES     = 22          # number of species (A..)
+DOMINANT_FRACTION = 0.30    # fraction of individuals assigned to species 'A'
+
+# Fisher’s log-series parameters for the non-dominant pool
+FISHER_ALPHA = 4.2
+FISHER_X     = 0.95
+
+# --- Gradient-responsive species -------------------------------------
+# Which species respond to which gradient? (temperature|elevation|rainfall)
+GRADIENT_SPECIES     = A, B, C, D
+GRADIENT_ASSIGNMENTS = temperature, temperature, elevation, rainfall
+
+# Optima/tolerances can be scalar (recycled), per-species (named), or per-gradient (named).
+# Examples:
+#   GRADIENT_OPTIMA     = 0.5
+#   GRADIENT_OPTIMA     = A:0.55, B:0.45, C:0.60, D:0.50
+#   GRADIENT_TOLERANCE  = temperature:0.12, elevation:0.10, rainfall:0.15
+GRADIENT_OPTIMA     = 0.50
+GRADIENT_TOLERANCE  = 0.12
+
+# --- Environmental grid (used for preferences and background maps) ---
+SAMPLING_RESOLUTION = 50     # grid steps per axis
+ENVIRONMENTAL_NOISE = 0.05   # Gaussian noise SD added to gradients
+
+# --- Dominant clustering (legacy/simple control for species 'A') -----
+MAX_CLUSTERS_DOMINANT = 5
+CLUSTER_SPREAD_DOMINANT = 3.0
+
+# --- Local interspecific interactions (legacy simple modifier) --------
+# Set INTERACTION_RADIUS > 0 and provide a matrix to enable; otherwise neutral (1s).
+INTERACTION_RADIUS = 2
+
+# Optional matrix CSV / edgelist can be supplied via load_interactions(); left neutral here.
+# INTERACTION_MATRIX is filled at runtime if interactions_file is provided to run_spatial_simulation().
+
+# =====================================================================
+# Spatial point-process choices (NEW)
+# ---------------------------------------------------------------------
+# You can model the dominant (A) and the remaining species with different processes.
+# Options (case-insensitive):
+#   poisson       — complete spatial randomness
+#   thomas        — Neyman–Scott / Thomas cluster process (parent–offspring)
+#   strauss       — inhibition process (repulsion)
+#   geyer         — Geyer saturation (clustering with saturation / mild inhibition)
+#
+# If you choose an advanced process, set its parameters below.
+# =====================================================================
+
+# ---- Species A (dominant) process -----------------------------------
+SPATIAL_PROCESS_A = thomas
+# For Thomas:
+#   A_PARENT_INTENSITY — parent intensity (parents per area). If NA, it is derived to hit N_A.
+#   A_MEAN_OFFSPRING   — mean offspring per parent (mu)
+#   A_CLUSTER_SCALE    — Gaussian cluster sigma (in map units)
+A_PARENT_INTENSITY = NA
+A_MEAN_OFFSPRING   = 12
+A_CLUSTER_SCALE    = 1.2
+
+# ---- Other species (B.. etc.) process --------------------------------
+SPATIAL_PROCESS_OTHERS = strauss
+# For Strauss:
+#   OTHERS_BETA  — baseline intensity (points per area). If NA, derived to hit total N_others.
+#   OTHERS_R     — interaction radius
+#   OTHERS_S     — gamma (0..1) inhibition strength (sometimes written as 'gamma' in literature)
+OTHERS_BETA  = NA
+OTHERS_R     = 1.0
+OTHERS_S     = 0.6
+
+# If you instead choose 'geyer', use:
+#   OTHERS_BETA, OTHERS_GAMMA (>1 for clustering), OTHERS_R (radius), OTHERS_S (saturation)
+# OTHERS_GAMMA = 1.5
+
+# If you choose 'thomas' for others, use:
+#   OTHERS_MU (offspring mean), OTHERS_SIGMA (cluster sigma)
+# OTHERS_MU    = 10
+# OTHERS_SIGMA = 1.0
+
+# =====================================================================
+# Quadrat placement (choose one scheme) --------------------------------
+#   random     — non-overlapping uniform placement
+#   tiled      — systematic grid cells fully contained in the domain
+#   systematic — regular point lattice, rectangles centered on grid points
+#   transect   — parallel lines with evenly spaced quadrats
+#   voronoi    — place quadrats inside suitable Voronoi cells
+# =====================================================================
+SAMPLING_SCHEME = tiled
+
+# When SAMPLING_SCHEME in {random, tiled, systematic, voronoi}:
+N_QUADRATS = 25
+# Choose a named option OR specify an explicit width/height via QUADRAT_SIZE.
+# Valid QUADRAT_SIZE_OPTION: small | medium | large
+QUADRAT_SIZE_OPTION = small
+# QUADRAT_SIZE = c(1.5, 1.5)
+
+# When SAMPLING_SCHEME = transect:
+N_TRANSECTS               = 1
+N_QUADRATS_PER_TRANSECT   = 8
+TRANSECT_ANGLE            = 90   # degrees, 0=N, 90=E
+
+# When SAMPLING_SCHEME = voronoi:
+VORONOI_SEED_FACTOR = 10
+
+# =====================================================================
+# Plot styling ---------------------------------------------------------
+POINT_SIZE       = 0.20
+POINT_ALPHA      = 1.00
+QUADRAT_ALPHA    = 0.05
+BACKGROUND_COLOUR="#ffffff"
+FOREGROUND_COLOUR="#22223b"
+QUADRAT_COLOUR   = "black"
+
+# =====================================================================
+# Advanced analysis panel ----------------------------------------------
+# If TRUE, the run writes an additional multi-plot panel with:
+# - Rank–abundance, Occupancy–abundance, SAR, Distance–decay, Rarefaction
+# - Optional PPC diagnostics (K, L(r)-r, g(r)) if spatstat.* is installed
+ADVANCED_ANALYSIS = TRUE

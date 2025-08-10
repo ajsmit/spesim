@@ -1,0 +1,38 @@
+# RStudio project & user files
+^\.Rproj\.user$
+^\.Rhistory$
+^\.RData$
+^\.Rapp\.history$
+
+# Git
+^\.git$
+^\.gitignore$
+
+# OS / editor cruft
+^\.DS_Store$
+Thumbs.db
+
+# Private or large folders
+^_private($|/)
+
+# Continuous integration configs
+^\.github$
+
+# Documentation artefacts
+^README\.Rmd$
+^README\.html$
+^vignettes/.*\.(html|pdf)$
+^inst/doc/.*\.(html|pdf)$
+
+# Renviron / dev env
+^\.Renviron$
+
+# Packrat / renv
+^packrat$
+^renv$
+^renv\.lock$
+
+# Build
+^build$
+^.*\.Rproj$
+^\.Rproj\.user$

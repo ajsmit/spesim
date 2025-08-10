@@ -1,0 +1,51 @@
+# R specific ----
+.Rhistory
+.RData
+.Ruserdata
+.Rapp.history
+.Rproj.user/
+
+# R build artifacts ----
+.Rcheck/
+build/
+
+# Documentation & reports ----
+/README.html
+/vignettes/*.html
+/vignettes/*.pdf
+/inst/doc/*.html
+/inst/doc/*.pdf
+
+# Renviron / configuration ----
+.Renviron
+
+# Packrat / renv ----
+packrat/
+renv/
+renv.lock
+
+# Test, coverage & cache ----
+.Rcache/
+.Rcov/
+.RUnit/
+
+# Operating system files ----
+.DS_Store
+Thumbs.db
+
+# IDE / editor files ----
+*.Rproj
+*.Rhistory
+.idea/
+.vscode/
+
+# Logs ----
+*.log
+
+# Python or other language artifacts ----
+*.py[cod]
+__pycache__/
+
+# Misc ----
+*.swp
+*~
