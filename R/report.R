@@ -24,7 +24,7 @@
 #'     \code{species} column. Used for tallies and alpha snapshots.}
 #'   \item{\code{quadrats}}{An \code{sf} POLYGON layer with \code{quadrat_id};
 #'     used to compute per-site alpha summaries.}
-#'   \item{\code{abund_matrix}}{A site x species abundance table (first column
+#'   \item{\code{abund_matrix}}{A site eqn{\times} species abundance table (first column
 #'     \code{site}; remaining columns are species counts), typically returned by
 #'     \code{\link{create_abundance_matrix}}().}
 #'   \item{\code{site_coords}}{A data frame with columns \code{site}, \code{x},
@@ -34,7 +34,7 @@
 #' @details
 #' Sections produced:
 #' \itemize{
-#'   \item \strong{Environmental Gradients:} min/max/range for temperature (^0C),
+#'   \item \strong{Environmental Gradients:} min/max/range for temperature (deg C),
 #'         elevation (m), rainfall (mm), with a short pattern note and a list of
 #'         gradient-responsive species including their optima/tolerances rendered
 #'         in natural units.
@@ -55,6 +55,11 @@
 #'         observed ranks and theoretical log-series abundances; compares configured
 #'         \code{FISHER_ALPHA} with \code{\link[vegan]{fisher.alpha}} estimated from
 #'         the data.
+#'   \item \strong{Computation Notes:} which baseline point-process models were
+#'         requested for the dominant and other species (\code{SPATIAL_PROCESS_A},
+#'         \code{SPATIAL_PROCESS_OTHERS}), and whether the \emph{fast} Thomas
+#'         engine (\code{rthomas_bbox_cpp}) was used (available) or the
+#'         \emph{fallback} spatstat-based simulator applies.
 #' }
 #'
 #' Internally, this routine relies on base summaries, \pkg{sf} for spatial
@@ -217,7 +222,7 @@ generate_full_report <- function(res) {
     sprintf("Abundance variation (CV): %.3f", stats::sd(richness_data$n_ind) / mean(richness_data$n_ind))
   )
 
-  ## --- Robust Mantel-style summary (no bare NA in c(...)) -------------------
+  ## --- Robust Mantel-style summary ------------------------------------------
   space_dist <- stats::dist(res$site_coords[, c("x", "y")])
   richness_dist <- stats::dist(richness_data$richness)
 
@@ -285,9 +290,52 @@ generate_full_report <- function(res) {
     sprintf("  Effective alpha from data: %.2f", eff_alpha)
   )
 
+  ## --- Computation Notes -----------------------------------------------------
+  proc_A <- tolower(as.character(res$P$SPATIAL_PROCESS_A %||% "poisson"))
+  proc_O <- tolower(as.character(res$P$SPATIAL_PROCESS_OTHERS %||% "poisson"))
+  fast_thomas_available <- isTRUE(exists("rthomas_bbox_cpp", mode = "function"))
+
+  note_A <- sprintf(
+    "  Dominant (A) process: %s%s",
+    proc_A,
+    if (identical(proc_A, "thomas")) {
+      if (fast_thomas_available) {
+        " -- fast Rcpp engine detected"
+      } else {
+        " -- spatstat-based fallback"
+      }
+    } else {
+      ""
+    }
+  )
+
+  note_O <- sprintf(
+    "  Others process: %s%s",
+    proc_O,
+    if (identical(proc_O, "thomas")) {
+      if (fast_thomas_available) {
+        " -- fast Rcpp engine detected"
+      } else {
+        " -- spatstat-based fallback"
+      }
+    } else {
+      ""
+    }
+  )
+
+  comp_notes <- c("\nComputation Notes:", note_A, note_O)
+  ## --------------------------------------------------------------------------
+
   full_report <- c(
     "========== ANALYSIS REPORT ==========",
-    env_report, corr_report, sad_report, alpha_report, div_report, spat_report, fisher_report,
+    env_report,
+    corr_report,
+    sad_report,
+    alpha_report,
+    div_report,
+    spat_report,
+    fisher_report,
+    comp_notes,
     "\nSIMULATION COMPLETED SUCCESSFULLY."
   )
   paste(full_report, collapse = "\n")

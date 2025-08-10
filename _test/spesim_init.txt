@@ -1,0 +1,63 @@
+SEED = 77
+N_SPECIES = 22
+N_INDIVIDUALS = 2500
+DOMINANT_FRACTION = 0.30
+FISHER_ALPHA = 4.2
+FISHER_X = 0.95
+
+# Gradient assignments (optional demo; can be edited later)
+GRADIENT_SPECIES = c("A", "B", "C", "D")
+GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", "rainfall")
+GRADIENT_OPTIMA = 0.5
+GRADIENT_TOLERANCE = 0.12
+SAMPLING_RESOLUTION = 50
+ENVIRONMENTAL_NOISE = 0.05
+
+# Quadrat sampling
+SAMPLING_SCHEME = "tiled"
+N_QUADRATS = 25
+QUADRAT_SIZE_OPTION = "small"
+N_TRANSECTS = 1
+N_QUADRATS_PER_TRANSECT = 8
+TRANSECT_ANGLE = 90
+VORONOI_SEED_FACTOR = 10
+
+# ---- Species A (dominant) process -----------------------------------
+SPATIAL_PROCESS_A = thomas
+# For Thomas:
+#   A_PARENT_INTENSITY — parent intensity (parents per area). If NA, it is derived to hit N_A.
+#   A_MEAN_OFFSPRING   — mean offspring per parent (mu)
+#   A_CLUSTER_SCALE    — Gaussian cluster sigma (in map units)
+A_PARENT_INTENSITY = NA
+A_MEAN_OFFSPRING   = 12
+A_CLUSTER_SCALE    = 1.2
+
+# ---- Other species (B.. etc.) process --------------------------------
+SPATIAL_PROCESS_OTHERS = strauss
+# For Strauss:
+#   OTHERS_BETA  — baseline intensity (points per area). If NA, derived to hit total N_others.
+#   OTHERS_R     — interaction radius
+#   OTHERS_S     — gamma (0..1) inhibition strength (sometimes written as 'gamma' in literature)
+OTHERS_BETA  = NA
+OTHERS_R     = 1.0
+OTHERS_S     = 0.6
+
+# If you instead choose 'geyer', use:
+#   OTHERS_BETA, OTHERS_GAMMA (>1 for clustering), OTHERS_R (radius), OTHERS_S (saturation)
+# OTHERS_GAMMA = 1.5
+
+# If you choose 'thomas' for others, use:
+#   OTHERS_MU (offspring mean), OTHERS_SIGMA (cluster sigma)
+# OTHERS_MU    = 10
+# OTHERS_SIGMA = 1.0
+
+# Plot styling
+POINT_SIZE = 0.2
+POINT_ALPHA = 1.0
+QUADRAT_ALPHA = 0.05
+BACKGROUND_COLOUR = "white"
+FOREGROUND_COLOUR = "#22223b"
+QUADRAT_COLOUR = "black"
+
+ADVANCED_ANALYSIS = TRUE
+

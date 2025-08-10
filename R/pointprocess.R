@@ -41,7 +41,7 @@
 # Simulators (spatstat-free)
 # ---------------------------------------------------------------------
 
-#' Simulate locations via a Thomas (Gaussian Neyman–Scott) process
+#' Simulate point locations via a Thomas (Gaussian Neyman–Scott) process
 #'
 #' Parent–offspring clustering without external dependencies:
 #' parents are sampled uniformly inside \code{domain}; each parent
@@ -265,22 +265,55 @@ simulate_points_dispatch <- function(kind, domain, n_target, args = list()) {
   kind <- tolower(.nz(kind, "poisson"))
   crs_dom <- sf::st_crs(domain)
 
-  if (n_target <= 0) {
+  if (n_target <= 0L) {
     return(sf::st_sf(geometry = sf::st_sfc(crs = crs_dom)))
   }
 
+  # Fast path: Poisson via sf::st_sample
   if (kind == "poisson") {
     pts <- sf::st_sample(domain, size = n_target, type = "random")
     return(sf::st_sf(geometry = pts))
   }
 
+  # Helper to build sfc POINT from a 2-col matrix/data.frame
+  .xy_to_sfc <- function(xy, crs) {
+    if (is.null(xy) || length(xy) == 0L) {
+      return(sf::st_sfc(crs = crs))
+    }
+    if (is.data.frame(xy)) xy <- as.matrix(xy)
+    stopifnot(is.matrix(xy), ncol(xy) >= 2)
+    sf::st_sfc(lapply(seq_len(nrow(xy)), function(i) sf::st_point(xy[i, 1:2])), crs = crs)
+  }
+
   switch(kind,
-    thomas = simulate_points_thomas(
-      domain, n_target,
-      kappa = .nz(args$A_PARENT_INTENSITY, args$beta),
-      mu = .nz(args$A_MEAN_OFFSPRING, .nz(args$mu, 10)),
-      sigma = .nz(args$A_CLUSTER_SCALE, .nz(args$sigma, 1))
-    ),
+    thomas = {
+      # Prefer fast Rcpp sampler if available; fall back to spatstat version
+      if (isTRUE(exists("rthomas_bbox_cpp", mode = "function"))) {
+        bb <- sf::st_bbox(domain)
+        mu <- .nz(args$A_MEAN_OFFSPRING, .nz(args$mu, 10))
+        sigma <- .nz(args$A_CLUSTER_SCALE, .nz(args$sigma, 1))
+        kappa <- .nz(args$A_PARENT_INTENSITY, args$beta) # may be NULL -> pass NA
+
+        # ---- IMPORTANT: positional call (no names) to match Rcpp signature ----
+        xy <- rthomas_bbox_cpp(
+          as.integer(n_target),
+          unname(bb["xmin"]), unname(bb["xmax"]),
+          unname(bb["ymin"]), unname(bb["ymax"]),
+          as.numeric(mu),
+          as.numeric(sigma),
+          if (is.null(kappa)) NA_real_ else as.numeric(kappa)
+        )
+        sfc <- .xy_to_sfc(xy, crs_dom)
+        return(sf::st_sf(geometry = sfc))
+      } else {
+        simulate_points_thomas(
+          domain, n_target,
+          kappa = .nz(args$A_PARENT_INTENSITY, args$beta),
+          mu = .nz(args$A_MEAN_OFFSPRING, .nz(args$mu, 10)),
+          sigma = .nz(args$A_CLUSTER_SCALE, .nz(args$sigma, 1))
+        )
+      }
+    },
     strauss = simulate_points_strauss(
       domain, n_target,
       beta = .nz(args$OTHERS_BETA, args$beta),

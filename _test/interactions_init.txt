@@ -1,0 +1,3 @@
+INTERACTION_RADIUS = 2
+MATRIX_CSV = interactions_matrix.csv
+AUTO = FALSE
