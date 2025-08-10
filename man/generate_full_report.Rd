@@ -21,7 +21,7 @@ environmental fields used for context.}
 \code{species} column. Used for tallies and alpha snapshots.}
 \item{\code{quadrats}}{An \code{sf} POLYGON layer with \code{quadrat_id};
 used to compute per-site alpha summaries.}
-\item{\code{abund_matrix}}{A site × species abundance table (first column
+\item{\code{abund_matrix}}{A site \eqn{\times} species abundance table (first column
 \code{site}; remaining columns are species counts), typically returned by
 \code{\link{create_abundance_matrix}}().}
 \item{\code{site_coords}}{A data frame with columns \code{site}, \code{x},
@@ -58,8 +58,8 @@ and labels for dominant and gradient-responsive species.
 compact species list (with counts) for each quadrat.
 \item \strong{Diversity Partitioning:} mean alpha richness (+/-SE), Shannon's
 H', Simpson's 1-D, gamma richness, Whittaker and additive beta, mean
-pairwise Sørensen dissimilarity (computed as binary Bray–Curtis on
-presence–absence), and simple abundance dispersion metrics.
+pairwise Sorensen dissimilarity (computed as binary Bray-Curtis on
+presence-absence), and simple abundance dispersion metrics.
 \item \strong{Spatial Autocorrelation:} Pearson correlation between
 inter-quadrat distances and differences in richness (a Mantel-style
 proxy) with p-value and interpretation.
@@ -69,9 +69,12 @@ observed ranks and theoretical log-series abundances; compares configured
 the data.
 \item \strong{Computation Notes:} which baseline point-process models were
 requested for the dominant and other species (\code{SPATIAL_PROCESS_A},
-\code{SPATIAL_PROCESS_OTHERS}), and whether the \emph{fast} Thomas
-engine (\code{rthomas_bbox_cpp}) was used (available) or the
-\emph{fallback} spatstat-based simulator applies.
+\code{SPATIAL_PROCESS_OTHERS}), and whether the fast Rcpp engines were
+used when applicable:
+\itemize{
+\item Thomas: \code{rthomas_bbox_cpp} (fast) or spatstat-based fallback
+\item Strauss: \code{rstrauss_bbox_cpp} (fast) or spatstat-based fallback
+}
 }
 
 Internally, this routine relies on base summaries, \pkg{sf} for spatial

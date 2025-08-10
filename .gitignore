@@ -16,6 +16,10 @@ build/
 /inst/doc/*.html
 /inst/doc/*.pdf
 
+# Private things
+_private/
+_test/
+
 # Renviron / configuration ----
 .Renviron
 
