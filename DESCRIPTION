@@ -1,6 +1,6 @@
 Package: spesim
 Title: Spatial Sampling Simulation for Heterogeneous Ecological Communities
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: 
     c(person(given = "AJ",
              family = "Smit",
