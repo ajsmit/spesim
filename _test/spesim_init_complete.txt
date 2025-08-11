@@ -53,6 +53,7 @@ INTERACTION_RADIUS = 2
 
 # Optional matrix CSV / edgelist can be supplied via load_interactions(); left neutral here.
 # INTERACTION_MATRIX is filled at runtime if interactions_file is provided to run_spatial_simulation().
+INTERACTIONS_EDGELIST = c("A,B-D,0.8", "C,A,1.2", "E,*,0.95")
 
 # =====================================================================
 # Spatial point-process choices (NEW)

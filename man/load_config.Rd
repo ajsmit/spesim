@@ -25,9 +25,15 @@ Supported value forms:
 \itemize{
 \item Scalars: \code{300}, \code{TRUE}, \code{0.15}, \code{"#22223b"}.
 \item Comma vectors: \code{A,B,C} or \code{0.1, 0.2, 0.3}.
-\item R-style vectors: \code{c(A, B, C)} or \code{c(0.1, 0.2)} (multi-line OK).
+\item R-style character vectors for inline edgelists: e.g.
+\code{INTERACTIONS_EDGELIST = c("A,B-D,0.8", "C,A,1.2", "E,*,0.95")}.
 \item Named entries: \code{A:0.55}, \code{temperature:0.12}.
 }
+You may specify INTERACTIONS_FILE = "path/to/interactions.txt" to point to
+a separate interactions config, or embed rules directly with
+\code{INTERACTIONS_EDGELIST = c("A,B-D,0.8", "C,A,1.2")}. If neither is provided,
+interactions default to neutral (all 1.0) with \code{INTERACTION_RADIUS = 0}.
+
 Gradient keys supported: \code{temperature}, \code{elevation}, \code{rainfall}.
 Use \code{GRADIENT_SPECIES}, \code{GRADIENT_ASSIGNMENTS}, plus either
 \code{GRADIENT_OPTIMA} and \code{GRADIENT_TOLERANCE} as scalar, per-species

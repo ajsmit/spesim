@@ -11,8 +11,8 @@ Simulate and visualise spatial community sampling within an irregular domain. Sp
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/yourname/spesim}
-  \item Report bugs at \url{https://github.com/yourname/spesim/issues}
+  \item \url{https://github.com/ajsmit/spesim}
+  \item Report bugs at \url{https://github.com/ajsmit/spesim/issues}
 }
 
 }

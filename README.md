@@ -1,7 +1,7 @@
 spesim: Spatial Ecological Simulation in R
 ================
 Your Name
-2025-08-09
+2025-08-11
 
 # spesim <img src="man/figures/logo.png" align="right" width="120" />
 
@@ -90,32 +90,6 @@ generate_advanced_panel(res)
 | `plot_distance_decay()` | Plot distance–decay relationships using Sørensen dissimilarity vs. geographic distance. |
 | `plot_rarefaction()` | Plot per-site rarefaction curves showing expected richness vs. sample size. |
 
-## Worked example
-
-``` r
-library(spesim)
-
-# Step 1: Parameters & domain
-P <- list(
-  N_SPECIES = 6,
-  N_INDIVIDUALS = 500,
-  DOMINANT_FRACTION = 0.4,
-  FISHER_ALPHA = 4,
-  FISHER_X = 0.7
-)
-domain <- sf::st_as_sf(data.frame(id = 1), wkt = "POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))", crs = 4326)
-
-# Step 2: Run simulation
-res <- run_spatial_simulation(P, domain)
-
-# Step 3: Analysis panel
-panel <- generate_advanced_panel(res)
-print(panel)
-
-# Step 4: Text report
-cat(generate_full_report(res))
-```
-
 ## Methodological note: from ad-hoc clustering to point processes
 
 In early versions, spesim generated clusters using simple “hand-rolled”
@@ -145,14 +119,9 @@ You can attach simulated environmental rasters or grids, then extract
 quadrat summaries:
 
 ``` r
-env_grid <- data.frame(
-  x = runif(500, 0, 1),
-  y = runif(500, 0, 1),
-  temperature_C = rnorm(500, 15, 3),
-  elevation_m = runif(500, 0, 500),
-  rainfall_mm = runif(500, 800, 1200)
-)
-quad_env <- calculate_quadrat_environment(env_grid, res$quadrats, sf::st_crs(domain))
+domain <- create_sampling_domain()
+env <- create_environmental_gradients(domain, resolution = 50, noise_level = 0.05)
+head(env)
 ```
 
 ## Diagnostics panel
@@ -168,9 +137,9 @@ If **spatstat** is available, the advanced panel adds an extra row:
 
 If you use spesim in your work, please cite it:
 
-@misc{spesim, author = {Your Name}, title = {spesim: Spatial Ecological
+@misc{spesim, author = {AJ Smit}, title = {spesim: Spatial Ecological
 Simulation in R}, year = {2025}, url =
-{<https://github.com/yourusername/spesim>} }
+{<https://github.com/ajsmit/spesim>} }
 
 ## License
 

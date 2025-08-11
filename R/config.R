@@ -126,9 +126,15 @@
 #' \itemize{
 #'   \item Scalars: \code{300}, \code{TRUE}, \code{0.15}, \code{"#22223b"}.
 #'   \item Comma vectors: \code{A,B,C} or \code{0.1, 0.2, 0.3}.
-#'   \item R-style vectors: \code{c(A, B, C)} or \code{c(0.1, 0.2)} (multi-line OK).
+#'   \item R-style character vectors for inline edgelists: e.g.
+#'      \code{INTERACTIONS_EDGELIST = c("A,B-D,0.8", "C,A,1.2", "E,*,0.95")}.
 #'   \item Named entries: \code{A:0.55}, \code{temperature:0.12}.
 #' }
+#' You may specify INTERACTIONS_FILE = "path/to/interactions.txt" to point to
+#' a separate interactions config, or embed rules directly with
+#' \code{INTERACTIONS_EDGELIST = c("A,B-D,0.8", "C,A,1.2")}. If neither is provided,
+#' interactions default to neutral (all 1.0) with \code{INTERACTION_RADIUS = 0}.
+#'
 #' Gradient keys supported: \code{temperature}, \code{elevation}, \code{rainfall}.
 #' Use \code{GRADIENT_SPECIES}, \code{GRADIENT_ASSIGNMENTS}, plus either
 #' \code{GRADIENT_OPTIMA} and \code{GRADIENT_TOLERANCE} as scalar, per-species
@@ -167,6 +173,8 @@ load_config <- function(init_file) {
     CLUSTER_SPREAD_DOMINANT = 3.0,
     INTERACTION_RADIUS = 0,
     INTERACTION_MATRIX = NULL,
+    INTERACTIONS_FILE = NULL,
+    INTERACTIONS_EDGELIST = NULL,
     SAMPLING_SCHEME = "random",
     N_QUADRATS = 20,
     QUADRAT_SIZE_OPTION = "medium",
@@ -243,6 +251,14 @@ load_config <- function(init_file) {
     if (!is.numeric(P[[f]]) && !is.logical(P[[f]]) && !is.null(P[[f]])) {
       suppressWarnings(P[[f]] <- as.numeric(P[[f]]))
     }
+  }
+
+  # Keep interaction pointers / edgelists as character
+  if (!is.null(P$INTERACTIONS_EDGELIST)) {
+    P$INTERACTIONS_EDGELIST <- as.character(P$INTERACTIONS_EDGELIST)
+  }
+  if (!is.null(P$INTERACTIONS_FILE)) {
+    P$INTERACTIONS_FILE <- as.character(P$INTERACTIONS_FILE)
   }
 
   # Logical flags
@@ -341,6 +357,32 @@ load_config <- function(init_file) {
 }
 
 
+# --- helpers ---------------------------------------------------------------
+.parse_neighbor_spec <- function(neighbor_field, focal, spp_names) {
+  # neighbor_field: e.g. "B-D,L" (cell is already parsed as one string by read.csv)
+  # Supports commas/semicolons/pipes as separators inside the cell.
+  if (is.na(neighbor_field) || !nzchar(neighbor_field)) {
+    return(character(0))
+  }
+  s <- gsub("\\s+", "", neighbor_field)
+  if (s == "*") {
+    return(setdiff(spp_names, focal)) # everyone except focal
+  }
+  parts <- unlist(strsplit(s, "[,;|]+"))
+  out <- character(0)
+  for (p in parts) {
+    if (grepl("^[A-Z]-[A-Z]$", p)) {
+      a <- substr(p, 1, 1)
+      b <- substr(p, 3, 3)
+      rng <- LETTERS[which(LETTERS == a):which(LETTERS == b)]
+      out <- c(out, rng)
+    } else {
+      out <- c(out, p)
+    }
+  }
+  unique(out)
+}
+
 #' Load interspecific interaction settings (radius + matrix)
 #'
 #' @description
@@ -391,59 +433,94 @@ load_config <- function(init_file) {
 #' @export
 load_interactions <- function(interactions_file, n_species) {
   spp_names <- LETTERS[1:n_species]
-  out_radius <- 0
-  IM <- matrix(1.0, nrow = n_species, ncol = n_species, dimnames = list(spp_names, spp_names))
+  radius <- 0
+  IM <- matrix(1.0, n_species, n_species, dimnames = list(spp_names, spp_names))
 
   if (is.null(interactions_file) || !file.exists(interactions_file)) {
-    if (!is.null(interactions_file) && !file.exists(interactions_file)) {
-      warning("interactions_file not found: ", interactions_file, " - interactions disabled.")
-    }
-    return(list(radius = out_radius, matrix = IM))
+    warning("interactions_file not found; interactions disabled.")
+    return(list(radius = radius, matrix = IM))
   }
 
+  ext <- tolower(tools::file_ext(interactions_file))
+
+  # -------------------- NEW CSV FORMAT (Option 1) --------------------
+  if (ext %in% c("csv")) {
+    df <- tryCatch(
+      utils::read.csv(interactions_file, stringsAsFactors = FALSE, check.names = FALSE),
+      error = function(e) stop("Failed to read interactions CSV: ", e$message)
+    )
+
+    needed <- c("focal", "neighbor", "value")
+    if (!all(needed %in% names(df))) {
+      stop("Interactions CSV must have columns: focal, neighbor, value")
+    }
+
+    # Optional metadata row for radius:
+    # _RADIUS_, "", 50
+    meta_rows <- which(toupper(df$focal) == "_RADIUS_")
+    if (length(meta_rows) > 0) {
+      val <- suppressWarnings(as.numeric(df$value[meta_rows[1]]))
+      if (is.finite(val) && val >= 0) radius <- val
+      df <- df[-meta_rows, , drop = FALSE]
+    }
+
+    if (nrow(df) == 0) {
+      return(list(radius = radius, matrix = IM))
+    }
+
+    for (i in seq_len(nrow(df))) {
+      f <- as.character(df$focal[i])
+      nb_raw <- as.character(df$neighbor[i])
+      v <- suppressWarnings(as.numeric(df$value[i]))
+
+      if (!nzchar(f) || !is.finite(v)) next
+      if (!(f %in% spp_names)) {
+        warning("Ignoring row ", i, ": focal '", f, "' not in species A..", LETTERS[n_species])
+        next
+      }
+
+      targets <- .parse_neighbor_spec(nb_raw, focal = f, spp_names = spp_names)
+      targets <- intersect(targets, spp_names)
+      if (length(targets) == 0) next
+
+      IM[f, targets] <- v
+    }
+
+    if (any(!is.finite(IM))) stop("INTERACTION_MATRIX contains non-finite values.")
+    return(list(radius = radius, matrix = IM))
+  }
+
+  # -------------------- BACKWARD-COMPATIBLE .txt (key=value) -----------------
   raw <- readLines(interactions_file, warn = FALSE)
-  raw <- trimws(sub("\\s+#.*$", "", raw))
+  raw <- trimws(sub("#.*$", "", raw))
   raw <- raw[nzchar(raw)]
+  if (length(raw) == 0) {
+    return(list(radius = radius, matrix = IM))
+  }
+
   kv <- strsplit(raw, "=", fixed = TRUE)
   K <- toupper(trimws(vapply(kv, `[`, "", 1)))
-  V <- trimws(vapply(kv, function(x) paste(x[-1], collapse = "="), ""))
-  params <- as.list(stats::setNames(V, K))
+  V <- trimws(vapply(kv, function(x) paste(x[-1], collapse = "="), "")) # allow '=' in RHS
+  params <- stats::setNames(V, K)
 
-  getp <- function(nm, default = NULL) {
-    val <- params[[nm]]
-    if (is.null(val) || !nzchar(val)) default else val
+  # radius
+  if ("INTERACTION_RADIUS" %in% names(params)) {
+    rnum <- suppressWarnings(as.numeric(params[["INTERACTION_RADIUS"]]))
+    if (length(rnum) == 1 && is.finite(rnum) && rnum >= 0) radius <- rnum
   }
 
-  rstr <- getp("INTERACTION_RADIUS")
-  if (!is.null(rstr)) {
-    rnum <- suppressWarnings(as.numeric(rstr))
-    if (length(rnum) == 1 && is.finite(rnum) && rnum >= 0) {
-      out_radius <- rnum
-    } else {
-      warning("Bad INTERACTION_RADIUS; using 0 (disabled).")
-      out_radius <- 0
-    }
-  }
-
-  matrix_csv <- getp("MATRIX_CSV")
-  edgelist_csv <- getp("EDGELIST_CSV")
-  auto <- tolower(getp("AUTO", "false")) %in% c("true", "1", "yes")
-
-  if (!is.null(matrix_csv)) {
-    if (!file.exists(matrix_csv)) stop("MATRIX_CSV not found: ", matrix_csv)
-    M <- as.matrix(utils::read.csv(matrix_csv, row.names = 1, check.names = FALSE))
-    fullM <- matrix(1.0, nrow = n_species, ncol = n_species, dimnames = list(spp_names, spp_names))
+  # CSV pointers (legacy)
+  if ("MATRIX_CSV" %in% names(params) && nzchar(params[["MATRIX_CSV"]])) {
+    p <- params[["MATRIX_CSV"]]
+    M <- as.matrix(utils::read.csv(p, row.names = 1, check.names = FALSE))
+    fullM <- matrix(1.0, n_species, n_species, dimnames = list(spp_names, spp_names))
     rn <- intersect(rownames(M), spp_names)
     cn <- intersect(colnames(M), spp_names)
-    if (length(rn) && length(cn)) {
-      suppressWarnings({
-        fullM[rn, cn] <- as.numeric(M[rn, cn, drop = FALSE])
-      })
-    }
+    fullM[rn, cn] <- as.numeric(M[rn, cn, drop = FALSE])
     IM <- fullM
-  } else if (!is.null(edgelist_csv)) {
-    if (!file.exists(edgelist_csv)) stop("EDGELIST_CSV not found: ", edgelist_csv)
-    E <- utils::read.csv(edgelist_csv, stringsAsFactors = FALSE, check.names = FALSE)
+  } else if ("EDGELIST_CSV" %in% names(params) && nzchar(params[["EDGELIST_CSV"]])) {
+    p <- params[["EDGELIST_CSV"]]
+    E <- utils::read.csv(p, stringsAsFactors = FALSE, check.names = FALSE)
     need_cols <- c("focal", "neighbor", "value")
     if (!all(need_cols %in% names(E))) stop("EDGELIST_CSV must have columns: focal, neighbor, value")
     for (i in seq_len(nrow(E))) {
@@ -452,10 +529,231 @@ load_interactions <- function(interactions_file, n_species) {
       v <- suppressWarnings(as.numeric(E$value[i]))
       if (f %in% spp_names && n %in% spp_names && is.finite(v)) IM[f, n] <- v
     }
-  } else if (auto) {
+  } else if (tolower(params[["AUTO"]] %||% "false") %in% c("true", "1", "yes")) {
     if (all(c("D", "E") %in% spp_names)) IM["E", "D"] <- 3.0
   }
 
   if (any(!is.finite(IM))) stop("INTERACTION_MATRIX contains non-finite values.")
-  list(radius = out_radius, matrix = IM)
+  list(radius = radius, matrix = IM)
+}
+
+
+#' Parse inline interaction rules from the init file
+#'
+#' Converts `INTERACTIONS_EDGELIST` (CSV-like string; optional `INTERACTION_RADIUS`)
+#' into the resolved interaction list (`radius`, `matrix`).
+#'
+#' @param rules Character scalar or character vector of CSV-like lines with columns
+#'   `focal,neighbour,value` and optional wildcard/range syntax (see vignette).
+#' @param radius Optional numeric radius override; if `NULL`, defaults to 0.
+#' @param n_species Integer S; used to define the full SxS matrix.
+#' @return A list with `radius` (numeric) and `matrix` (SxS numeric with dimnames).
+#' @examples
+#' \dontrun{
+#' load_interactions_inline(
+#'   rules = c("A,B-D,0.8", "C,A,1.2", "E,*,0.95"),
+#'   radius = 2, n_species = 10
+#' )
+#' }
+#' @export
+load_interactions_inline <- function(rules, n_species, radius = 0) {
+  spp <- LETTERS[1:n_species]
+  M <- matrix(1, n_species, n_species, dimnames = list(spp, spp))
+  r <- as.numeric(radius %||% 0)
+
+  # permit an optional "radius=..." line up front
+  head_like <- trimws(rules)
+  if (length(head_like) && grepl("^radius\\s*=", head_like[1], ignore.case = TRUE)) {
+    r <- as.numeric(sub("^radius\\s*=\\s*", "", head_like[1], ignore.case = TRUE))
+    rules <- rules[-1]
+  }
+
+  # reuse the same expand/shorthand you already implemented for CSV rows
+  expand_targets <- function(neighbor) {
+    neighbor <- trimws(neighbor)
+    if (neighbor == "*") {
+      return(setdiff(spp, focal))
+    } # filled per-row below
+    # A,B-D,L  -> expand ranges and singles
+    items <- unlist(strsplit(neighbor, "\\s*,\\s*"))
+    out <- character(0)
+    for (it in items) {
+      if (grepl("-", it)) {
+        ends <- unlist(strsplit(it, "\\s*-\\s*"))
+        a <- match(ends[1], LETTERS)
+        b <- match(ends[2], LETTERS)
+        if (is.na(a) || is.na(b)) next
+        out <- c(out, LETTERS[seq(min(a, b), max(a, b))])
+      } else {
+        out <- c(out, it)
+      }
+    }
+    unique(out)
+  }
+
+  for (ln in rules) {
+    if (!nzchar(trimws(ln))) next
+    # expected: focal,neighbors,value   (commas separate the 3 fields only)
+    parts <- unlist(strsplit(ln, "\\s*,\\s*"))
+    if (length(parts) != 3) stop("Bad inline interaction row: '", ln, "'. Expect: focal,neighbors,value")
+    focal <- parts[1]
+    neighbors_raw <- parts[2]
+    value <- suppressWarnings(as.numeric(parts[3]))
+    if (!(focal %in% spp) || !is.finite(value)) stop("Invalid focal/value in row: '", ln, "'")
+    if (neighbors_raw == "*") {
+      targets <- setdiff(spp, focal)
+    } else {
+      targets <- expand_targets(neighbors_raw)
+    }
+    targets <- intersect(targets, spp)
+    if (length(targets)) M[focal, targets] <- value
+  }
+
+  list(radius = r, matrix = M)
+}
+
+
+#' Validate an interaction specification
+#'
+#' Checks that the resolved interaction list (radius + matrix) is well formed
+#' for the given species set. Warns or errors on shape/NA/finite/name issues.
+#'
+#' @param I A list with elements `radius` (numeric scalar) and `matrix` (S×S numeric).
+#' @param spp_names Character vector of expected species names
+#'   (e.g., \verb{LETTERS[1:S]}).
+#' @param stop_on_error Logical; stop on validation failure (`TRUE`) or just warn (`FALSE`).
+#' @return Invisibly returns `TRUE` on success.
+#' @examples
+#' \dontrun{
+#' I <- list(radius = 2, matrix = diag(10))
+#' validate_interactions(I, LETTERS[1:10])
+#' }
+#' @export
+validate_interactions <- function(I, spp_names, stop_on_error = FALSE) {
+  msgs <- character()
+  ok <- TRUE
+
+  # structure
+  if (!is.list(I) || !all(c("radius", "matrix") %in% names(I))) {
+    msgs <- c(msgs, "Object must be a list with elements 'radius' and 'matrix'.")
+    ok <- FALSE
+  } else {
+    r <- I$radius
+    M <- I$matrix
+
+    # radius checks
+    if (!is.numeric(r) || length(r) != 1 || !is.finite(r) || r < 0) {
+      msgs <- c(msgs, "INTERACTION_RADIUS must be a single non-negative, finite number.")
+      ok <- FALSE
+    }
+
+    # matrix shape
+    S <- length(spp_names)
+    if (!is.matrix(M) || any(dim(M) != S)) {
+      msgs <- c(msgs, sprintf(
+        "Matrix must be %dx%d (got %sx%s).", S, S,
+        if (is.matrix(M)) paste(dim(M), collapse = "x") else "NA",
+        if (is.matrix(M)) paste(dim(M), collapse = "x") else "NA"
+      ))
+      ok <- FALSE
+    } else {
+      # names
+      rn <- rownames(M)
+      cn <- colnames(M)
+      if (is.null(rn) || is.null(cn) || !all(rn == spp_names) || !all(cn == spp_names)) {
+        msgs <- c(msgs, "Matrix row/col names must exactly match 'spp_names' in order.")
+        ok <- FALSE
+      }
+
+      # values
+      if (any(!is.finite(M))) {
+        msgs <- c(msgs, "Matrix contains non-finite values.")
+        ok <- FALSE
+      }
+
+      # quick sanity notes (not fatal)
+      if (any(diag(M) != 1)) {
+        msgs <- c(msgs, "Note: diagonal has values != 1 (self-effects present).")
+      }
+      if (any(M <= 0)) {
+        msgs <- c(msgs, "Warning: matrix contains non-positive values (could zero out probabilities).")
+      }
+      # species with no listed effects either way (all 1s in row & col)
+      barren <- spp_names[(rowSums(M != 1) == 0) & (colSums(M != 1) == 0)]
+      if (length(barren)) {
+        msgs <- c(msgs, sprintf("Note: no non-1 interactions for species: %s.", paste(barren, collapse = ", ")))
+      }
+    }
+  }
+
+  if (!ok && stop_on_error) stop(paste(msgs, collapse = "\n"))
+  if (length(msgs)) message(paste(msgs, collapse = "\n"))
+  invisible(list(ok = ok, messages = msgs))
+}
+
+
+#' Pretty-print a compact interaction matrix summary
+#'
+#' Prints the radius and a sorted list of non-1.0 coefficients from the
+#' interaction matrix.
+#'
+#' @param I A list with `radius` and `matrix`.
+#' @param digits Integer; number of digits to print.
+#' @param top_n Integer; show at most this many non-1.0 entries.
+#' @return Invisibly returns `NULL`.
+#' @examples
+#' \dontrun{
+#' print_interactions(I, digits = 3, top_n = 20)
+#' }
+#' @export
+print_interactions <- function(I, digits = 3, top_n = NULL) {
+  stopifnot(is.list(I), "radius" %in% names(I), "matrix" %in% names(I))
+  r <- I$radius
+  M <- I$matrix
+  spp <- rownames(M)
+  S <- nrow(M)
+
+  # basics
+  cat("---- Interactions Summary ----\n")
+  cat(sprintf("Species: %d (%s..%s)\n", S, spp[1], spp[S]))
+  cat(sprintf("Radius : %s\n", format(r, digits = digits)))
+
+  # sparsity & symmetry
+  nz <- which(abs(M - 1) > .Machine$double.eps, arr.ind = TRUE)
+  K <- nrow(nz)
+  cat(sprintf("Non-1 entries: %d (%.1f%% of %d)\n", K, 100 * K / (S * S), S * S))
+  if (K > 0) {
+    symm_err <- mean(abs(M - t(M)))
+    cat(sprintf("Asymmetry (mean |M - t(M)|): %.*f\n", digits, symm_err))
+  }
+
+  # small matrix view
+  if (S <= 15) {
+    cat("\nMatrix ('.' = 1):\n")
+    prettyM <- apply(M, 2, function(col) ifelse(abs(col - 1) < 1e-12, ".", format(round(col, digits), nsmall = 0)))
+    dimnames(prettyM) <- dimnames(M)
+    print(noquote(prettyM))
+  }
+
+  # edgelist of deviations from 1
+  if (K > 0) {
+    df <- data.frame(
+      focal = spp[nz[, 1]],
+      neighbor = spp[nz[, 2]],
+      value = as.numeric(M[nz]),
+      delta = abs(as.numeric(M[nz]) - 1),
+      stringsAsFactors = FALSE
+    )
+    df <- df[order(-df$delta, df$focal, df$neighbor), ]
+    if (!is.null(top_n)) df <- utils::head(df, top_n)
+
+    cat("\nNon-1 entries (sorted by |value-1|):\n")
+    print(
+      utils::head(transform(df[, c("focal", "neighbor", "value")],
+        value = round(value, digits)
+      ), if (is.null(top_n)) nrow(df) else top_n),
+      row.names = FALSE
+    )
+  }
+  cat("------------------------------\n")
 }

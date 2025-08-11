@@ -2,7 +2,7 @@
 % Please edit documentation in R/report.R
 \name{generate_full_report}
 \alias{generate_full_report}
-\title{Build a human-readable multi-section report from simulation outputs}
+\title{(Advanced) Build a human-readable multi-section report}
 \usage{
 generate_full_report(res)
 }
@@ -34,14 +34,16 @@ are written by this function; callers typically append the string to a log
 or include it in the simulation report sink.
 }
 \description{
-Compiles high-level textual summaries of the simulated system and sampling
-results, including: environmental gradient ranges and responsive species;
-pairwise correlations among gradients; a species-abundance distribution
-(with dominant/gradient-responsive tagging); per-quadrat alpha diversity
-snapshots; diversity partitioning (alpha, beta, gamma; Shannon and Simpson);
-simple spatial autocorrelation of richness; and a goodness-of-fit check for
-Fisher's log-series. The report is returned as a single character string with
-section headers and formatted values suitable for appending to a log file.
+\strong{Most users do not need to call this directly.} When you run
+\code{run_spatial_simulation(write_outputs = TRUE)}, a report is written to
+disk automatically under your timestamped \code{OUTPUT_PREFIX}. This function
+returns the same report as a single character string for advanced workflows
+(e.g., embedding the text in another system, tests, or custom pipelines).
+
+The report summarises environmental ranges, gradient correlations, species
+abundance distribution, per-quadrat alpha diversity, diversity partitioning,
+simple spatial autocorrelation, Fisher log-series validation, and computation
+notes (e.g., whether fast Rcpp engines were used for the point processes).
 }
 \details{
 Sections produced:
@@ -82,6 +84,12 @@ intersections, and \pkg{vegan} for diversity indices. It avoids tidy-evaluation
 in favor of explicit column access to keep dependencies minimal within a
 non-interactive reporting context.
 }
+\section{Typical usage}{
+
+Most users should read the saved report from disk rather than call this
+function. See \code{\link{read_latest_report}()} for a convenient helper.
+}
+
 \section{Requirements}{
 
 The \code{res} object must be consistent (all components correspond to the
@@ -90,17 +98,8 @@ will lead to sections being populated with \code{NA} summaries or informative
 defaults where possible; irrecoverable inconsistencies raise errors.
 }
 
-\examples{
-\dontrun{
-res <- list(
-  P = P, env_gradients = env, species_dist = spp,
-  quadrats = quads, abund_matrix = A, site_coords = C
-)
-cat(generate_full_report(res))
-}
-}
 \seealso{
-\code{\link{run_spatial_simulation}}, \code{\link{create_abundance_matrix}},
-\code{\link{calculate_quadrat_environment}}, \code{\link[vegan]{diversity}},
-\code{\link[vegan]{vegdist}}, \code{\link[vegan]{fisher.alpha}}
+\code{\link{run_spatial_simulation}}, \code{\link{read_latest_report}},
+\code{\link{create_abundance_matrix}}, \code{\link{calculate_quadrat_environment}}
 }
+\keyword{internal}

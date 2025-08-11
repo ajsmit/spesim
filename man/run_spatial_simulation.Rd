@@ -2,109 +2,140 @@
 % Please edit documentation in R/run.R
 \name{run_spatial_simulation}
 \alias{run_spatial_simulation}
-\title{Run the full spatial sampling simulation and write outputs}
+\title{Run the full spatial sampling simulation}
 \usage{
 run_spatial_simulation(
-  init_file = "simul_init.txt",
+  init_file = NULL,
   interactions_file = NULL,
-  output_prefix = "simulation_output"
+  output_prefix = NULL,
+  domain = NULL,
+  P = NULL,
+  write_outputs = TRUE,
+  interactions_validate = TRUE,
+  interactions_strict = TRUE,
+  interactions_print = TRUE,
+  interactions_top_n = 20
 )
 }
 \arguments{
-\item{init_file}{Character scalar. Path to a simulation config text file (e.g. \code{“simul_init.txt”}).
-  Lines are parsed as \code{KEY = value} with \code{#} comments ignored. Supports numerics, logicals,
-simple vectors (comma‑separated or \code{c(…)}) and named pairs (\code{name:value}). See
-\code{\link{load_config}()} for full specification. Default: \code{“simul_init.txt”}.}
+\item{init_file}{Character path to a text configuration (KEY = value). If
+supplied, this takes precedence over \code{P}/\code{domain} inputs (file-driven mode).
+See \code{\link[=load_config]{load_config()}} for supported keys.}
 
-\item{interactions_file}{\emph{Optional} character scalar. Path to a separate interactions config.
-Recognized keys include \code{INTERACTION_RADIUS}, \code{MATRIX_CSV}, \code{EDGELIST_CSV}, and \code{AUTO}.
-If \code{NULL} (default) or not found, interactions are disabled (radius = 0, all coefficients = 1).}
+\item{interactions_file}{Optional character path for a separate interactions
+config. If \code{NULL}, the function will look inside the init file (or \code{P}) for
+either \code{INTERACTIONS_FILE} (pointer) or \code{INTERACTIONS_EDGELIST} (inline rules).
+Falls back to neutral interactions (all 1s; radius 0) if nothing is provided.}
 
-\item{output_prefix}{Character scalar used as the base for all output filenames. A timestamp
-(\code{YYYYMMDD_HHMMSS}) is appended automatically to avoid overwriting previous runs.
-May include a directory component; it will be created if missing. Default: \code{“simulation_output”}.}
+\item{output_prefix}{Base path for outputs (timestamp appended). If \code{NULL},
+derives from \code{P$OUTPUT_PREFIX} or defaults to \code{"simulation_output"}.
+Ignored when \code{write_outputs = FALSE}.}
+
+\item{domain}{Optional \code{sf} polygon (study area). If \code{NULL}, a default domain
+is created by \code{\link[=create_sampling_domain]{create_sampling_domain()}}. Ignored in file-driven mode
+when \code{init_file} is provided (a domain is still created unless you supply
+your own).}
+
+\item{P}{Optional fully materialized parameter list (often from
+\code{\link[=load_config]{load_config()}}). If \code{init_file} is \strong{not} given, \code{P} is used as-is.}
+
+\item{write_outputs}{Logical; write CSVs/figures/report to disk? Default \code{TRUE}.}
+
+\item{interactions_validate}{Logical; validate the resolved interaction matrix
+with \code{\link[=validate_interactions]{validate_interactions()}} (default \code{TRUE}).}
+
+\item{interactions_strict}{Logical; if validation finds problems, stop with
+an error (\code{TRUE}) or just warn (\code{FALSE}). Default \code{TRUE}.}
+
+\item{interactions_print}{Logical; pretty-print a compact summary of the
+interaction matrix with \code{\link[=print_interactions]{print_interactions()}} (default \code{TRUE}).}
+
+\item{interactions_top_n}{Integer; cap the number of non-1.0 entries shown by
+the pretty-printer. Default \code{20}.}
 }
 \value{
-\code{NULL}, invisibly. All primary results are written to disk; key objects are also
-constructed internally to build plots and the textual report.
+A named list with components:
+\itemize{
+\item \code{P} -- resolved parameters
+\item \code{domain} -- \code{sf} polygon(s) of the study area
+\item \code{species_dist} -- \code{sf} points with \code{species} and attached env columns
+\item \code{quadrats} -- \code{sf} polygons of sampled quadrats
+\item \code{env_gradients} -- data.frame grid of environmental fields
+\item \code{abund_matrix} -- site \eqn{\times} species table (first column \code{site})
+\item \code{site_coords} -- data.frame with \verb{site, x, y} (quadrat centroids)
+}
+When \code{write_outputs = TRUE}, files are written to disk under \code{output_prefix}.
 }
 \description{
-End‑to‑end runner that:
+End-to-end runner that can be called in two ways:
+
+\strong{A. File-driven (legacy / CLI-friendly)}
+Provide \code{init_file} (and optionally \code{interactions_file}). The function reads
+configuration via \code{\link[=load_config]{load_config()}}, simulates the community, places quadrats,
+builds tables and figures, writes them to disk under \code{output_prefix}
+(timestamped), and returns a results list.
+\strong{Interactions} can be supplied (i) via \code{interactions_file}, (ii) by putting
+\code{INTERACTIONS_FILE = path/to/file} in the init file, or (iii) by embedding
+inline rules with \code{INTERACTIONS_EDGELIST = c("A,B-D,0.8", "C,A,1.2", "E,*,0.95")}
+directly in the init file.
+
+\strong{B. Programmatic (as used in the README)}
+Provide an in-memory parameter list \code{P} (typically from \code{\link[=load_config]{load_config()}})
+and an \code{sf} polygon \code{domain} (or let the function create one). Interactions
+are resolved from arguments or fields inside \code{P}: you may pass an external
+\code{interactions_file}, set \code{P$INTERACTIONS_FILE} (pointer), or set
+\code{P$INTERACTIONS_EDGELIST} (inline rules). By default \code{write_outputs = TRUE},
+so the same files are written; set \code{write_outputs = FALSE} to skip writing and
+just get the results list back.
+
+Internally it:
 \enumerate{
-\item reads a text configuration via \code{\link{load_config}()},
-\item optionally reads a separate interactions config via \code{\link{load_interactions}()},
-\item simulates a heterogeneous community (environmental filtering, dominant clustering, local interactions),
+\item resolves parameters (\code{P}) and optional interspecific interactions,
+\item simulates a heterogeneous community (point process + environment),
 \item places sampling quadrats using the requested scheme,
-\item compiles site × species tables and per‑site environment,
-\item saves data tables and a 2×2 figure panel to disk,
-\item (optionally) computes an advanced analysis panel, and
-\item appends a human‑readable text report with key results.
+\item compiles site \eqn{\times} species tables and per-site environment,
+\item (optionally) writes a 2\eqn{\times}2 map panel and an advanced multi-plot panel,
+\item (optionally) appends a human-readable text report, and
+\item returns a named results list.
 }
 }
-\details{
-\strong{Configuration file} — See \code{\link{load_config}()} for supported keys. At minimum, the file
-should specify community size (\code{N_INDIVIDUALS}), number of species (\code{N_SPECIES}), gradient
-assignments for any responsive species (\code{GRADIENT_SPECIES}, \code{GRADIENT_ASSIGNMENTS}), and
-sampling options (\code{SAMPLING_SCHEME}, quadrat settings).
+\section{Files written (when \code{write_outputs = TRUE})}{
 
-\strong{Interactions file} — If provided, \code{\link{load_interactions}()} parses a neighborhood
-radius and either a full matrix or edgelist of interaction coefficients. If omitted or unreadable,
-interactions default to neutral (radius = 0, matrix of 1s).
-
-\strong{Sampling schemes} — The function supports:
 \itemize{
-\item \code{“random”} (non‑overlapping rectangles placed uniformly),
-\item \code{“tiled”} (systematic grid cells fully contained in the domain),
-\item \code{“systematic”} (regular point lattice with rectangles centered on grid points),
-\item \code{“transect”} (parallel lines with evenly spaced quadrats),
-\item \code{“voronoi”} (cells with largest inscribed circles that fit the quadrat).
+\item \verb{*_abundances.csv} -- site \eqn{\times} species matrix
+\item \verb{*_environments.csv} -- mean environment per quadrat
+\item \verb{*_quadrat_centroids.csv} -- centroids table
+\item \verb{*_fig_panel.png} -- 2\eqn{\times}2 spatial panel
+\item \verb{*_fig_advanced_panel.png} -- advanced diagnostics (if enabled)
+\item \verb{*_report.txt} -- textual analysis report
 }
-
-\strong{Side effects and outputs} — Files are written adjacent to \code{output_prefix} with an
-appended timestamp. Filenames include:
-\itemize{
-\item \code{_abundances.csv}: site × species matrix (rows = quadrats),
-\item \code{_environments.csv}: per‑quadrat environment summaries,
-\item \code{_quadrat_centroids.csv}: centroids of sampled quadrats,
-\item \code{_fig_panel.png}: 2×2 panel (species map + 3 environment overlays),
-\item \code{_fig_advanced_panel.png}: optional multi‑plot analysis panel,
-\item \code{_report.txt}: appended textual report of settings and results.
-}
-
-A sink is opened to append both standard output and messages to the report; it is
-safely closed on exit even if errors occur. The function returns \code{NULL} (invisibly).
-}
-\section{Reproducibility}{
-
-The random seed is taken from \code{SEED} in the config (default 77) and set within
-\code{\link{load_config}()}. For full reproducibility across systems, ensure identical versions
-of \pkg{sf}, GEOS/PROJ, and random number generator defaults.
-}
-
-\section{Errors and warnings}{
-
-Most errors are caught and appended to the report under “ERROR in core simulation”.
-Geometry warnings like “attribute variables are assumed to be spatially constant”
-originate from \pkg{sf} and are benign for plotting/aggregation here.
 }
 
 \examples{
 \dontrun{
-# Minimal run with defaults (reads “simul_init.txt” in working directory)
-run_spatial_simulation()
-
-# Custom configs and output prefix
+## A) File-driven
 run_spatial_simulation(
-  init_file = “config/my_sim.txt”,
-  interactions_file = “config/interactions.txt”,
-  output_prefix = “out/my_run”
+  init_file = "inst/examples/spesim_init_complete.txt",
+  interactions_file = NULL,
+  output_prefix = "out/run"
 )
+
+## B) Programmatic (as in README)
+dom <- create_sampling_domain()
+init <- system.file("examples", "spesim_init_complete.txt", package = "spesim")
+P <- load_config(init)
+res <- run_spatial_simulation(
+  domain = dom, P = P,
+  interactions_file = NULL,
+  write_outputs = FALSE
+)
+str(res$abund_matrix)
 }
 }
 \seealso{
-\code{\link{load_config}()}, \code{\link{load_interactions}()},
-\code{\link{plot_spatial_sampling}()}, \code{\link{generate_full_report}()},
-\code{\link{place_quadrats}}, \code{\link{place_quadrats_tiled}},
-\code{\link{place_quadrats_systematic}}, \code{\link{place_quadrats_transect}},
-\code{\link{place_quadrats_voronoi}}
+\code{\link[=load_config]{load_config()}}, \code{\link[=load_interactions]{load_interactions()}}, \code{\link[=load_interactions_inline]{load_interactions_inline()}},
+\code{\link[=validate_interactions]{validate_interactions()}}, \code{\link[=print_interactions]{print_interactions()}},
+\code{\link[=generate_heterogeneous_distribution]{generate_heterogeneous_distribution()}}, \code{\link[=create_abundance_matrix]{create_abundance_matrix()}},
+\code{\link[=calculate_quadrat_environment]{calculate_quadrat_environment()}}, \code{\link[=plot_spatial_sampling]{plot_spatial_sampling()}},
+\code{\link[=generate_advanced_panel]{generate_advanced_panel()}}, \code{\link[=generate_full_report]{generate_full_report()}}
 }

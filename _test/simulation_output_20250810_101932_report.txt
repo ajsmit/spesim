@@ -1,4 +1,0 @@
-G3;========== INITIALISING SPATIAL SAMPLING SIMULATION ==========
-g
-ERROR in core simulation:
-MATRIX_CSV not found: interactions_matrix.csv

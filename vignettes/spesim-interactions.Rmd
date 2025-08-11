@@ -1,0 +1,225 @@
+---
+title: "spesim: Defining Interspecific Interactions"
+author: "spesim team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{spesim: Defining Interspecific Interactions}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Overview
+
+In **spesim**, interspecific interactions are encoded as a directed
+coefficient matrix \\(M\\) that modifies local establishment probability
+within a neighbourhood radius \\(r\\). Values `< 1` represent net
+competitive effects (suppression); values `> 1` represent net
+facilitative effects; `1` is neutral. The effective neighbourhood is
+defined by a single global **interaction radius** in the same map units
+as your simulation.
+
+You can provide interactions in **two** convenient ways:
+
+- **A) External CSV file** referenced from your init file (simple and
+  spreadsheet‑friendly).
+- **B) Inline rules** directly in the init file via
+  `INTERACTIONS_EDGELIST` (no extra files).
+
+`run_spatial_simulation()` will automatically resolve interactions when
+either key is present in the init file. Under the hood it calls the
+package loaders (e.g. `load_interactions()`, `load_interactions_inline()`)
+and then validates/prints the resolved matrix.
+
+---
+
+# A) External CSV file
+
+## CSV format
+
+Create a CSV with **three columns**, in this exact order:
+
+```
+focal,neighbour,value
+```
+
+- **focal** — a single species label (A..Z).
+- **neighbour** — the set of species affected by `focal`. This field
+  supports rich syntax (see below) **inside one cell**; if it contains
+  commas, keep the cell **quoted** so CSV structure stays intact.
+- **value** — numeric coefficient. `< 1` = suppressive; `> 1` = facilitative.
+
+**Optional metadata row for radius:** put a first row with
+`"_RADIUS_"` in `focal`, empty `neighbour`, and a numeric `value` to
+set the global neighbourhood radius (otherwise radius can be set in the
+init file).
+
+## Allowed neighbour syntax (inside the single neighbour cell)
+
+- Single species: `A`
+- List (any of **comma**, **pipe**, or **semicolon**): `"B,L"` or `"B|L"` or `"B;L"`
+- Range: `"B-D"` expands to `B,C,D`
+- Wildcard: `"*"` means **all species except the focal**
+- You can mix them: `"B-D,L"`
+
+> Notes
+>
+> - Neighbour strings live inside **one CSV cell**. If you use commas,
+>   quote the cell (most spreadsheets handle this automatically).
+> - Effects are **directed**. `A → B` does not imply `B → A`.
+> - Any pairs not specified remain **neutral** (`1.0`).
+
+## Example CSV
+
+```csv
+focal,neighbour,value
+"_RADIUS_","",30
+A,"B-D,L",0.8      # A suppresses B,C,D,L
+C,"A",1.2          # C facilitates A
+E,"*",0.95         # E slightly suppresses everyone else (not E itself)
+```
+
+(Inline `#` comments won’t be preserved by all tools; keep commentary in
+your notes/vignette rather than inside the CSV.)
+
+## Referencing the CSV in your init file
+
+Add this line to your init file (paths can be relative to the working
+directory):
+
+```
+INTERACTIONS_FILE = "path/to/interactions.csv"
+```
+
+You may also set the radius in the init file instead of the CSV metadata
+row:
+
+```
+INTERACTION_RADIUS = 30
+```
+
+If both are supplied, the init file value typically takes precedence (see
+the function documentation for exact precedence rules in your version).
+
+---
+
+# B) Inline rules in the init file (`INTERACTIONS_EDGELIST`)
+
+You can embed an **edgelist** directly in your init file using a
+character vector where **each element is one rule** in strict
+three‑field form (exactly **two commas** per rule):
+
+```
+focal,neighbour,value
+```
+
+- `focal` — single label (e.g. `A`).
+- `neighbour` — accepts **singles**, **ranges** (`B-D`), **lists** with
+  commas (non‑contiguous sets), and the **wildcard** `*` (all except
+  the focal). You can mix ranges and singles, e.g. `B-D,H`.
+- `value` — numeric coefficient.
+
+### Minimal example (init file)
+
+```r
+# Distance threshold (0 disables the neighbourhood modifier)
+INTERACTION_RADIUS = 1.5
+
+# Directed rules (exactly two commas per rule: focal , neighbour , value)
+INTERACTIONS_EDGELIST = c(
+  "A,B-D,0.80",      # A suppresses B..D
+  "C,A,1.20",        # C facilitates A
+  "E,*,0.95",        # E slightly suppresses everyone else (not E itself)
+  "H,B,D,G,0.70",    # H suppresses a non-contiguous set: B, D, G
+  "J,B-D,H,0.60"     # J suppresses B..D plus H (mix of range + single)
+)
+```
+
+### Semantics
+
+- Rules are **directed**.
+- `*` expands to **every species except the focal**.
+- To include self‑effects, list the focal explicitly in the neighbour set
+  (e.g., `"A,A,0.9"`).
+- The final matrix is S×S for `S = N_SPECIES` (`A..`); any missing
+  pairs default to `1.0`. Labels outside `A..` are ignored with a
+  warning.
+
+### Quick validation & preview
+
+By default, `run_spatial_simulation()` validates and pretty‑prints the
+resolved interaction matrix:
+
+- `interactions_validate = TRUE` — checks shape, names, and finiteness.
+- `interactions_strict = TRUE` — stop on validation issues (else warn).
+- `interactions_print = TRUE` — compact summary showing entries most
+  different from `1.0`.
+
+(These are function arguments; keep defaults unless you want to change
+behaviour programmatically.)
+
+---
+
+# End‑to‑end usage
+
+A typical init file might include **either** the CSV pointer **or** the
+inline edgelist (not both), plus the usual simulation settings. For
+example:
+
+```r
+# core sim
+SEED = 77
+N_INDIVIDUALS = 2000
+N_SPECIES = 10
+
+# interactions — choose ONE of the following blocks
+
+# A) External CSV
+# INTERACTIONS_FILE = "inst/extdata/interactions.csv"
+# INTERACTION_RADIUS = 30
+
+# B) Inline rules
+INTERACTION_RADIUS = 1.5
+INTERACTIONS_EDGELIST = c(
+  "A,B-D,0.80",
+  "C,A,1.20",
+  "E,*,0.95"
+)
+```
+
+Then run:
+
+```r
+library(spesim)
+
+res <- run_spatial_simulation(
+  init_file = "inst/examples/my_init.txt",
+  output_prefix = "out/run"
+)
+```
+
+The runner will:
+1) load parameters and interactions, 2) simulate the landscape,
+3) place quadrats, 4) build tables/figures, 5) validate/print the
+interaction matrix (if enabled), and 6) write outputs under
+`out/run_*timestamp*`.
+
+---
+
+# Troubleshooting
+
+- **CSV neighbour cell split across columns** — make sure the cell is
+  **quoted** if it contains commas.
+- **Unexpected species labels** — only `A..` up to `N_SPECIES` are used;
+  others are ignored with a warning.
+- **No effect observed** — set a positive `INTERACTION_RADIUS` (0 turns
+  the neighbourhood modifier off), and ensure rules differ from `1.0`.
+- **Matrix dimension warning** — the loader always produces an S×S
+  (`S = N_SPECIES`) matrix; individual CSV rows can be partial, the rest
+  is filled with `1.0`.

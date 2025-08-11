@@ -1,0 +1,236 @@
+---
+title: "spesim: Full Init File Parameters"
+author: "spesim team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{spesim: Full Init File Parameters}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Overview
+
+The **init file** is a plain text configuration that defines all simulation
+parameters for `spesim`. It is read by
+[`load_config()`](../reference/load_config.html) and can be created manually or
+adapted from bundled examples.
+
+Each non-empty line is a `KEY = value` pair. Lines may include comments after a
+`#`, which are ignored. Keys are case-insensitive; values can be scalars or
+vectors (see formats below).
+
+This vignette lists **all recognised keys** with their meanings, defaults, and
+accepted formats, grouped by purpose.
+
+## Value formats accepted by the parser
+
+- **Scalar numbers or strings:** `77`, `0.15`, `"black"`
+- **Logical:** `TRUE`, `FALSE`
+- **Comma-separated vectors:** `A,B,C` or `0.1, 0.2, 0.3`
+- **R-style vectors (multi‑line OK):** `c(A, B, C)` or `c(0.1, 0.2)`
+- **Named single or vector:** `A:0.55` or `temperature:0.12, elevation:0.08`
+
+When a parameter allows multiple forms (e.g., per‑species or per‑gradient), the
+loader resolves them automatically as documented below.
+
+---
+
+# General settings
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `SEED` | integer | `77` | Random seed for reproducibility. |
+| `OUTPUT_PREFIX` | character | `"output"` | Base path/prefix for outputs (timestamp appended). |
+| `N_INDIVIDUALS` | integer | `2000` | Total number of individuals in the simulated community. |
+| `N_SPECIES` | integer | `10` | Number of species (labels `A..`). |
+| `DOMINANT_FRACTION` | numeric | `0.30` | Fraction of all individuals assigned to the dominant species `A`. |
+
+## Abundance model (Fisher’s log-series)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `FISHER_ALPHA` | numeric | `3.0` | Fisher’s alpha for the non‑dominant tail. |
+| `FISHER_X` | numeric | `0.95` | Log‑series parameter (close to 1). |
+
+---
+
+# Environmental filtering (gradients)
+
+Gradients are on a normalized 0–1 scale internally and are reported in
+interpretable units (°C, m, mm). Allowed gradient names are
+`temperature`, `elevation`, `rainfall`.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `GRADIENT_SPECIES` | vector (character) | `c()` | Species affected by gradients (e.g., `c(B, C, D)`). |
+| `GRADIENT_ASSIGNMENTS` | vector (character) | `c()` | One entry per `GRADIENT_SPECIES`, choosing from the allowed gradient names. |
+| `GRADIENT_OPTIMA` | scalar / per‑species / per‑gradient | `0.5` | Optimum (0–1). May be a single number, a vector named by species, or named by gradient (e.g., `temperature:0.6, elevation:0.4`). |
+| `GRADIENT_TOLERANCE` | scalar / per‑species / per‑gradient | `0.1` | Niche width (>0). Same naming rules as OPTIMA. |
+| `SAMPLING_RESOLUTION` | integer | `50` | Grid resolution for gradient fields. |
+| `ENVIRONMENTAL_NOISE` | numeric | `0.05` | Std. dev. of Gaussian noise added to gradients. |
+
+**Resolution rules for OPTIMA/TOLERANCE** (in priority order): named by species
+→ named by gradient → vector length = |species| → vector length = |unique
+gradients| → scalar (recycled).
+
+---
+
+# Dominant species clustering
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `MAX_CLUSTERS_DOMINANT` | integer | `5` | Max number of clusters for species `A`. |
+| `CLUSTER_SPREAD_DOMINANT` | numeric | `3.0` | Decay scale for cluster attraction. |
+
+---
+
+# Interspecific interactions
+
+Local neighborhood effects modify placement probabilities via a distance‑limited
+multiplier. You can configure interactions via a separate file **or** inline in
+the init file.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `INTERACTION_RADIUS` | numeric | `0` | Global distance threshold. `0` disables interactions. |
+| `INTERACTIONS_FILE` | character (path) | – | Optional: path to a separate interactions CSV (see the vignette “Using an Interspecific Interactions File”). |
+| `INTERACTIONS_EDGELIST` | character vector | – | Optional: inline rules of the form `"focal,neighbour,value"`. Supports neighbour **ranges** (`B-D`), **lists** (`B,D,G`), and **wildcard** (`*`). |
+
+> If both `INTERACTIONS_FILE` and `INTERACTIONS_EDGELIST` are given, the
+> **inline edgelist takes precedence**. Any missing coefficients default to `1.0`.
+
+**Quick inline example** (inside the init file):
+```r
+INTERACTION_RADIUS = 30
+INTERACTIONS_EDGELIST = c(
+  "A,B-D,0.8",    # A suppresses B..D
+  "C,A,1.2",      # C facilitates A
+  "E,*,0.95",     # E suppresses everyone except E
+  "H,B,D,G,0.7",  # H suppresses a non‑contiguous set
+  "J,B-D,H,0.6"   # J suppresses a range plus a single
+)
+```
+
+---
+
+# Sampling design (quadrats)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `SAMPLING_SCHEME` | character | `"random"` | One of `random`, `tiled`, `systematic`, `transect`, `voronoi`. |
+| `N_QUADRATS` | integer | `20` | Total quadrats when applicable. |
+| `QUADRAT_SIZE_OPTION` | character | `"medium"` | One of `small` (=1×1), `medium` (=1.5×1.5), `large` (=2×2). |
+| `N_TRANSECTS` | integer | `1` | Number of parallel transects (for `transect`). |
+| `N_QUADRATS_PER_TRANSECT` | integer | `8` | Quadrats per transect (for `transect`). |
+| `TRANSECT_ANGLE` | numeric | `90` | Bearing in degrees (0 = North, 90 = East). |
+| `VORONOI_SEED_FACTOR` | numeric | `10` | Seeds multiplier for Voronoi candidate cells. |
+
+---
+
+# Plotting & aesthetics
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `POINT_SIZE` | numeric | `0.2` | Point size for individuals. |
+| `POINT_ALPHA` | numeric | `1.0` | Point transparency (0–1). |
+| `QUADRAT_ALPHA` | numeric | `0.05` | Quadrat fill alpha (maps are mostly outlines). |
+| `BACKGROUND_COLOUR` | character | `"white"` | Plot background. Any R colour string. |
+| `FOREGROUND_COLOUR` | character | `"#22223b"` | Domain outline, titles. |
+| `QUADRAT_COLOUR` | character | `"black"` | Quadrat outline. |
+
+---
+
+# Output & diagnostics
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `ADVANCED_ANALYSIS` | logical | `FALSE` | If `TRUE`, saves an advanced diagnostics multi‑plot panel. |
+
+---
+
+# Obtaining and customising a complete init file
+
+The package ships with example init files. To copy one into your working
+directory for editing:
+
+```r
+example_init <- system.file("examples", "spesim_init_complete.txt", package = "spesim")
+file.copy(example_init, "my_spesim_init.txt")
+```
+
+You can also programmatically tweak a list returned by `load_config()` and then
+write it out if you prefer to keep configs under version control.
+
+---
+
+# Minimal and maximal examples
+
+## Minimal (defaults except species and individuals)
+```r
+SEED = 77
+OUTPUT_PREFIX = "out/run_min"
+N_INDIVIDUALS = 1500
+N_SPECIES = 12
+SAMPLING_SCHEME = "random"
+N_QUADRATS = 20
+QUADRAT_SIZE_OPTION = "medium"
+```
+
+## Maximal (showing most knobs)
+```r
+SEED = 123
+OUTPUT_PREFIX = "out/run_max"
+
+# Community size and SAD
+N_INDIVIDUALS = 3000
+N_SPECIES = 14
+DOMINANT_FRACTION = 0.28
+FISHER_ALPHA = 3.5
+FISHER_X = 0.96
+
+# Gradients: B,C,D respond (two temp, one elevation)
+GRADIENT_SPECIES = c(B, C, D)
+GRADIENT_ASSIGNMENTS = c(temperature, temperature, elevation)
+GRADIENT_OPTIMA = temperature:0.60, elevation:0.35
+GRADIENT_TOLERANCE = temperature:0.10, elevation:0.12
+SAMPLING_RESOLUTION = 60
+ENVIRONMENTAL_NOISE = 0.05
+
+# Dominant clustering
+MAX_CLUSTERS_DOMINANT = 6
+CLUSTER_SPREAD_DOMINANT = 3.2
+
+# Interactions (inline or via file; inline takes precedence)
+INTERACTION_RADIUS = 30
+INTERACTIONS_EDGELIST = c(
+  "A,B-D,0.8",
+  "C,A,1.2",
+  "E,*,0.95",
+  "H,B,D,G,0.7",
+  "J,B-D,H,0.6"
+)
+# Alternatively: INTERACTIONS_FILE = "interactions_edges.csv"
+
+# Sampling
+SAMPLING_SCHEME = "transect"
+N_TRANSECTS = 2
+N_QUADRATS_PER_TRANSECT = 10
+QUADRAT_SIZE_OPTION = "large"
+TRANSECT_ANGLE = 60
+VORONOI_SEED_FACTOR = 12
+
+# Aesthetics
+POINT_SIZE = 0.25
+POINT_ALPHA = 0.9
+QUADRAT_ALPHA = 0.07
+BACKGROUND_COLOUR = "white"
+FOREGROUND_COLOUR = "#22223b"
+QUADRAT_COLOUR = "black"
+
+# Output
+ADVANCED_ANALYSIS = TRUE
+```

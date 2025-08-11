@@ -1,14 +1,16 @@
-#' Build a human-readable multi-section report from simulation outputs
+#' (Advanced) Build a human-readable multi-section report
 #'
 #' @description
-#' Compiles high-level textual summaries of the simulated system and sampling
-#' results, including: environmental gradient ranges and responsive species;
-#' pairwise correlations among gradients; a species-abundance distribution
-#' (with dominant/gradient-responsive tagging); per-quadrat alpha diversity
-#' snapshots; diversity partitioning (alpha, beta, gamma; Shannon and Simpson);
-#' simple spatial autocorrelation of richness; and a goodness-of-fit check for
-#' Fisher's log-series. The report is returned as a single character string with
-#' section headers and formatted values suitable for appending to a log file.
+#' **Most users do not need to call this directly.** When you run
+#' \code{run_spatial_simulation(write_outputs = TRUE)}, a report is written to
+#' disk automatically under your timestamped \code{OUTPUT_PREFIX}. This function
+#' returns the same report as a single character string for advanced workflows
+#' (e.g., embedding the text in another system, tests, or custom pipelines).
+#'
+#' The report summarises environmental ranges, gradient correlations, species
+#' abundance distribution, per-quadrat alpha diversity, diversity partitioning,
+#' simple spatial autocorrelation, Fisher log-series validation, and computation
+#' notes (e.g., whether fast Rcpp engines were used for the point processes).
 #'
 #' @param res A named list produced by the simulator with at least the elements:
 #' \describe{
@@ -74,6 +76,10 @@
 #' are written by this function; callers typically append the string to a log
 #' or include it in the simulation report sink.
 #'
+#' @section Typical usage:
+#' Most users should read the saved report from disk rather than call this
+#' function. See \code{\link{read_latest_report}()} for a convenient helper.
+#'
 #' @section Requirements:
 #' The \code{res} object must be consistent (all components correspond to the
 #' same simulation and coordinate reference system). Missing or empty inputs
@@ -81,18 +87,11 @@
 #' defaults where possible; irrecoverable inconsistencies raise errors.
 #'
 #' @seealso
-#' \code{\link{run_spatial_simulation}}, \code{\link{create_abundance_matrix}},
-#' \code{\link{calculate_quadrat_environment}}, \code{\link[vegan]{diversity}},
-#' \code{\link[vegan]{vegdist}}, \code{\link[vegan]{fisher.alpha}}
+#' \code{\link{run_spatial_simulation}}, \code{\link{read_latest_report}},
+#' \code{\link{create_abundance_matrix}}, \code{\link{calculate_quadrat_environment}}
 #'
-#' @examples
-#' \dontrun{
-#' res <- list(
-#'   P = P, env_gradients = env, species_dist = spp,
-#'   quadrats = quads, abund_matrix = A, site_coords = C
-#' )
-#' cat(generate_full_report(res))
-#' }
+#' @keywords internal
+#' @export
 generate_full_report <- function(res) {
   `%||%` <- function(a, b) if (!is.null(a)) a else b
 
@@ -344,4 +343,32 @@ generate_full_report <- function(res) {
     "\nSIMULATION COMPLETED SUCCESSFULLY."
   )
   paste(full_report, collapse = "\n")
+}
+
+
+#' Read the most recent simulation report from an output directory
+#'
+#' @description
+#' Convenience helper to locate and read the latest \code{*_report.txt} written
+#' by \code{run_spatial_simulation(write_outputs = TRUE)} under a given
+#' \code{output_dir}. Useful for users who want the report text without calling
+#' \code{generate_full_report()} directly.
+#'
+#' @param output_dir Directory to search. If you set \code{OUTPUT_PREFIX} in your
+#'   init file to something like \code{"out/run"}, pass \code{"out"} here (default).
+#'   The function searches recursively for files matching \code{_report.txt}.
+#'
+#' @return A single character scalar containing the report contents.
+#'
+#' @examples
+#' \dontrun{
+#' txt <- read_latest_report("out")
+#' cat(txt)
+#' }
+#' @export
+read_latest_report <- function(output_dir = "out") {
+  fs <- list.files(output_dir, pattern = "_report\\.txt$", full.names = TRUE, recursive = TRUE)
+  if (!length(fs)) stop("No report files found under: ", normalizePath(output_dir))
+  latest <- fs[which.max(file.mtime(fs))]
+  paste(readLines(latest, warn = FALSE), collapse = "\n")
 }

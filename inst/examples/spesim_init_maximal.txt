@@ -1,0 +1,56 @@
+# spesim: maximal example init file
+# Copy this file and tweak values to taste.
+
+SEED = 123
+OUTPUT_PREFIX = "out/run_max"
+
+# Community size and SAD
+N_INDIVIDUALS = 3000
+N_SPECIES = 14
+DOMINANT_FRACTION = 0.28
+FISHER_ALPHA = 3.5
+FISHER_X = 0.96
+
+# Gradients: B,C,D respond (two temperature, one elevation)
+GRADIENT_SPECIES = c(B, C, D)
+GRADIENT_ASSIGNMENTS = c(temperature, temperature, elevation)
+GRADIENT_OPTIMA = temperature:0.60, elevation:0.35
+GRADIENT_TOLERANCE = temperature:0.10, elevation:0.12
+SAMPLING_RESOLUTION = 60
+ENVIRONMENTAL_NOISE = 0.05
+
+# Dominant clustering
+MAX_CLUSTERS_DOMINANT = 6
+CLUSTER_SPREAD_DOMINANT = 3.2
+
+# Interspecific interactions
+INTERACTION_RADIUS = 30
+# Prefer inline edgelist for simplicity (takes precedence if both are set)
+INTERACTIONS_EDGELIST = c(
+  "A,B-D,0.8",    # A suppresses B..D
+  "C,A,1.2",      # C facilitates A
+  "E,*,0.95",     # E slightly suppresses everyone (except E)
+  "H,B,D,G,0.7",  # H suppresses a non-contiguous set
+  "J,B-D,H,0.6"   # J suppresses B..D plus H
+)
+# Or point to a CSV (three columns: focal,neighbour,value), with optional first row "_RADIUS_"
+# INTERACTIONS_FILE = "interactions_edges.csv"
+
+# Sampling
+SAMPLING_SCHEME = "transect"
+N_TRANSECTS = 2
+N_QUADRATS_PER_TRANSECT = 10
+QUADRAT_SIZE_OPTION = "large"
+TRANSECT_ANGLE = 60
+VORONOI_SEED_FACTOR = 12
+
+# Aesthetics
+POINT_SIZE = 0.25
+POINT_ALPHA = 0.9
+QUADRAT_ALPHA = 0.07
+BACKGROUND_COLOUR = "white"
+FOREGROUND_COLOUR = "#22223b"
+QUADRAT_COLOUR = "black"
+
+# Output
+ADVANCED_ANALYSIS = TRUE

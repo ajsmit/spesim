@@ -10,7 +10,7 @@
 
 # OS / editor cruft
 ^\.DS_Store$
-Thumbs.db
+Thumbs\.db
 
 # Private or large folders
 ^_private($|/)
@@ -19,11 +19,11 @@ Thumbs.db
 # Continuous integration configs
 ^\.github$
 
-# Documentation artefacts
+# Documentation artefacts (source files only)
 ^README\.Rmd$
+^README-.*\.png$
+^README_files$
 ^README\.html$
-^vignettes/.*\.(html|pdf)$
-^inst/doc/.*\.(html|pdf)$
 
 # Renviron / dev env
 ^\.Renviron$
@@ -36,4 +36,12 @@ Thumbs.db
 # Build
 ^build$
 ^.*\.Rproj$
-^\.Rproj\.user$
+
+# CRAN should not include pkgdown / GitHub Pages site
+^doc$
+
+# Exclude pkgdown metadata (if using pkgdown)
+^pkgdown$
+
+# Exclude site cache (optional)
+^_pkgdown\.yml$
