@@ -46,6 +46,13 @@ require:
 install.packages(c("spatstat.geom", "spatstat.core"))
 ```
 
+## Vignettes
+
+- [Using an Interspecific Interactions
+  File](https://ajsmit.github.io/spesim/articles/spesim-interactions.html)
+- [Full Init File
+  Parameters](https://ajsmit.github.io/spesim/articles/spesim-init-parameters.html)
+
 ## Quick start
 
 ``` r
