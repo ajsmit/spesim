@@ -1,0 +1,73 @@
+---
+title: "spesim: Full Init File Parameters"
+author: "spesim team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{spesim: Full Init File Parameters}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Overview
+
+The **init file** is a plain text configuration that defines all simulation parameters for `spesim`. 
+It is read by [`load_config()`](../reference/load_config.html) and can be created manually or adapted from bundled examples.
+
+Each line is a `KEY = value` pair. Comments start with `#` and are ignored.
+
+This vignette lists **all recognised keys** with their meanings, defaults, and accepted formats.
+
+## General Simulation Settings
+
+| Key | Type | Default | Description                                            |
+|-----|------|---------|--------------------------------------------------------|
+| `SEED` | integer | `77` | Random seed for reproducibility. |
+| `N_INDIVIDUALS` | integer | – | Total number of individuals in the simulated community. |
+| `N_SPECIES` | integer | – | Number of species in the community. |
+| `COMMUNITY_DISTRIBUTION` | character | `"fisher"` | Distribution model for abundances (`"fisher"`, `"lognormal"`, `"uniform"`). |
+
+## Environmental Filtering
+
+| Key | Type | Default | Description                                            |
+|-----|------|---------|--------------------------------------------------------|
+| `GRADIENT_SPECIES` | integer | `0` | Number of species affected by environmental gradients. |
+| `GRADIENT_ASSIGNMENTS` | vector | – | Mapping of gradient-sensitive species to gradient types. |
+| `SAMPLING_RESOLUTION` | numeric | `50` | Grid resolution for gradient rasterisation. |
+| `ENVIRONMENTAL_NOISE` | numeric | `0.1` | Gaussian noise added to gradient values. |
+
+## Dominant Species Clustering
+
+| Key | Type | Default | Description                                            |
+|-----|------|---------|--------------------------------------------------------|
+| `DOMINANT_SPECIES` | character | `NULL` | Species code(s) to be treated as dominant clusterers. |
+| `CLUSTER_RADIUS` | numeric | `10` | Radius of clustering effect (map units). |
+
+## Interspecific Interactions
+
+| Key | Type | Default | Description                                            |
+|-----|------|---------|--------------------------------------------------------|
+| `INTERACTION_RADIUS` | numeric | `0` | Distance within which interaction coefficients are applied. |
+| `INTERACTION_MATRIX` | matrix | all `1`s | Species-by-species interaction strengths. |
+
+## Sampling Settings
+
+| Key | Type | Default | Description                                            |
+|-----|------|---------|--------------------------------------------------------|
+| `SAMPLING_SCHEME` | character | `"random"` | Quadrat placement scheme (`"random"`, `"tiled"`, `"systematic"`, `"transect"`, `"voronoi"`). |
+| `N_QUADRATS` | integer | `10` | Number of quadrats to sample. |
+| `QUADRAT_SIZE` | numeric | `5` | Quadrat side length (map units). |
+| `N_TRANSECTS` | integer | `1` | For transect scheme: number of transects. |
+| `N_QUADRATS_PER_TRANSECT` | integer | `5` | For transect scheme: number of quadrats per transect. |
+| `TRANSECT_ANGLE` | numeric | `0` | Angle of transects in degrees. |
+| `VORONOI_SEED_FACTOR` | numeric | `1` | Scaling factor for Voronoi seeds. |
+
+## Output
+
+| Key | Type | Default | Description                                            |
+|-----|------|---------|--------------------------------------------------------|
+| `OUTPUT_PREFIX` | character | `"simulation_output"` | Prefix for all output files. |
+| `ADVANCED_ANALYSIS` | logical | `FALSE` | Whether to generate advanced analysis plots. |

@@ -1,0 +1,67 @@
+---
+title: "spesim: Using an Interspecific Interactions File"
+author: "spesim team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{spesim: Using an Interspecific Interactions File}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Overview
+
+The **interactions file** defines local neighbourhood effects between species in the simulation. 
+It is loaded by [`load_interactions()`](../reference/load_interactions.html).
+
+## File Structure
+
+Two formats are supported:
+
+### 1. Full Matrix CSV
+
+- A square matrix with **species codes** as both row and column names.
+- Each entry is the **multiplicative effect** on the expected abundance of the column species 
+  when the row species occurs within `INTERACTION_RADIUS`.
+- Diagonal entries should be `1` (self-interactions neutral).
+
+**Example:**
+
+```
+, A,  B,  C
+A,1.0,1.2,0.8
+B,1.1,1.0,0.9
+C,1.0,1.0,1.0
+```
+
+### 2. Edge List CSV
+
+- Three columns: `species_from`, `species_to`, `coefficient`.
+- Only non-neutral pairs need to be listed.
+- All unspecified pairs default to `1`.
+
+**Example:**
+
+```
+species_from,species_to,coefficient
+A,B,1.2
+B,C,0.9
+```
+
+## Parameters in Init File
+
+The init file should still specify:
+
+- `INTERACTION_RADIUS`: distance threshold for applying coefficients.
+- `N_SPECIES`: number of species.
+
+## Default Behaviour
+
+If no interactions file is provided:
+
+- `INTERACTION_RADIUS` is set to `0`.
+- All coefficients are `1` (neutral).
+
