@@ -46,3 +46,4 @@ Thumbs\.db
 # Exclude site cache (optional)
 ^_pkgdown\.yml$
 ^docs$
+^Meta$

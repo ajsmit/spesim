@@ -64,11 +64,15 @@ package relies on common spatial/data/plotting libraries (see
 ## Vignettes (online)
 
 - [**Interactions (neighbour
-  effects)**](articles/spesim-interactions.html)
-- [**Full init-file parameters**](articles/spesim-init-parameters.html)
-- [**Environmental Gradients**](articles/spesim-env-gradients.html)
-- [**Advanced Analysis Panel**](articles/spesim-advanced-panel.html)
-- [**Point processes**](articles/spesim-point-processes.html)
+  effects)**](https://ajsmit.github.io/spesim/articles/spesim-interactions.html)
+- [**Full init-file
+  parameters**](https://ajsmit.github.io/spesim/articles/spesim-init-parameters.html)
+- [**Environmental
+  Gradients**](https://ajsmit.github.io/spesim/articles/spesim-env-gradients.html)
+- [**Advanced Analysis
+  Panel**](https://ajsmit.github.io/spesim/articles/spesim-advanced-panel.html)
+- [**Point
+  processes**](https://ajsmit.github.io/spesim/articles/spesim-point-processes.html)
 
 If reading on GitHub before the site is live, you’ll find the sources
 under `vignettes/`.
