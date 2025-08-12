@@ -1,0 +1,98 @@
+---
+title: "Inside the Advanced Analysis Panel"
+author: "spesim team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Advanced Analysis Panel}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Overview
+
+`generate_advanced_panel()` compiles a compact, multi-plot summary of your simulation.
+It is designed for **teaching** and **quick diagnostics**. This vignette explains each
+component, how it is computed, and what patterns to look for.
+
+Enable via `P$ADVANCED_ANALYSIS = TRUE` or call the function directly on a results list.
+
+# What’s included
+
+1. **Rank–Abundance (SAD)** — Observed vs. theoretical Fisher log-series.
+2. **Occupancy–Abundance** — Total abundance vs. number of occupied sites.
+3. **Species–Area (specaccum)** — Mean richness and variation vs. sampled area.
+4. **Distance–Decay** — Sørensen dissimilarity vs. geographic distance.
+5. **Rarefaction** — Expected richness vs. sample size per site.
+
+(If *spatstat* tooling is installed in your environment, you can optionally add
+point-process diagnostics; see the “Extensions” section.)
+
+# Example
+
+```r
+library(spesim)
+P <- load_config(system.file("examples/spesim_init_complete.txt", package = "spesim"))
+P$ADVANCED_ANALYSIS <- TRUE
+res <- run_spatial_simulation(P = P, write_outputs = FALSE)
+generate_advanced_panel(res)
+```
+
+# Panels in detail
+
+## 1) Rank–Abundance Distribution (SAD)
+
+- **Observed**: counts per species from `res$species_dist` (points in all quadrats).
+- **Theoretical**: Fisher’s log-series using `FISHER_ALPHA`, `FISHER_X` and
+  dominant fraction (species A).  
+- **Interpretation**: A good match (on log-scale) suggests your realised
+  abundances follow the intended SAD; large departures imply strong spatial
+  filtering or very small sample sizes.
+
+## 2) Occupancy–Abundance
+
+- **Data**: site × species matrix (`res$abund_matrix`).
+- **Metric**: `TotalAbundance` (column sum) vs. `Occupancy` (non-zero sites).
+- **Interpretation**: Many systems show a positive trend: common species occupy
+  more sites. Outliers (high abundance but low occupancy) may be habitat
+  specialists or spatially clumped species.
+
+## 3) Species–Area (specaccum)
+
+- **Method**: `vegan::specaccum(..., method = "random")` over sites.
+- **Plot**: Mean richness with ±1 SD ribbon.
+- **Interpretation**: Curves that rise slowly suggest high redundancy; steep
+  curves imply high heterogeneity/beta diversity.
+
+## 4) Distance–Decay
+
+- **Geography**: Euclidean distance among quadrat centroids.
+- **Dissimilarity**: Sørensen/Bray on presence–absence.
+- **Interpretation**: Positive slope → communities become more different with
+  distance; reflects environmental turnover and/or dispersal limitation.
+
+## 5) Rarefaction
+
+- **Method**: `vegan::rarecurve` by site (quadrat).
+- **Interpretation**: Compare richness at equal sample sizes; plateauing curves
+  suggest adequate sampling.
+
+# Extensions (optional)
+
+If you install **spatstat.geom** (and optionally **spatstat.explore**),
+you can extend diagnostics with:
+
+- **Ripley’s K** and **L(r)-r** transforms
+- **Pair correlation** g(r)
+
+These help validate the spatial point process (CSR, clustering, inhibition).
+Integrate similar plots alongside or beneath the default panel as desired.
+
+# Reproducibility notes
+
+- All panel components are deterministic functions of `res`.
+- For SAR and rarefaction, random permutations are internal to `vegan`;
+  set `set.seed()` beforehand for reproducibility if you re-run them.

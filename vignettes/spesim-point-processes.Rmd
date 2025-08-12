@@ -1,0 +1,92 @@
+---
+title: "Point Processes in spesim: Options and Intuition"
+author: "spesim team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Point Processes in spesim}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Overview
+
+spesim simulates point locations (individuals) within a polygonal domain.
+While a simple *ad hoc* clustering for the dominant species is available,
+you can think about these patterns through the lens of **point processes**.
+
+This vignette gives a conceptual tour and practical guidance for the
+options currently supported or easily emulated.
+
+# Why point processes?
+
+They give you tunable, interpretable controls on *clustering* and *inhibition*,
+mirroring mechanisms like limited dispersal, aggregation in safe sites,
+or competition for space/resources.
+
+# Options in spesim
+
+## 1) CSR (Complete Spatial Randomness)
+
+- **What**: Homogeneous Poisson process.
+- **Effect**: No interaction; points independent.
+- **Use**: Baseline or when you only want environmental filtering to structure communities.
+
+**In spesim**: default placement for non-dominant species *unless* you impose other rules.
+
+## 2) Dominant-species clusters (fast k-NN heuristic)
+
+- **What**: Choose random cluster centres; draw others with probability decaying by distance.
+- **Controls**: `MAX_CLUSTERS_DOMINANT`, `CLUSTER_SPREAD_DOMINANT`.
+- **Use**: Strong aggregations for one (or few) dominant species.
+
+## 3) Towards process models (conceptual mapping)
+
+While spesim avoids heavy dependencies, the above can emulate key behaviours:
+
+- **Neyman–Scott / Thomas**: Parent–offspring clusters with Gaussian spread.  
+  *Approximation*: Increase clusters, set spread; draw others around centres.
+- **Strauss (inhibition)**: Avoid placing points within radius r.  
+  *Approximation*: Rejection sampling when a new point falls within r of prior points.
+- **Geyer saturation**: Favour moderate clustering but saturate local counts.  
+  *Approximation*: Weight by neighbour counts within r, cap at a threshold.
+
+We include simple, dependency-light heuristics that capture these patterns for teaching.
+If you require exact inference or simulation, pair spesim outputs with **spatstat**
+outside this package.
+
+# Quick recipe
+
+```r
+P <- load_config(system.file("examples/spesim_init_basic.txt", package = "spesim"))
+
+# Dominant clusters
+P$MAX_CLUSTERS_DOMINANT  <- 6
+P$CLUSTER_SPREAD_DOMINANT <- 2.5
+
+# Neutral for others; add interactions if desired
+P$INTERACTION_RADIUS <- 0
+
+res <- run_spatial_simulation(P = P, write_outputs = FALSE)
+```
+
+# Diagnostics to check realism
+
+- Visual inspection of maps.
+- Pairwise distances or nearest-neighbour histograms.
+- Advanced panel (SAR steepness, distance–decay strength).
+
+# When to use which?
+
+- **CSR**: null model; isolate the effect of environmental filtering.
+- **Clustering**: dispersal limitation, microhabitat patches, facilitation.
+- **Inhibition**: competition for territory, strong negative biotic interactions.
+
+# Notes for power users
+
+- The dominant-cluster routine is deliberately fast (k-d tree nearest centres).
+- You can replace or wrap `generate_heterogeneous_distribution()` with your own
+  process and still use the rest of the pipeline (quadrats, matrices, panels).

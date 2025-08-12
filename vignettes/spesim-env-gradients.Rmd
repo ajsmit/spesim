@@ -1,0 +1,131 @@
+---
+title: "Simulating Environmental Gradients with spesim"
+author: "spesim team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Simulating Environmental Gradients}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Overview
+
+This vignette shows how **spesim** builds environmental fields (e.g. temperature, elevation,
+rainfall) that drive species responses and, ultimately, spatial community structure.
+You can use these gradients purely for visualisation or to **filter** species according
+to optimum and tolerance parameters supplied in your init file or programmatically.
+
+Key functions:
+- `create_sampling_domain()` – makes an irregular (organic) polygon or use your own.
+- `create_environmental_gradients()` – generates gridded fields over the domain.
+- `plot_spatial_sampling()` – overlays species/quadrats and (optionally) a gradient.
+
+# Concept
+
+Gradients are generated on a regular grid spanning the domain’s bounding box and then
+clipped/used for nearest-neighbour joins to points/quadrats. Each gradient is
+**normalised to [0,1]** internally and also **rescaled** to human-readable units for
+reporting:
+
+- `temperature` → `temperature_C` (≈ −2 to 28 °C by default)
+- `elevation`   → `elevation_m` (0–2000 m)
+- `rainfall`    → `rainfall_mm` (200–900 mm)
+
+Species can be assigned to one named gradient with an **optimum** (peak response)
+and a **tolerance** (width) using a Gaussian response.
+
+# Minimal workflow
+
+```r
+library(spesim)
+library(ggplot2)
+
+# 1) Domain (use built-in irregular polygon)
+dom <- create_sampling_domain()
+
+# 2) Make gradients (resolution = number of grid cells per axis)
+env <- create_environmental_gradients(dom, resolution = 60, noise_level = 0.05)
+head(env)  # x, y, temperature, elevation, rainfall and rescaled *_C/_m/_mm
+```
+
+# Visualising a gradient
+
+```r
+# Simple ggplot heat map of temperature_C
+ggplot(env, aes(x, y, fill = temperature_C)) +
+  geom_raster() +
+  coord_equal() +
+  scale_fill_viridis_c() +
+  labs(fill = "°C", title = "Simulated temperature") +
+  theme_minimal()
+```
+
+# Using gradients in a simulation
+
+There are two paths: **init-file driven** or **programmatic**. Both resolve to a tidy
+`P$GRADIENT` table with columns `species, gradient, optimum, tol`.
+
+## A) Init-file driven
+
+Example (excerpt):
+
+```
+GRADIENT_SPECIES     = A,B,C,D
+GRADIENT_ASSIGNMENTS = temperature,temperature,elevation,rainfall
+GRADIENT_OPTIMA      = temperature:0.65, elevation:0.7, rainfall:0.4
+GRADIENT_TOLERANCE   = 0.12
+```
+
+Interpretation:
+- A,B respond to temperature (opt 0.65, tol 0.12);
+- C responds to elevation (opt 0.7);
+- D responds to rainfall (opt 0.4).
+
+```r
+P <- load_config(system.file("examples/spesim_init_complete.txt", package = "spesim"))
+res <- run_spatial_simulation(P = P, write_outputs = FALSE)
+```
+
+## B) Programmatic
+
+```r
+P <- load_config(system.file("examples/spesim_init_basic.txt", package = "spesim"))
+P$GRADIENT <- tibble::tibble(
+  species  = c("A","B","C"),
+  gradient = c("temperature","elevation","rainfall"),
+  optimum  = c(0.6, 0.7, 0.4),
+  tol      = c(0.12, 0.10, 0.15)
+)
+res <- run_spatial_simulation(P = P, write_outputs = FALSE)
+```
+
+# Overlaying in the map panel
+
+```r
+# Show species/quadrats and a temperature overlay side-by-side
+p1 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P)
+p2 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P,
+                            show_gradient = TRUE, env_gradients = res$env_gradients,
+                            gradient_type = "temperature_C")
+p1 | p2
+```
+
+# Tips & knobs
+
+- `resolution`: higher values → smoother fields but larger data.
+- `noise_level`: adds small-scale heterogeneity; set to 0 for perfectly smooth gradients.
+- Optima/tolerances accept **named-by-gradient** values (e.g., `temperature:0.6`)
+  or **named-by-species** values (e.g., `A:0.6, B:0.7`) for fine control.
+- Your own real rasters? Convert to points and pass through the same join logic;
+  or adapt `create_environmental_gradients()` as a template.
+
+# Troubleshooting
+
+- “Species not responding to gradients”: confirm `species` labels in `P$GRADIENT`
+  match your simulation’s species set (A..). Check `res$P$GRADIENT` after loading.
+- “No gradient overlay”: pass the correct `gradient_type` name used in the data
+  (`temperature_C`, `elevation_m`, `rainfall_mm`) when plotting.

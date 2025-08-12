@@ -1,6 +1,6 @@
 ---
 title: "spesim: Spatial Ecological Simulation in R"
-author: "Your Name"
+author: "AJ Smit and contributors"
 date: "`r Sys.Date()`"
 output:
   rmarkdown::github_document
@@ -12,137 +12,200 @@ vignette: >
 
 # spesim <img src="man/figures/logo.png" align="right" width="120" />
 
-**spesim** is an R package for generating, analysing, and visualising *spatially heterogeneous ecological communities*.  
-It is designed for simulation-based teaching, methodological testing, and exploratory research.
+**spesim** is an R package for simulating, sampling, and analysing *spatially heterogeneous ecological communities* in irregular landscapes.  
+It’s built for teaching, methods testing, and exploratory research in **biogeography** and **community ecology**.
 
-## Features
+- Generate individuals for multiple species under realistic **species–abundance distributions** (e.g., Fisher’s log-series with a dominant species).
+- Impose **environmental filtering** (per‑species optima/tolerances on named gradients).
+- Add **spatial structure** (dominant clustering + optional interspecific neighbourhood effects).
+- Sample with flexible **quadrat schemes** (random, systematic, tiled, transect, Voronoi).
+- Produce **site × species** matrices, per‑site **environment summaries**, and **diversity partitions** (α, β, γ).
+- Save publication‑quality **maps** and an optional **advanced analysis panel** (rank–abundance, occupancy–abundance, species–area, distance–decay, rarefaction).
+- Write a human‑readable **text report** that explains what happened.
 
-- Simulate species distributions across an arbitrary polygonal domain.
-- Include **environmental gradients**, **dominance structure**, and **spatial autocorrelation**.
-- Flexible spatial point generation: CSR, cluster processes, inhibition models.
-- Automatically produce **species × site abundance matrices**, **environmental summaries**, and **diversity metrics**.
-- High-quality plotting functions for:
-  - Rank–abundance curves
-  - Occupancy–abundance relationships
-  - Species–area curves
-  - Distance–decay patterns
-  - Rarefaction curves
-- **Advanced analysis panel**: multi-plot patchwork summary with optional point–process diagnostics.
-- Full-text simulation reports for reproducible summaries.
+## Why spesim?
+
+- **Teaching**: make abstract ideas (environmental filtering, distance decay, β‑diversity) tangible with quick simulations you can show in class.
+- **Methods development**: prototype sampling designs (how many quadrats? which scheme?) and test metrics before going to the field.
+- **Exploration**: stress‑test analyses on known “truth” to see how robust your inferences are.
+
+---
 
 ## Installation
 
-You can install the development version from GitHub:
+Development version from GitHub:
 
-```{r eval=FALSE}
+```r
 # install.packages("remotes")
-remotes::install_github("yourusername/spesim")
+remotes::install_github("ajsmit/spesim")
 ```
 
-The package imports several analysis and plotting libraries; see the DESCRIPTION file for full details.
-Optional point-process diagnostics require:
+No heavy *spatstat* dependency is required for core functionality. The package relies on common spatial/data/plotting libraries (see `DESCRIPTION` for imports).
 
-```{r eval=FALSE}
-install.packages(c("spatstat.geom", "spatstat.core"))
-```
+> Building the optional **pkgdown** site locally? Use:
+>
+> ```r
+> # install.packages("pkgdown")
+> pkgdown::build_site()
+> ```
 
-## Vignettes
+---
 
-- [Using an Interspecific Interactions File](https://ajsmit.github.io/spesim/articles/spesim-interactions.html)
-- [Full Init File Parameters](https://ajsmit.github.io/spesim/articles/spesim-init-parameters.html)
+## Vignettes (online)
+
+- **Interactions (neighbour effects):**  
+  <https://ajsmit.github.io/spesim/articles/spesim-interactions.html>
+- **Full init-file parameters:**  
+  <https://ajsmit.github.io/spesim/articles/spesim-init-parameters.html>
+- **Environmental Gradients:**
+  <https://ajsmit.github.io/spesim/articles/spesim-env-gradients.html>
+- **Advanced Analysis Panel:**
+  <https://ajsmit.github.io/spesim/articles/spesim-advanced-panel.html>
+- **Point processes:**
+  <https://ajsmit.github.io/spesim/articles/spesim-point-processes.html>
+
+
+If reading on GitHub before the site is live, you’ll find the sources under `vignettes/`.
+
+---
 
 ## Quick start
 
-```{r eval=FALSE}
+You can run a simulation in two ways: **programmatically** (in-memory) or using an **init file** on disk. The latter is more convenient for larger setups and reproducibility, since access to the init file gives you a full bird's eye view of the simulation parameters.
+
+### Quick start (programmatic)
+
+A minimal run that *does not* write files (handy for examples/CI).
+
+```r
 library(spesim)
 
-# Define simulation parameters
-P <- list(
-  N_SPECIES = 10,
-  N_INDIVIDUALS = 1000,
-  DOMINANT_FRACTION = 0.3,
-  FISHER_ALPHA = 5,
-  FISHER_X = 0.6
+# Load a complete example init, then tweak a few things in-memory
+P <- load_config(system.file("examples/spesim_init_basic.txt", package = "spesim"))
+P$N_SPECIES <- 10
+P$N_INDIVIDUALS <- 2000
+P$SAMPLING_SCHEME <- "random"
+P$N_QUADRATS <- 20
+P$QUADRAT_SIZE_OPTION <- "medium"
+
+# Run (skip writing to disk to keep examples snappy)
+res <- run_spatial_simulation(P = P, write_outputs = FALSE)
+
+# One-map view: individuals + quadrats (no gradient fill)
+p <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P)
+print(p)
+
+# Optional: a 2×2 panel including gradient overlays
+p1 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P)
+p2 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P,
+                            show_gradient = TRUE, env_gradients = res$env_gradients, gradient_type = "temperature_C")
+p3 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P,
+                            show_gradient = TRUE, env_gradients = res$env_gradients, gradient_type = "elevation_m")
+p4 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P,
+                            show_gradient = TRUE, env_gradients = res$env_gradients, gradient_type = "rainfall_mm")
+(p1 | p2) / (p3 | p4)
+```
+
+### Quick start (init file on disk)
+
+Prefer declaring everything in a text file? Point `run_spatial_simulation()` to it:
+
+```r
+library(spesim)
+
+# Your own config on disk
+init <- "inst/examples/spesim_init_complete.txt"   # or a path you created
+
+# Optional: interactions resolved within the init (via INTERACTIONS_EDGELIST)
+#          or via a separate interactions file set here:
+# interactions <- "inst/examples/interactions_init.txt"
+
+res <- run_spatial_simulation(
+  init_file = init,
+  interactions_file = NULL,  # use inline settings if present
+  output_prefix = "out/demo", 
+  write_outputs = TRUE       # write CSVs, figures, report
 )
 
-# Generate a simple rectangular domain
-domain <- sf::st_as_sf(
-  data.frame(id = 1),
-  coords = cbind(c(0, 100, 100, 0, 0), c(0, 0, 100, 100, 0)),
-  crs = 3857
-) |> sf::st_cast("POLYGON")
-
-# Run the spatial simulation
-res <- run_spatial_simulation(P, domain)
-
-# Visualise the output
-generate_advanced_panel(res)
+# Outputs written under out/demo_<timestamp>*
+# Results also returned in 'res' for programmatic use:
+str(res$abund_matrix)
 ```
+
+---
+
+## Typical workflow
+
+1. **Set parameters**: either with an **init file** (see vignette) or in-memory (`load_config()` → edit fields).
+2. **Run the simulator**: `run_spatial_simulation()`.
+3. **Use the outputs**:
+   - `res$abund_matrix` (site × species),
+   - `res$site_coords` (quadrat centroids),
+   - `res$env_gradients` (grid with temp/elev/rain fields),
+   - and map(s) via `plot_spatial_sampling()`.
+4. **(Optional) Advanced panel**: enable `P$ADVANCED_ANALYSIS <- TRUE` when you want the multi‑plot diagnostic image written to disk.
+
+---
 
 ## Function overview
 
 | Function | Purpose |
 |----------|---------|
-| `run_spatial_simulation()` | Main simulation engine; returns a list of results containing parameters, species distributions, quadrats, abundance matrices, and coordinates. |
-| `generate_heterogeneous_distribution()` | Generate species point locations given a chosen spatial process model (CSR, cluster process, inhibition model, etc.). |
-| `create_abundance_matrix()` | Build site × species abundance matrix from species point data and quadrat polygons. |
-| `calculate_quadrat_environment()` | Summarise environmental conditions per quadrat from environmental grid data. |
-| `generate_full_report()` | Produce a plain-text, multi-section analysis report covering gradients, species distributions, diversity metrics, and model validation. |
-| `generate_advanced_panel()` | Assemble a multi-plot patchwork diagnostic panel, optionally with point–process diagnostics if `spatstat` is available. |
-| `plot_rank_abundance()` | Plot observed vs. theoretical rank–abundance curves on a log-scaled axis. |
-| `plot_occupancy_abundance()` | Plot occupancy–abundance relationships (log–log) with optional trendline. |
-| `plot_species_area()` | Plot species–area relationships with mean curve ± 1 SD. |
-| `plot_distance_decay()` | Plot distance–decay relationships using Sørensen dissimilarity vs. geographic distance. |
-| `plot_rarefaction()` | Plot per-site rarefaction curves showing expected richness vs. sample size. |
+| `run_spatial_simulation()` | End‑to‑end orchestrator; returns a results list and (optionally) writes CSVs/figures/report. |
+| `generate_heterogeneous_distribution()` | Place individuals using abundances, gradients, dominant clustering, and interactions. |
+| `create_abundance_matrix()` | Build site × species table by intersecting individuals with quadrats. |
+| `calculate_quadrat_environment()` | Mean environmental conditions per quadrat from the grid. |
+| `plot_spatial_sampling()` | Publication‑ready map of domain, individuals, quadrats, optional gradient fill. |
+| `generate_full_report()` | Text report covering gradients, distributions, diversity, and Fisher log‑series validation. |
+| `generate_advanced_panel()` | Patchwork panel: rank–abundance, occupancy–abundance, species–area, distance–decay, rarefaction. |
 
-## Methodological note: from ad-hoc clustering to point processes
+---
 
-In early versions, spesim generated clusters using simple “hand-rolled” logic for dominant species.
-You can now opt for principled point process models:
+## Interactions (neighbour effects)
 
-- Neyman–Scott / Thomas process: parent–offspring clustering, controlled by parent intensity & offspring spread.
-- Strauss process: inhibition between points, tunable interaction radius & strength.
-- Geyer saturation process: combination of clustering and inhibition effects.
+You can specify interspecific effects **inline in the init file** or via a simple **CSV edgelist**. See the dedicated vignette:
 
-These models give you a tunable pair correlation function (g(r)) that you can validate against empirical or simulated data using:
+- <https://ajsmit.github.io/spesim/articles/spesim-interactions.html>
 
-- Ripley’s K function (K(r))
-- Transformed (L(r)-r)
-- (g(r)) from the pair correlation function
+Key points:
 
-This is integrated in `generate_advanced_panel()` if the **spatstat** packages are installed.
+- Rules are **directed** (`A -> B` may differ from `B -> A`).  
+- Default is **neutral** (`1.0`); only list deviations.
+- Set the global `INTERACTION_RADIUS` (0 disables the modifier).
 
-## Generating environmental gradients
+---
 
-You can attach simulated environmental rasters or grids, then extract quadrat summaries:
+## Environmental gradients
 
-```{r eval=FALSE}
+Three synthetic gradients are available out-of-the-box (`temperature`, `elevation`, `rainfall`), each normalised to [0,1] and reported in common units for plots/reports. You can control per-species **optima** and **tolerances** as scalars, vectors (by species), or named by gradient. See the init-file vignette:
+
+- <https://ajsmit.github.io/spesim/articles/spesim-init-parameters.html>
+
+For a quick look at the generated grid:
+
+```r
 domain <- create_sampling_domain()
 env <- create_environmental_gradients(domain, resolution = 50, noise_level = 0.05)
 head(env)
 ```
 
-## Diagnostics panel
-
-If **spatstat** is available, the advanced panel adds an extra row:
-
-- Ripley’s K (border correction): deviation from CSR.
-- L(r) – r: positive values suggest clustering; negative values suggest inhibition.
-- Pair correlation g(r): >1 clustering, <1 inhibition.
+---
 
 ## Citation
 
-If you use spesim in your work, please cite it:
+If you use **spesim**, please cite:
 
+```
 @misc{spesim,
   author = {AJ Smit},
-  title = {spesim: Spatial Ecological Simulation in R},
-  year = {2025},
-  url = {https://github.com/ajsmit/spesim}
+  title  = {spesim: Spatial Ecological Simulation in R},
+  year   = {2025},
+  url    = {https://github.com/ajsmit/spesim}
 }
+```
 
+---
 
 ## License
 
-MIT License — see LICENSE file for details.
-
+MIT License — see `LICENSE`.

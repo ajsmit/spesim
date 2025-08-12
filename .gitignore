@@ -64,3 +64,4 @@ src/*.dll
 
 # Private sandbox
 _private/
+docs
