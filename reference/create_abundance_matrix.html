@@ -94,7 +94,7 @@ in the intersections are still created as columns and zero-filled.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The function uses <code><a href="https://r-spatial.github.io/sf/reference/geos_binary_ops.html" class="external-link">st_intersection</a>()</code> to associate each
+    <p>The function uses <code><a href="https://r-spatial.github.io/sf/reference/geos_binary_ops.html" class="external-link">st_intersection()</a></code> to associate each
 individual with the quadrat polygon that contains it, then tallies counts by
 <code>(quadrat_id, species)</code> and pivots to wide format. If no points fall in
 any quadrat, the result is a data frame with one row per quadrat and zeros in
@@ -133,7 +133,7 @@ reproject beforehand (e.g., <code>species_dist &lt;- sf::st_transform(species_di
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>
