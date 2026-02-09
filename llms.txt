@@ -2,7 +2,7 @@
 
 AJ Smit and contributors 2025-08-12
 
-# spesim ![](reference/figures/logo.png)
+# spesim
 
 **spesim** is an R package for simulating, sampling, and analysing
 *spatially heterogeneous ecological communities* in irregular
