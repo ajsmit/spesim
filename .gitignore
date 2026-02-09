@@ -28,6 +28,9 @@ packrat/
 renv/
 renv.lock
 
+# pkgdown cache
+pkgdown/
+
 # Test, coverage & cache ----
 .Rcache/
 .Rcov/

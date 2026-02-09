@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="690" viewBox="0 0 600 690" role="img" aria-label="spesim logo: hexagon with coastline-like domain and sampling quadrats">
+  <defs>
+    <linearGradient id="bgB" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0E3B43"/>
+      <stop offset="100%" stop-color="#357266"/>
+    </linearGradient>
+    <clipPath id="clipHexB">
+      <path d="M300 40 L520 165 L520 425 L300 550 L80 425 L80 165 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Hexagon base -->
+  <path d="M300 40 L520 165 L520 425 L300 550 L80 425 L80 165 Z" fill="url(#bgB)"/>
+  <path d="M300 40 L520 165 L520 425 L300 550 L80 425 L80 165 Z" fill="none" stroke="#F4F1DE" stroke-width="10"/>
+
+  <g clip-path="url(#clipHexB)">
+    <!-- irregular domain (like an sf polygon) -->
+    <path d="M130 210
+             C160 150, 240 130, 300 160
+             C360 190, 420 150, 470 200
+             C520 255, 480 335, 440 370
+             C395 410, 370 470, 300 490
+             C235 508, 190 470, 160 430
+             C125 385, 95 280, 130 210 Z"
+          fill="#F4F1DE" opacity="0.18" stroke="#F4F1DE" stroke-width="6"/>
+
+    <!-- quadrats (tiled sampling) -->
+    <g fill="none" stroke="#F4F1DE" stroke-width="6" opacity="0.9">
+      <rect x="200" y="230" width="70" height="70"/>
+      <rect x="280" y="230" width="70" height="70"/>
+      <rect x="360" y="230" width="70" height="70"/>
+      <rect x="240" y="310" width="70" height="70"/>
+      <rect x="320" y="310" width="70" height="70"/>
+      <rect x="200" y="390" width="70" height="70"/>
+      <rect x="280" y="390" width="70" height="70"/>
+    </g>
+
+    <!-- points -->
+    <g fill="#FFD166" opacity="0.95">
+      <circle cx="215" cy="265" r="6"/>
+      <circle cx="310" cy="270" r="7"/>
+      <circle cx="395" cy="265" r="6"/>
+      <circle cx="275" cy="345" r="7"/>
+      <circle cx="350" cy="350" r="6"/>
+      <circle cx="235" cy="425" r="6"/>
+      <circle cx="315" cy="420" r="7"/>
+    </g>
+  </g>
+
+  <text x="300" y="635" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="64" font-weight="700" fill="#0B132B">spesim</text>
+</svg>
