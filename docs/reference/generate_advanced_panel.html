@@ -30,8 +30,11 @@ function \(g(r)\)."></head><body>
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-init-parameters.html">spesim: Full Init File Parameters</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-advanced-panel.html">Inside the Advanced Analysis Panel</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-env-gradients.html">Simulating Environmental Gradients with spesim</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-init-parameters.html">spesim: Full Init File Parameters</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-interactions.html">spesim: Defining Interspecific Interactions</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-point-processes.html">Point Processes in spesim: Options and Intuition</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -100,7 +103,7 @@ or save it with <code><a href="https://ggplot2.tidyverse.org/reference/ggsave.ht
 <span class="pkg">spatstat.geom</span> (for spatial windows and point patterns) and
 <span class="pkg">spatstat.explore</span> (for summary functions such as <code>Kest</code> and
 <code>pcf</code>) are installed. The domain is converted to a window (<code>owin</code>)
-using <code><a href="https://rdrr.io/pkg/spatstat.geom/man/as.owin.html" class="external-link">spatstat.geom::as.owin()</a></code> on the <code>sf</code> polygon; the
+using <code>spatstat.geom::as.owin()</code> on the <code>sf</code> polygon; the
 individuals are converted to a <code>ppp</code> with that window. We then compute:</p><ul><li><p><code>Kest(ppp, correction = "border")</code> and plot the border‑corrected K.</p></li>
 <li><p>\(L(r) = \sqrt{K(r)/\pi}\) and \(L(r)-r\) (\(&gt;0\) suggests clustering).</p></li>
 <li><p><code>pcf(ppp)</code> as an estimate of the pair‑correlation \(g(r)\)
@@ -133,7 +136,7 @@ individuals are converted to a <code>ppp</code> with that window. We then comput
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

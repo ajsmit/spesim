@@ -1,6 +1,8 @@
 Package: spesim
 Title: Spatial Sampling Simulation for Heterogeneous Ecological Communities
 Version: 0.2.0
+Author: AJ Smit [aut, cre]
+Maintainer: AJ Smit <ajsmit@uwc.ac.za>
 Authors@R: 
     c(person(given = "AJ",
              family = "Smit",
@@ -50,6 +52,6 @@ VignetteBuilder: knitr
 Config/testthat/edition: 3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 URL: https://github.com/ajsmit/spesim, https://ajsmit.github.io/spesim/
 BugReports: https://github.com/ajsmit/spesim/issues

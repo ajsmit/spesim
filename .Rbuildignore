@@ -36,6 +36,12 @@ Thumbs\.db
 # Build
 ^build$
 ^.*\.Rproj$
+^\.\.Rcheck$
+
+# Compiled artefacts (should never be in the source tarball)
+^src/.*\.(o|so|dll)$
+^src/.*\.a$
+^src/.*\.dylib$
 
 # CRAN should not include pkgdown / GitHub Pages site
 ^doc$

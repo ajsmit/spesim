@@ -36,8 +36,11 @@ individuals.'></head><body>
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-init-parameters.html">spesim: Full Init File Parameters</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-advanced-panel.html">Inside the Advanced Analysis Panel</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-env-gradients.html">Simulating Environmental Gradients with spesim</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-init-parameters.html">spesim: Full Init File Parameters</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-interactions.html">spesim: Defining Interspecific Interactions</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-point-processes.html">Point Processes in spesim: Options and Intuition</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -84,7 +87,7 @@ domain; must have a valid CRS (projected coordinates recommended).</p></dd>
 
 <dt id="arg-p">P<a class="anchor" aria-label="anchor" href="#arg-p"></a></dt>
 <dd><p>A fully materialized parameter list, typically from
-<code><a href="load_config.html">load_config</a>()</code>, containing at least:</p><ul><li><p><em>Community size:</em> <code>N_SPECIES</code>, <code>N_INDIVIDUALS</code>,
+<code><a href="load_config.html">load_config()</a></code>, containing at least:</p><ul><li><p><em>Community size:</em> <code>N_SPECIES</code>, <code>N_INDIVIDUALS</code>,
 <code>DOMINANT_FRACTION</code>, <code>FISHER_ALPHA</code>, <code>FISHER_X</code>.</p></li>
 <li><p><em>Environment:</em> <code>SAMPLING_RESOLUTION</code>, <code>ENVIRONMENTAL_NOISE</code>,
 and <code>GRADIENT</code> (tibble with <code>species</code>, <code>gradient</code> in
@@ -117,7 +120,7 @@ assignment.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><strong>Abundances.</strong> Total individuals per species are drawn with
-<code><a href="generate_fisher_log_series.html">generate_fisher_log_series</a>()</code>, allocating a fixed fraction to
+<code><a href="generate_fisher_log_series.html">generate_fisher_log_series()</a></code>, allocating a fixed fraction to
 species "A" and distributing the remainder by a log-series across
 <code>B, C, ...</code>.</p>
 <p><strong>Baseline locations (point processes).</strong> Locations are simulated using
@@ -144,7 +147,7 @@ the assignment probability for each species is proportional to
 \(\exp\{-(x - \mu)^2 / (2 \sigma^2)\}\), where \(x\) is the normalized
 environmental value at the point, \(\mu\) the species optimum, and
 \(\sigma\) the tolerance. Environmental values are attached by nearest
-neighbour join to the grid returned by <code><a href="create_environmental_gradients.html">create_environmental_gradients</a>()</code>.</p>
+neighbour join to the grid returned by <code><a href="create_environmental_gradients.html">create_environmental_gradients()</a></code>.</p>
 <p><strong>Local interactions.</strong> For each candidate point and focal species,
 the abundance-independent interaction modifier is the geometric mean of the
 corresponding coefficients in <code>P$INTERACTION_MATRIX</code> for neighbours found
@@ -168,10 +171,10 @@ local interaction effects.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="create_environmental_gradients.html">create_environmental_gradients</a>()</code>,
-<code><a href="generate_fisher_log_series.html">generate_fisher_log_series</a>()</code>,
-<code><a href="load_config.html">load_config</a>()</code>,
-<code><a href="load_interactions.html">load_interactions</a>()</code></p></div>
+    <div class="dont-index"><p><code><a href="create_environmental_gradients.html">create_environmental_gradients()</a></code>,
+<code><a href="generate_fisher_log_series.html">generate_fisher_log_series()</a></code>,
+<code><a href="load_config.html">load_config()</a></code>,
+<code><a href="load_interactions.html">load_interactions()</a></code></p></div>
     </div>
 
     <div class="section level2">
@@ -205,7 +208,7 @@ local interaction effects.</p></li>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

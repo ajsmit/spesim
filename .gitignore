@@ -46,6 +46,9 @@ Thumbs.db
 # Logs ----
 *.log
 
+# Build outputs
+spesim_*.tar.gz
+
 # Python or other language artifacts ----
 *.py[cod]
 __pycache__/
@@ -58,10 +61,18 @@ inst/doc
 /Meta/
 
 # Compiled objects
-src/*.so
+*.o
+*.so
+*.dll
 src/*.o
+src/*.so
 src/*.dll
+src/symbols.rds
+
+# pkgdown output (keep docs tracked for GitHub Pages)
+# Ignore pkgdown markdown helpers (we publish HTML)
+docs/**/*.md
+docs/llms.txt
 
 # Private sandbox
 _private/
-docs
