@@ -47,21 +47,8 @@ quadrat_size <- c(1.5, 1.5)
 A small helper to plot the domain + quadrats consistently:
 
 ```{r}
-plot_quadrats <- function(domain, quadrats, title) {
-  ggplot() +
-    geom_sf(data = domain, fill = NA, colour = "#22223b", linewidth = 0.7) +
-    geom_sf(data = quadrats, fill = "#4a4e69", alpha = 0.15, colour = "#22223b", linewidth = 0.5) +
-    geom_sf_text(
-      data = suppressWarnings(sf::st_centroid(quadrats)),
-      aes(label = quadrat_id),
-      size = 3,
-      colour = "#22223b"
-    ) +
-    coord_sf(datum = NA) +
-    labs(title = title) +
-    theme_minimal(base_size = 12) +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
-}
+# Plotting helper (exported by spesim)
+# See ?plot_quadrats for arguments.
 ```
 
 ## 1) Random (non-overlapping) placement
