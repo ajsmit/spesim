@@ -48,6 +48,8 @@
   : Plot Distance-Decay Relationship
 - [`plot_occupancy_abundance()`](https://ajsmit.github.io/spesim/reference/plot_occupancy_abundance.md)
   : Plot Occupancy-Abundance Relationship
+- [`plot_quadrats()`](https://ajsmit.github.io/spesim/reference/plot_quadrats.md)
+  : Plot a sampling domain with quadrats
 - [`plot_rank_abundance()`](https://ajsmit.github.io/spesim/reference/plot_rank_abundance.md)
   : Plot Rank-Abundance Curve
 - [`plot_rarefaction()`](https://ajsmit.github.io/spesim/reference/plot_rarefaction.md)
