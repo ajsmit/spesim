@@ -14,8 +14,8 @@ plot_quadrats(
   label_ids = c("auto", "yes", "no"),
   label_threshold = 40,
   id_col = "quadrat_id",
-  show_voronoi = FALSE,
-  show_seeds = FALSE,
+  show_voronoi = c("auto", "yes", "no"),
+  show_seeds = c("auto", "yes", "no"),
   domain_colour = "#22223b",
   quadrat_colour = "#22223b",
   quadrat_fill = "#4a4e69",
@@ -67,16 +67,18 @@ plot_quadrats(
 
 - show_voronoi:
 
-  Logical. If `TRUE`, and the `quadrats` object carries a
+  Logical or character. If `TRUE`, and the `quadrats` object carries a
   `"voronoi_cells"` attribute (as returned by
   [`place_quadrats_voronoi()`](https://ajsmit.github.io/spesim/reference/place_quadrats_voronoi.md)
   with `show_voronoi = TRUE`), plot those Voronoi cell boundaries
-  underneath the quadrats.
+  underneath the quadrats. If `"auto"` (default), Voronoi overlays are
+  shown only when the needed attributes are present.
 
 - show_seeds:
 
-  Logical. If `TRUE` and `show_voronoi = TRUE`, also plot the Voronoi
-  seed points if present as a `"voronoi_seeds"` attribute.
+  Logical or character. If `TRUE` and Voronoi overlays are enabled, also
+  plot the Voronoi seed points if present as a `"voronoi_seeds"`
+  attribute. If `"auto"` (default), seeds are shown when present.
 
 - domain_colour, quadrat_colour:
 

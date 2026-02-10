@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -18,8 +18,8 @@
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
-    <li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-quadrat-placement.html">Quadrat placement schemes in spesim</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-gradients.html">spesim recipes: environmental gradients</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-interactions.html">spesim recipes: interspecific interactions</a></li>
@@ -43,6 +43,18 @@
       <small>Source: <a href="https://github.com/ajsmit/spesim/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.1" id="spesim-031">spesim 0.3.1<a class="anchor" aria-label="anchor" href="#spesim-031"></a></h2>
+<div class="section level3">
+<h3 id="usability-0-3-1">Usability<a class="anchor" aria-label="anchor" href="#usability-0-3-1"></a></h3>
+<ul><li>New recommended high-level runner: <code><a href="../reference/spesim_run.html">spesim_run()</a></code> (S3 result object; better teaching workflow defaults).</li>
+<li>New helpers for teaching/workshops: <code><a href="../reference/validate_config.html">validate_config()</a></code>, <code><a href="../reference/list_examples.html">list_examples()</a></code>, <code><a href="../reference/spesim_use_example.html">spesim_use_example()</a></code>, <code><a href="../reference/spesim_open_docs.html">spesim_open_docs()</a></code>.</li>
+<li>New plotting theme: <code><a href="../reference/theme_spesim.html">theme_spesim()</a></code>.</li>
+<li>
+<code><a href="../reference/plot_quadrats.html">plot_quadrats()</a></code> now supports <code>show_voronoi = "auto"</code>/<code>"yes"</code>/<code>"no"</code> and uses tighter plotting defaults.</li>
+<li>Config parsing errors for <code>c(...)</code> vectors now include file + line context.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="spesim-030">spesim 0.3.0<a class="anchor" aria-label="anchor" href="#spesim-030"></a></h2>
 <ul><li>Add <code><a href="../reference/spesim_demo.html">spesim_demo()</a></code> convenience wrapper for teaching/quick exploration.</li>

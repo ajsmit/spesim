@@ -2,10 +2,10 @@
 
 ### Articles
 
-- [spesim public API (stability
-  guide)](https://ajsmit.github.io/spesim/articles/spesim-public-api.md):
 - [spesim workflow: basic → intermediate →
   advanced](https://ajsmit.github.io/spesim/articles/spesim-workflow.md):
+- [spesim public API (stability
+  guide)](https://ajsmit.github.io/spesim/articles/spesim-public-api.md):
 - [Quadrat placement schemes in
   spesim](https://ajsmit.github.io/spesim/articles/spesim-quadrat-placement.md):
 - [spesim recipes: environmental

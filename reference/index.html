@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -18,8 +18,8 @@
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
-    <li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-quadrat-placement.html">Quadrat placement schemes in spesim</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-gradients.html">spesim recipes: environmental gradients</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-interactions.html">spesim recipes: interspecific interactions</a></li>
@@ -43,7 +43,7 @@
     </div>
 
     <div class="section level2">
-      <h2 id="all-functions">All functions<a class="anchor" aria-label="anchor" href="#all-functions"></a></h2>
+      <h2 id="getting-started">Getting started<a class="anchor" aria-label="anchor" href="#getting-started"></a></h2>
 
 
 
@@ -54,87 +54,17 @@
 
       <dl><dt>
 
-          <code><a href="calculate_distance_decay.html">calculate_distance_decay()</a></code>
+          <code><a href="spesim_demo.html">spesim_demo()</a></code>
 
         </dt>
-        <dd>Distance-Decay Data</dd>
+        <dd>Run a compact spesim demonstration workflow</dd>
 
         <dt>
 
-          <code><a href="calculate_occupancy_abundance.html">calculate_occupancy_abundance()</a></code>
+          <code><a href="spesim_run.html">spesim_run()</a></code>
 
         </dt>
-        <dd>Occupancy-Abundance Table</dd>
-
-        <dt>
-
-          <code><a href="calculate_quadrat_environment.html">calculate_quadrat_environment()</a></code>
-
-        </dt>
-        <dd>Summarise mean environmental conditions per quadrat</dd>
-
-        <dt>
-
-          <code><a href="calculate_rank_abundance.html">calculate_rank_abundance()</a></code>
-
-        </dt>
-        <dd>Rank-Abundance Data</dd>
-
-        <dt>
-
-          <code><a href="calculate_rarefaction.html">calculate_rarefaction()</a></code>
-
-        </dt>
-        <dd>Rarefaction Curves Data</dd>
-
-        <dt>
-
-          <code><a href="calculate_species_area.html">calculate_species_area()</a></code>
-
-        </dt>
-        <dd>Species-Area (Accumulation) Data</dd>
-
-        <dt>
-
-          <code><a href="create_abundance_matrix.html">create_abundance_matrix()</a></code>
-
-        </dt>
-        <dd>Build a site-by-species abundance matrix from point–polygon overlaps</dd>
-
-        <dt>
-
-          <code><a href="create_environmental_gradients.html">create_environmental_gradients()</a></code>
-
-        </dt>
-        <dd>Create synthetic environmental gradients over a spatial domain</dd>
-
-        <dt>
-
-          <code><a href="create_sampling_domain.html">create_sampling_domain()</a></code>
-
-        </dt>
-        <dd>Create an irregular sampling domain polygon</dd>
-
-        <dt>
-
-          <code><a href="generate_advanced_panel.html">generate_advanced_panel()</a></code>
-
-        </dt>
-        <dd>Advanced Analysis Panel (rank/occupancy/SAR/decay/rarefaction + optional PPC)</dd>
-
-        <dt>
-
-          <code><a href="generate_fisher_log_series.html">generate_fisher_log_series()</a></code>
-
-        </dt>
-        <dd>Generate Fisher's log-series abundances with a dominant species</dd>
-
-        <dt>
-
-          <code><a href="generate_heterogeneous_distribution.html">generate_heterogeneous_distribution()</a></code>
-
-        </dt>
-        <dd>Generate a heterogeneous community (point process + environment + interactions)</dd>
+        <dd>Run a complete spesim simulation (recommended)</dd>
 
         <dt>
 
@@ -145,19 +75,93 @@
 
         <dt>
 
-          <code><a href="load_interactions.html">load_interactions()</a></code>
+          <code><a href="validate_config.html">validate_config()</a></code>
 
         </dt>
-        <dd>Load interspecific interaction settings (radius + matrix)</dd>
+        <dd>Validate a spesim configuration (without running the simulation)</dd>
 
         <dt>
 
-          <code><a href="load_interactions_inline.html">load_interactions_inline()</a></code>
+          <code><a href="list_examples.html">list_examples()</a></code>
 
         </dt>
-        <dd>Parse inline interaction rules from the init file</dd>
+        <dd>List shipped example configuration files</dd>
 
         <dt>
+
+          <code><a href="spesim_use_example.html">spesim_use_example()</a></code>
+
+        </dt>
+        <dd>Copy a shipped example init file into your working directory</dd>
+
+        <dt>
+
+          <code><a href="spesim_open_docs.html">spesim_open_docs()</a></code>
+
+        </dt>
+        <dd>Open spesim documentation pages in your browser</dd>
+      </dl></div><div class="section level2">
+      <h2 id="simulation">Simulation<a class="anchor" aria-label="anchor" href="#simulation"></a></h2>
+
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="run_spatial_simulation.html">run_spatial_simulation()</a></code>
+
+        </dt>
+        <dd>Run the full spatial sampling simulation</dd>
+
+        <dt>
+
+          <code><a href="generate_heterogeneous_distribution.html">generate_heterogeneous_distribution()</a></code>
+
+        </dt>
+        <dd>Generate a heterogeneous community (point process + environment + interactions)</dd>
+
+        <dt>
+
+          <code><a href="create_sampling_domain.html">create_sampling_domain()</a></code>
+
+        </dt>
+        <dd>Create an irregular sampling domain polygon</dd>
+
+        <dt>
+
+          <code><a href="create_environmental_gradients.html">create_environmental_gradients()</a></code>
+
+        </dt>
+        <dd>Create synthetic environmental gradients over a spatial domain</dd>
+
+        <dt>
+
+          <code><a href="create_abundance_matrix.html">create_abundance_matrix()</a></code>
+
+        </dt>
+        <dd>Build a site-by-species abundance matrix from point–polygon overlaps</dd>
+
+        <dt>
+
+          <code><a href="calculate_quadrat_environment.html">calculate_quadrat_environment()</a></code>
+
+        </dt>
+        <dd>Summarise mean environmental conditions per quadrat</dd>
+      </dl></div><div class="section level2">
+      <h2 id="quadrat-placement">Quadrat placement<a class="anchor" aria-label="anchor" href="#quadrat-placement"></a></h2>
+
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
 
           <code><a href="place_quadrats.html">place_quadrats()</a></code>
 
@@ -191,41 +195,22 @@
 
         </dt>
         <dd>Voronoi‑based Quadrat Placement</dd>
+      </dl></div><div class="section level2">
+      <h2 id="plotting">Plotting<a class="anchor" aria-label="anchor" href="#plotting"></a></h2>
 
-        <dt>
 
-          <code><a href="plot_distance_decay.html">plot_distance_decay()</a></code>
 
-        </dt>
-        <dd>Plot Distance-Decay Relationship</dd>
+      <dl></dl></div><div class="section level2">
 
-        <dt>
 
-          <code><a href="plot_occupancy_abundance.html">plot_occupancy_abundance()</a></code>
 
-        </dt>
-        <dd>Plot Occupancy-Abundance Relationship</dd>
 
-        <dt>
+      <dl><dt>
 
           <code><a href="plot_quadrats.html">plot_quadrats()</a></code>
 
         </dt>
         <dd>Plot a sampling domain with quadrats</dd>
-
-        <dt>
-
-          <code><a href="plot_rank_abundance.html">plot_rank_abundance()</a></code>
-
-        </dt>
-        <dd>Plot Rank-Abundance Curve</dd>
-
-        <dt>
-
-          <code><a href="plot_rarefaction.html">plot_rarefaction()</a></code>
-
-        </dt>
-        <dd>Plot Rarefaction Curves</dd>
 
         <dt>
 
@@ -236,6 +221,71 @@
 
         <dt>
 
+          <code><a href="theme_spesim.html">theme_spesim()</a></code>
+
+        </dt>
+        <dd>A consistent ggplot2 theme for spesim teaching plots</dd>
+      </dl></div><div class="section level2">
+      <h2 id="advanced-analysis">Advanced analysis<a class="anchor" aria-label="anchor" href="#advanced-analysis"></a></h2>
+
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="generate_advanced_panel.html">generate_advanced_panel()</a></code>
+
+        </dt>
+        <dd>Advanced Analysis Panel (rank/occupancy/SAR/decay/rarefaction + optional PPC)</dd>
+
+        <dt>
+
+          <code><a href="generate_full_report.html">generate_full_report()</a></code>
+
+        </dt>
+        <dd>(Advanced) Build a human-readable multi-section report</dd>
+
+        <dt>
+
+          <code><a href="calculate_rank_abundance.html">calculate_rank_abundance()</a></code>
+
+        </dt>
+        <dd>Rank-Abundance Data</dd>
+
+        <dt>
+
+          <code><a href="plot_rank_abundance.html">plot_rank_abundance()</a></code>
+
+        </dt>
+        <dd>Plot Rank-Abundance Curve</dd>
+
+        <dt>
+
+          <code><a href="calculate_occupancy_abundance.html">calculate_occupancy_abundance()</a></code>
+
+        </dt>
+        <dd>Occupancy-Abundance Table</dd>
+
+        <dt>
+
+          <code><a href="plot_occupancy_abundance.html">plot_occupancy_abundance()</a></code>
+
+        </dt>
+        <dd>Plot Occupancy-Abundance Relationship</dd>
+
+        <dt>
+
+          <code><a href="calculate_species_area.html">calculate_species_area()</a></code>
+
+        </dt>
+        <dd>Species-Area (Accumulation) Data</dd>
+
+        <dt>
+
           <code><a href="plot_species_area.html">plot_species_area()</a></code>
 
         </dt>
@@ -243,38 +293,84 @@
 
         <dt>
 
+          <code><a href="calculate_distance_decay.html">calculate_distance_decay()</a></code>
+
+        </dt>
+        <dd>Distance-Decay Data</dd>
+
+        <dt>
+
+          <code><a href="plot_distance_decay.html">plot_distance_decay()</a></code>
+
+        </dt>
+        <dd>Plot Distance-Decay Relationship</dd>
+
+        <dt>
+
+          <code><a href="calculate_rarefaction.html">calculate_rarefaction()</a></code>
+
+        </dt>
+        <dd>Rarefaction Curves Data</dd>
+
+        <dt>
+
+          <code><a href="plot_rarefaction.html">plot_rarefaction()</a></code>
+
+        </dt>
+        <dd>Plot Rarefaction Curves</dd>
+      </dl></div><div class="section level2">
+      <h2 id="interactions">Interactions<a class="anchor" aria-label="anchor" href="#interactions"></a></h2>
+
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="load_interactions.html">load_interactions()</a></code>
+
+        </dt>
+        <dd>Load interspecific interaction settings (radius + matrix)</dd>
+
+        <dt>
+
+          <code><a href="load_interactions_inline.html">load_interactions_inline()</a></code>
+
+        </dt>
+        <dd>Parse inline interaction rules from the init file</dd>
+
+        <dt>
+
+          <code><a href="validate_interactions.html">validate_interactions()</a></code>
+
+        </dt>
+        <dd>Validate an interaction specification</dd>
+
+        <dt>
+
           <code><a href="print_interactions.html">print_interactions()</a></code>
 
         </dt>
         <dd>Pretty-print a compact interaction matrix summary</dd>
+      </dl></div><div class="section level2">
+      <h2 id="point-process-engines">Point-process engines<a class="anchor" aria-label="anchor" href="#point-process-engines"></a></h2>
 
-        <dt>
 
-          <code><a href="read_latest_report.html">read_latest_report()</a></code>
 
-        </dt>
-        <dd>Read the most recent simulation report from an output directory</dd>
+      <dl></dl></div><div class="section level2">
 
-        <dt>
+
+
+
+      <dl><dt>
 
           <code><a href="rthomas_fast.html">rthomas_fast()</a></code>
 
         </dt>
         <dd>Fast Thomas Process (Rcpp-backed) in an arbitrary polygon</dd>
-
-        <dt>
-
-          <code><a href="run_spatial_simulation.html">run_spatial_simulation()</a></code>
-
-        </dt>
-        <dd>Run the full spatial sampling simulation</dd>
-
-        <dt>
-
-          <code><a href="simulate_points_geyer_fast.html">simulate_points_geyer_fast()</a></code>
-
-        </dt>
-        <dd>Fast Geyer saturation simulator (bbox Metropolis–Hastings)</dd>
 
         <dt>
 
@@ -285,19 +381,45 @@
 
         <dt>
 
-          <code><a href="spesim_demo.html">spesim_demo()</a></code>
+          <code><a href="simulate_points_geyer_fast.html">simulate_points_geyer_fast()</a></code>
 
         </dt>
-        <dd>Run a compact spesim demonstration workflow</dd>
+        <dd>Fast Geyer saturation simulator (bbox Metropolis–Hastings)</dd>
+      </dl></div><div class="section level2">
+      <h2 id="reports">Reports<a class="anchor" aria-label="anchor" href="#reports"></a></h2>
 
-        <dt>
 
-          <code><a href="validate_interactions.html">validate_interactions()</a></code>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="read_latest_report.html">read_latest_report()</a></code>
 
         </dt>
-        <dd>Validate an interaction specification</dd>
+        <dd>Read the most recent simulation report from an output directory</dd>
+      </dl></div><div class="section level2">
+      <h2 id="utilities">Utilities<a class="anchor" aria-label="anchor" href="#utilities"></a></h2>
+
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="generate_fisher_log_series.html">generate_fisher_log_series()</a></code>
+
+        </dt>
+        <dd>Generate Fisher's log-series abundances with a dominant species</dd>
       </dl></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

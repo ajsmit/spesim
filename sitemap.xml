@@ -38,6 +38,7 @@
 <url><loc>https://ajsmit.github.io/spesim/reference/generate_full_report.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/generate_heterogeneous_distribution.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/index.html</loc></url>
+<url><loc>https://ajsmit.github.io/spesim/reference/list_examples.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/load_config.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/load_interactions.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/load_interactions_inline.html</loc></url>
@@ -65,6 +66,11 @@
 <url><loc>https://ajsmit.github.io/spesim/reference/simulate_points_thomas.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/spesim-package.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/spesim_demo.html</loc></url>
+<url><loc>https://ajsmit.github.io/spesim/reference/spesim_open_docs.html</loc></url>
+<url><loc>https://ajsmit.github.io/spesim/reference/spesim_run.html</loc></url>
+<url><loc>https://ajsmit.github.io/spesim/reference/spesim_use_example.html</loc></url>
+<url><loc>https://ajsmit.github.io/spesim/reference/theme_spesim.html</loc></url>
+<url><loc>https://ajsmit.github.io/spesim/reference/validate_config.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/validate_interactions.html</loc></url>
 </urlset>
 
