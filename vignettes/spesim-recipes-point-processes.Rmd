@@ -29,7 +29,7 @@ library(spesim)
 
 P <- load_config(system.file("examples/spesim_init_complete.txt", package = "spesim"))
 P$N_SPECIES <- 10
-P$N_INDIVIDUALS <- 1500
+P$N_INDIVIDUALS <- 1200
 P$ADVANCED_ANALYSIS <- FALSE
 
 # Keep interactions off for clarity
@@ -44,6 +44,7 @@ P1 <- P
 P1$SPATIAL_PROCESS_A <- "poisson"
 P1$SPATIAL_PROCESS_OTHERS <- "poisson"
 
+set.seed(P$SEED)
 res_pois <- run_spatial_simulation(P = P1, write_outputs = FALSE, interactions_print = FALSE)
 plot_spatial_sampling(res_pois$domain, res_pois$species_dist, res_pois$quadrats, res_pois$P)
 ```
@@ -72,6 +73,37 @@ P3$OTHERS_S <- 0.5
 
 res_st <- run_spatial_simulation(P = P3, write_outputs = FALSE, interactions_print = FALSE)
 plot_spatial_sampling(res_st$domain, res_st$species_dist, res_st$quadrats, res_st$P)
+```
+
+## Consequences in the advanced analysis panel (and theory)
+
+Different point processes correspond to different *mechanisms* of spatial
+structure:
+
+- **Poisson** is a null model (complete spatial randomness).
+- **Thomas clustering** is a proxy for limited dispersal or patchy habitat
+  suitability, producing aggregated individuals.
+- **Strauss inhibition** approximates territoriality/space limitation, producing
+  repulsion among points.
+
+In the advanced panel, these differences often show up as:
+
+- **distance–decay**: clustering can increase dissimilarity among quadrats,
+  strengthening decay,
+- **species–area**: more spatial structure can increase observed beta diversity,
+  steepening the curve,
+- **rarefaction**: strong aggregation can reduce per-quadrat richness at small
+  sample sizes (more uneven encounter rates).
+
+Below we compare the advanced panel between Poisson, Thomas (A clustered), and
+Thomas + Strauss (others inhibited).
+
+```{r}
+p_pois <- generate_advanced_panel(res_pois) + patchwork::plot_annotation(title = "Poisson (CSR)")
+p_th   <- generate_advanced_panel(res_th)   + patchwork::plot_annotation(title = "Thomas clustering for A")
+p_st   <- generate_advanced_panel(res_st)   + patchwork::plot_annotation(title = "Thomas (A) + Strauss inhibition (others)")
+
+(p_pois / p_th) / p_st
 ```
 
 ## Notes

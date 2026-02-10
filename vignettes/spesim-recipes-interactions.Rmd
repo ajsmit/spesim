@@ -42,6 +42,7 @@ P$ADVANCED_ANALYSIS <- FALSE
 P$INTERACTION_RADIUS <- 0
 P$INTERACTIONS_EDGELIST <- NULL
 
+set.seed(P$SEED)
 res0 <- run_spatial_simulation(P = P, write_outputs = FALSE, interactions_print = FALSE)
 plot_spatial_sampling(res0$domain, res0$species_dist, res0$quadrats, res0$P)
 ```
@@ -62,6 +63,29 @@ res1 <- run_spatial_simulation(P = P2, write_outputs = FALSE, interactions_print
 
 # Visualise the outcome
 plot_spatial_sampling(res1$domain, res1$species_dist, res1$quadrats, res1$P)
+```
+
+## Consequences in the advanced analysis panel (and theory)
+
+Neighbour effects can change **co-occurrence patterns** and local abundance,
+which in turn changes what you observe in quadrats.
+
+In ecological terms, competition (coefficients < 1) can create **spatial
+segregation** and reduce local richness in neighbourhoods dominated by a strong
+competitor, while facilitation (> 1) can increase local co-occurrence.
+
+In the advanced panel, interaction effects can manifest as:
+
+- shifts in **occupancy–abundance** (suppressed species become rarer and occupy
+  fewer sites),
+- changes in **distance–decay** (if interactions amplify patchiness),
+- and altered **rarefaction** curves (effective evenness/richness per site).
+
+```{r}
+panel0 <- generate_advanced_panel(res0) + patchwork::plot_annotation(title = "Baseline: no interactions")
+panel1 <- generate_advanced_panel(res1) + patchwork::plot_annotation(title = "With neighbour interactions")
+
+panel0 / panel1
 ```
 
 ## Notes

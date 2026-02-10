@@ -29,9 +29,10 @@ library(spesim)
 
 P <- load_config(system.file("examples/spesim_init_basic.txt", package = "spesim"))
 P$N_SPECIES <- 10
-P$N_INDIVIDUALS <- 1500
+P$N_INDIVIDUALS <- 1200
 P$ADVANCED_ANALYSIS <- FALSE
 
+set.seed(P$SEED)
 res0 <- run_spatial_simulation(P = P, write_outputs = FALSE)
 plot_spatial_sampling(res0$domain, res0$species_dist, res0$quadrats, res0$P)
 ```
@@ -64,6 +65,29 @@ p2 <- plot_spatial_sampling(
 
 p1
 p2
+```
+
+## Consequences in the advanced analysis panel (and theory)
+
+Environmental filtering typically increases **spatial turnover** (beta diversity)
+when species have different optima along a gradient. In the advanced panel this
+often shows up as:
+
+- a stronger **distance–decay** signal (dissimilarity increases with distance),
+- a steeper **species–area** curve (more quadrats needed to capture gamma diversity),
+- and changes in **occupancy–abundance** patterns (specialists can be abundant
+  but occupy fewer sites).
+
+This is consistent with classic niche-based theory: species are sorted along
+environmental axes (e.g. temperature), so communities separated along the axis
+share fewer species.
+
+```{r}
+# Compare advanced panels: baseline vs stronger filtering
+panel0 <- generate_advanced_panel(res0) + patchwork::plot_annotation(title = "Baseline: weak/default filtering")
+panel1 <- generate_advanced_panel(res1) + patchwork::plot_annotation(title = "Stronger temperature filtering")
+
+panel0 / panel1
 ```
 
 ## Tip: reproducibility

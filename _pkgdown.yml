@@ -12,6 +12,7 @@ articles:
 - title: "Articles"
   navbar: ~
   contents:
+  - spesim-public-api
   - spesim-workflow
   - spesim-quadrat-placement
   - spesim-recipes-gradients
