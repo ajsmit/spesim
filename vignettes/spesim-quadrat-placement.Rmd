@@ -153,9 +153,26 @@ q_voronoi <- place_quadrats_voronoi(
   domain,
   n_quadrats = 20,
   quadrat_size = c(1.2, 1.2),
-  voronoi_seed_factor = 4
+  voronoi_seed_factor = 4,
+  show_voronoi = TRUE
 )
+
+# Standard view (domain + quadrats)
 plot_quadrats(domain, q_voronoi, "Voronoi placement (seed_factor = 4; size = 1.2×1.2)")
+
+# Optional: show the underlying Voronoi tessellation used to select candidates
+vor_cells <- attr(q_voronoi, "voronoi_cells")
+
+p_voronoi_diag <- ggplot() +
+  geom_sf(data = domain, fill = NA, colour = "#22223b", linewidth = 0.7) +
+  geom_sf(data = vor_cells, fill = NA, colour = "grey80", linewidth = 0.3) +
+  geom_sf(data = q_voronoi, fill = "#4a4e69", alpha = 0.15, colour = "#22223b", linewidth = 0.5) +
+  coord_sf(datum = NA) +
+  labs(title = "Voronoi diagram (clipped) + selected quadrats") +
+  theme_minimal(base_size = 12) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+print(p_voronoi_diag)
 ```
 
 **Notes:**

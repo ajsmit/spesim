@@ -4,7 +4,13 @@
 \alias{place_quadrats_voronoi}
 \title{Voronoi‑based Quadrat Placement}
 \usage{
-place_quadrats_voronoi(domain, n_quadrats, quadrat_size, voronoi_seed_factor)
+place_quadrats_voronoi(
+  domain,
+  n_quadrats,
+  quadrat_size,
+  voronoi_seed_factor,
+  show_voronoi = FALSE
+)
 }
 \arguments{
 \item{domain}{An sf polygon/multipolygon defining the sampling
@@ -22,12 +28,23 @@ Both values must be positive and finite.}
 how many random seeds are used to build the Voronoi diagram:
 n_seeds = n_quadrats * voronoi_seed_factor. Use larger values (e.g., 8–20)
 in very irregular or narrow domains to improve coverage.}
+
+\item{show_voronoi}{Logical. If TRUE, the returned sf object (quadrats)
+will carry additional attributes that can be used to visualise the
+underlying Voronoi tessellation used to select candidate cells.}
 }
 \value{
 An sf object (polygons) with:
 \describe{
 \item{quadrat_id}{Sequential integer identifier of the placed quadrats.}
 \item{geometry}{Axis‑aligned rectangular polygon for each quadrat.}
+}
+
+If \code{show_voronoi = TRUE}, the returned object also has attributes:
+\describe{
+\item{voronoi_cells}{An sf object with the Voronoi polygons clipped to the domain.}
+\item{voronoi_seeds}{An sfc POINT collection of the random seed points.}
+\item{inscribed_circles}{An sfc POLYGON collection of inscribed-circle polygons.}
 }
 }
 \description{
@@ -70,9 +87,11 @@ qs  <- place_quadrats_voronoi(
   domain = dom,
   n_quadrats = 20,
   quadrat_size = c(1.5, 1.5),
-  voronoi_seed_factor = 12
+  voronoi_seed_factor = 12,
+  show_voronoi = TRUE
 )
 plot(st_geometry(dom), col = "grey95", border = "grey60")
+plot(st_geometry(attr(qs, "voronoi_cells")), add = TRUE, border = "grey80")
 plot(st_geometry(qs), add = TRUE, border = "black", lwd = 1)
 }
 }

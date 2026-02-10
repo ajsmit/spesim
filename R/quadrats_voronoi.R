@@ -41,11 +41,21 @@
 #'   how many random seeds are used to build the Voronoi diagram:
 #'   n_seeds = n_quadrats * voronoi_seed_factor. Use larger values (e.g., 8–20)
 #'   in very irregular or narrow domains to improve coverage.
+#' @param show_voronoi Logical. If TRUE, the returned sf object (quadrats)
+#'   will carry additional attributes that can be used to visualise the
+#'   underlying Voronoi tessellation used to select candidate cells.
 #'
 #' @return An sf object (polygons) with:
 #' \describe{
 #'   \item{quadrat_id}{Sequential integer identifier of the placed quadrats.}
 #'   \item{geometry}{Axis‑aligned rectangular polygon for each quadrat.}
+#' }
+#'
+#' If \code{show_voronoi = TRUE}, the returned object also has attributes:
+#' \describe{
+#'   \item{voronoi_cells}{An sf object with the Voronoi polygons clipped to the domain.}
+#'   \item{voronoi_seeds}{An sfc POINT collection of the random seed points.}
+#'   \item{inscribed_circles}{An sfc POLYGON collection of inscribed-circle polygons.}
 #' }
 #'
 #' @seealso
@@ -63,13 +73,15 @@
 #'   domain = dom,
 #'   n_quadrats = 20,
 #'   quadrat_size = c(1.5, 1.5),
-#'   voronoi_seed_factor = 12
+#'   voronoi_seed_factor = 12,
+#'   show_voronoi = TRUE
 #' )
 #' plot(st_geometry(dom), col = "grey95", border = "grey60")
+#' plot(st_geometry(attr(qs, "voronoi_cells")), add = TRUE, border = "grey80")
 #' plot(st_geometry(qs), add = TRUE, border = "black", lwd = 1)
 #' }
 #' @export
-place_quadrats_voronoi <- function(domain, n_quadrats, quadrat_size, voronoi_seed_factor) {
+place_quadrats_voronoi <- function(domain, n_quadrats, quadrat_size, voronoi_seed_factor, show_voronoi = FALSE) {
   n_seeds <- n_quadrats * voronoi_seed_factor
   domain_union <- sf::st_union(domain)
   seed_points <- sf::st_sample(domain_union, size = n_seeds, type = "random")
@@ -92,5 +104,13 @@ place_quadrats_voronoi <- function(domain, n_quadrats, quadrat_size, voronoi_see
   final_centers <- sf::st_centroid(inscribed_circles[sampled_indices])
   quadrat_list <- lapply(sf::st_geometry(final_centers), function(pt) create_quadrat_from_center(pt, quadrat_size))
   final_quadrats_sfc <- sf::st_sfc(quadrat_list, crs = sf::st_crs(domain))
-  sf::st_sf(quadrat_id = 1:length(final_quadrats_sfc), geometry = final_quadrats_sfc)
+  out <- sf::st_sf(quadrat_id = 1:length(final_quadrats_sfc), geometry = final_quadrats_sfc)
+
+  if (isTRUE(show_voronoi)) {
+    attr(out, "voronoi_cells") <- sf::st_as_sf(voronoi_clipped)
+    attr(out, "voronoi_seeds") <- seed_points
+    attr(out, "inscribed_circles") <- inscribed_circles
+  }
+
+  out
 }
