@@ -6,6 +6,8 @@
 \alias{spesim-package}
 \title{spesim: Spatial Sampling Simulation for Heterogeneous Ecological Communities}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 Simulate and visualise spatial community sampling within an irregular domain. Species distributions are generated from a Fisher log-series and can include environmental filtering (multiple gradients), dominant-species clustering, and local interspecific interactions. Multiple quadrat placement schemes are provided (random, tiled, systematic, transect, Voronoi) to emulate common field designs. The package writes site-by-species abundance matrices and per-quadrat environmental summaries, and produces publication-quality maps and analysis panels (rank–abundance, occupancy– abundance, species–area, distance–decay, rarefaction). A single high-level runner orchestrates the full workflow from configuration files to figures and a human-readable report.
 }
 \seealso{
