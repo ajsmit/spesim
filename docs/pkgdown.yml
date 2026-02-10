@@ -8,7 +8,8 @@ articles:
   spesim-interactions: spesim-interactions.html
   spesim-point-processes: spesim-point-processes.html
   spesim-quadrat-placement: spesim-quadrat-placement.html
-last_built: 2026-02-10T06:16Z
+  spesim-workflow: spesim-workflow.html
+last_built: 2026-02-10T06:23Z
 urls:
   reference: https://ajsmit.github.io/spesim/reference
   article: https://ajsmit.github.io/spesim/articles
