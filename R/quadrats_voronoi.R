@@ -90,7 +90,16 @@ place_quadrats_voronoi <- function(domain, n_quadrats, quadrat_size, voronoi_see
   # Cast/extract polygons and clip to the domain.
   # Note: st_voronoi() may yield GEOMETRYCOLLECTION; extract polygons for plotting.
   voronoi_geom <- sf::st_cast(voronoi_polys)
-  voronoi_geom <- sf::st_collection_extract(voronoi_geom, "POLYGON")
+  if (any(sf::st_geometry_type(voronoi_geom) %in% c("GEOMETRYCOLLECTION"))) {
+    voronoi_geom <- sf::st_collection_extract(voronoi_geom, "POLYGON")
+  }
+
+  # Make geometries valid to avoid occasional GEOS TopologyException failures
+  if ("st_make_valid" %in% getNamespaceExports("sf")) {
+    domain_union <- sf::st_make_valid(domain_union)
+    voronoi_geom <- sf::st_make_valid(voronoi_geom)
+  }
+
   voronoi_clipped <- sf::st_intersection(voronoi_geom, domain_union)
 
   inscribed_circles <- suppressWarnings(sf::st_inscribed_circle(voronoi_clipped))
