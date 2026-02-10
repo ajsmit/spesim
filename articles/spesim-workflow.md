@@ -11,60 +11,48 @@ stage.
 
 ## Big picture workflow (flow diagram)
 
-This diagram shows the main pipeline in a compact, teachable form.
+Below is a compact workflow diagram showing the main pipeline.
 
-``` r
-# A dependency-free flow diagram (uses base R's grid package)
-library(grid)
-
-grid.newpage()
-
-box <- function(x, y, w, h, label, gp = gpar(fill = "grey95", col = "grey40", lwd = 1)) {
-  grid.roundrect(x, y, width = w, height = h, r = unit(0.06, "snpc"), gp = gp)
-  grid.text(label, x, y, gp = gpar(col = "grey10", cex = 0.9))
-}
-
-arrow_down <- function(x, y0, y1) {
-  grid.lines(x = unit(c(x, x), "npc"), y = unit(c(y0, y1), "npc"),
-             gp = gpar(col = "grey30", lwd = 1.2),
-             arrow = arrow(type = "closed", length = unit(0.12, "in")))
-}
-
-arrow_right <- function(x0, x1, y) {
-  grid.lines(x = unit(c(x0, x1), "npc"), y = unit(c(y, y), "npc"),
-             gp = gpar(col = "grey30", lwd = 1.1),
-             arrow = arrow(type = "closed", length = unit(0.12, "in")))
-}
-
-# Main spine
-box(0.30, 0.82, 0.52, 0.16,
-    "1) Configuration\n• load_config(init_file)\n• or tweak list P in R")
-arrow_down(0.30, 0.74, 0.67)
-
-box(0.30, 0.58, 0.52, 0.18,
-    "2) Run simulation\nrun_spatial_simulation()\n• domain\n• individuals\n• quadrats\n• matrices")
-arrow_down(0.30, 0.47, 0.40)
-
-box(0.30, 0.30, 0.70, 0.22,
-    "3) Primary outputs (in-memory; optional disk)\nres$species_dist  | res$quadrats\nres$abund_matrix  | res$env_gradients | res$site_coords")
-
-# Analysis branches
-box(0.78, 0.38, 0.38, 0.12, "Basic\nMaps + matrices", gp = gpar(fill = "#d8f3dc", col = "#40916c"))
-box(0.78, 0.22, 0.38, 0.16, "Intermediate\nSAD, OA, SAR,\ndistance–decay, rarefaction",
-    gp = gpar(fill = "#e0fbfc", col = "#3d5a80"))
-box(0.78, 0.07, 0.38, 0.13, "Advanced\nadvanced panel + report",
-    gp = gpar(fill = "#ffe5d9", col = "#b23a48"))
-
-arrow_right(0.63, 0.66, 0.38)
-arrow_right(0.63, 0.66, 0.22)
-arrow_right(0.63, 0.66, 0.07)
-
-# Minor caption
-grid.text("spesim workflow overview", x = unit(0.02, "npc"), y = unit(0.98, "npc"),
-          just = c("left", "top"), gp = gpar(cex = 0.9, col = "grey30"))
+``` text
+┌──────────────────────────────┐
+│ 1) Configuration             │
+│   - load_config(init_file)   │
+│   - or tweak list P in R     │
+└───────────────┬──────────────┘
+                │
+                v
+┌──────────────────────────────┐
+│ 2) Run simulation            │
+│   run_spatial_simulation()   │
+│   - creates domain (or use)  │
+│   - simulates individuals    │
+│   - places quadrats          │
+│   - builds matrices          │
+└───────────────┬──────────────┘
+                │
+                v
+┌──────────────────────────────────────────────────────┐
+│ 3) Primary outputs (returned in-memory; optional disk)│
+│   res$species_dist   (individual points, with species)│
+│   res$quadrats       (quadrat polygons)               │
+│   res$abund_matrix   (site × species table)           │
+│   res$env_gradients  (gridded env fields)             │
+│   res$site_coords    (quadrat centroids)              │
+└───────────────┬──────────────────────────────────────┘
+                │
+                ├───────────── Basic: maps + matrices
+                │
+                ├───────────── Intermediate: derived analyses
+                │                 - rank–abundance
+                │                 - occupancy–abundance
+                │                 - SAR
+                │                 - distance–decay
+                │                 - rarefaction
+                │
+                └───────────── Advanced: panels + report
+                                  - generate_advanced_panel(res)
+                                  - generate_full_report(res)
 ```
-
-![](spesim-workflow_files/figure-html/workflow-diagram-1.png)
 
 ## Three levels of use
 
