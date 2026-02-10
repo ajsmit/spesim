@@ -1,0 +1,72 @@
+---
+title: "spesim recipes: environmental gradients"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{spesim recipes: environmental gradients}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  fig.align = "center"
+)
+```
+
+This short recipe shows how to turn **environmental filtering** on and off, and
+how to change **optima/tolerances** for gradient-responsive species.
+
+## Minimal run (no special gradients)
+
+```{r}
+library(spesim)
+
+P <- load_config(system.file("examples/spesim_init_basic.txt", package = "spesim"))
+P$N_SPECIES <- 10
+P$N_INDIVIDUALS <- 1500
+P$ADVANCED_ANALYSIS <- FALSE
+
+res0 <- run_spatial_simulation(P = P, write_outputs = FALSE)
+plot_spatial_sampling(res0$domain, res0$species_dist, res0$quadrats, res0$P)
+```
+
+## Make a few species respond strongly to a gradient
+
+Here we keep everything else the same but make the temperature-responsive species
+prefer warmer areas by shifting their **optimum** upward and tightening their
+**tolerance**.
+
+```{r}
+P2 <- P
+
+# A and B respond to temperature; C to elevation; D to rainfall (from the example init)
+# Push temperature optimum to the warm end and make the response sharper
+P2$GRADIENT_OPTIMA <- c(temperature = 0.80, elevation = 0.50, rainfall = 0.50)
+P2$GRADIENT_TOLERANCE <- c(temperature = 0.07, elevation = 0.12, rainfall = 0.12)
+
+res1 <- run_spatial_simulation(P = P2, write_outputs = FALSE)
+
+p1 <- plot_spatial_sampling(res1$domain, res1$species_dist, res1$quadrats, res1$P)
+
+# Show the underlying temperature field
+p2 <- plot_spatial_sampling(
+  res1$domain, res1$species_dist, res1$quadrats, res1$P,
+  show_gradient = TRUE,
+  env_gradients = res1$env_gradients,
+  gradient_type = "temperature_C"
+)
+
+p1
+p2
+```
+
+## Tip: reproducibility
+
+If you want exact repeatability for gradient-driven patterns, set the seed (via
+init file or `P$SEED`) and call `set.seed()` before running.

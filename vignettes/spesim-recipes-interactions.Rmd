@@ -1,0 +1,71 @@
+---
+title: "spesim recipes: interspecific interactions"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{spesim recipes: interspecific interactions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  fig.align = "center"
+)
+```
+
+This recipe shows how to specify simple **neighbour effects** using
+`INTERACTIONS_EDGELIST`.
+
+Values:
+
+- `< 1` suppressive (competition)
+- `> 1` facilitative
+- `= 1` neutral
+
+## Baseline (no interactions)
+
+```{r}
+library(spesim)
+
+P <- load_config(system.file("examples/spesim_init_basic.txt", package = "spesim"))
+P$N_SPECIES <- 10
+P$N_INDIVIDUALS <- 2000
+P$ADVANCED_ANALYSIS <- FALSE
+
+# Turn interactions off
+P$INTERACTION_RADIUS <- 0
+P$INTERACTIONS_EDGELIST <- NULL
+
+res0 <- run_spatial_simulation(P = P, write_outputs = FALSE, interactions_print = FALSE)
+plot_spatial_sampling(res0$domain, res0$species_dist, res0$quadrats, res0$P)
+```
+
+## Add a few directed interaction rules
+
+Here, species A suppresses B..D locally, and species C facilitates A.
+
+```{r}
+P2 <- P
+P2$INTERACTION_RADIUS <- 2
+P2$INTERACTIONS_EDGELIST <- c(
+  "A,B-D,0.7",
+  "C,A,1.3"
+)
+
+res1 <- run_spatial_simulation(P = P2, write_outputs = FALSE, interactions_print = TRUE)
+
+# Visualise the outcome
+plot_spatial_sampling(res1$domain, res1$species_dist, res1$quadrats, res1$P)
+```
+
+## Notes
+
+- Rules are **directed** (`A -> B` need not equal `B -> A`).
+- The global `INTERACTION_RADIUS` controls the neighbourhood size.
+- Keep `INTERACTION_RADIUS = 0` to disable the modifier.
