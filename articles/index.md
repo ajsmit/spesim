@@ -2,6 +2,8 @@
 
 ### Articles
 
+- [spesim workflow: basic → intermediate →
+  advanced](https://ajsmit.github.io/spesim/articles/spesim-workflow.md):
 - [Quadrat placement schemes in
   spesim](https://ajsmit.github.io/spesim/articles/spesim-quadrat-placement.md):
 - [Inside the Advanced Analysis
