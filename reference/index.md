@@ -71,5 +71,7 @@
   : Fast Geyer saturation simulator (bbox Metropolis–Hastings)
 - [`simulate_points_strauss_fast()`](https://ajsmit.github.io/spesim/reference/simulate_points_strauss_fast.md)
   : Fast Strauss simulator (Rcpp backend) returning an sf point layer
+- [`spesim_demo()`](https://ajsmit.github.io/spesim/reference/spesim_demo.md)
+  : Run a compact spesim demonstration workflow
 - [`validate_interactions()`](https://ajsmit.github.io/spesim/reference/validate_interactions.md)
   : Validate an interaction specification

@@ -11,13 +11,13 @@ Source:
 [`DESCRIPTION`](https://github.com/ajsmit/spesim/blob/main/DESCRIPTION)
 
 Smit A (2026). *spesim: Spatial Sampling Simulation for Heterogeneous
-Ecological Communities*. R package version 0.2.0,
+Ecological Communities*. R package version 0.3.0,
 <https://github.com/ajsmit/spesim>.
 
     @Manual{,
       title = {spesim: Spatial Sampling Simulation for Heterogeneous Ecological Communities},
       author = {AJ Smit},
       year = {2026},
-      note = {R package version 0.2.0},
+      note = {R package version 0.3.0},
       url = {https://github.com/ajsmit/spesim},
     }
