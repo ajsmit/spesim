@@ -11,7 +11,7 @@ labelled by quadrat id) using ggplot2."><meta property="og:image" content="https
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -22,8 +22,8 @@ labelled by quadrat id) using ggplot2."><meta property="og:image" content="https
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
-    <li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-quadrat-placement.html">Quadrat placement schemes in spesim</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-gradients.html">spesim recipes: environmental gradients</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-interactions.html">spesim recipes: interspecific interactions</a></li>
@@ -63,8 +63,8 @@ labelled by quadrat id) using <strong>ggplot2</strong>.</p>
 <span>  label_ids <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"yes"</span>, <span class="st">"no"</span><span class="op">)</span>,</span>
 <span>  label_threshold <span class="op">=</span> <span class="fl">40</span>,</span>
 <span>  id_col <span class="op">=</span> <span class="st">"quadrat_id"</span>,</span>
-<span>  show_voronoi <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  show_seeds <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  show_voronoi <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"yes"</span>, <span class="st">"no"</span><span class="op">)</span>,</span>
+<span>  show_seeds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"yes"</span>, <span class="st">"no"</span><span class="op">)</span>,</span>
 <span>  domain_colour <span class="op">=</span> <span class="st">"#22223b"</span>,</span>
 <span>  quadrat_colour <span class="op">=</span> <span class="st">"#22223b"</span>,</span>
 <span>  quadrat_fill <span class="op">=</span> <span class="st">"#4a4e69"</span>,</span>
@@ -114,15 +114,17 @@ Defaults to <code>"quadrat_id"</code>.</p></dd>
 
 
 <dt id="arg-show-voronoi">show_voronoi<a class="anchor" aria-label="anchor" href="#arg-show-voronoi"></a></dt>
-<dd><p>Logical. If <code>TRUE</code>, and the <code>quadrats</code> object carries a
-<code>"voronoi_cells"</code> attribute (as returned by
+<dd><p>Logical or character. If <code>TRUE</code>, and the <code>quadrats</code> object
+carries a <code>"voronoi_cells"</code> attribute (as returned by
 <code><a href="place_quadrats_voronoi.html">place_quadrats_voronoi()</a></code> with <code>show_voronoi = TRUE</code>), plot those Voronoi cell
-boundaries underneath the quadrats.</p></dd>
+boundaries underneath the quadrats. If <code>"auto"</code> (default), Voronoi overlays
+are shown only when the needed attributes are present.</p></dd>
 
 
 <dt id="arg-show-seeds">show_seeds<a class="anchor" aria-label="anchor" href="#arg-show-seeds"></a></dt>
-<dd><p>Logical. If <code>TRUE</code> and <code>show_voronoi = TRUE</code>, also plot the
-Voronoi seed points if present as a <code>"voronoi_seeds"</code> attribute.</p></dd>
+<dd><p>Logical or character. If <code>TRUE</code> and Voronoi overlays are
+enabled, also plot the Voronoi seed points if present as a <code>"voronoi_seeds"</code>
+attribute. If <code>"auto"</code> (default), seeds are shown when present.</p></dd>
 
 
 <dt id="arg-domain-colour-quadrat-colour">domain_colour, quadrat_colour<a class="anchor" aria-label="anchor" href="#arg-domain-colour-quadrat-colour"></a></dt>

@@ -16,15 +16,27 @@
 #'
 #' @keywords internal
 #' @noRd
+
 .parse_init_file <- function(filename) {
-  if (!file.exists(filename)) stop("Parameter file not found: ", filename)
+  if (!file.exists(filename)) {
+    stop(
+      "Parameter file not found: ", filename, "\n",
+      "Tip: run `list_examples()` to see shipped example init files."
+    )
+  }
+
   raw <- readLines(filename, warn = FALSE)
+  raw_line <- seq_along(raw)
 
   # Keep hex colours like "#22223b" by only removing comments that start
   # *after* some whitespace and a '#'. We do not remove inline '#' inside quotes.
   strip_comments <- function(x) sub("\\s+#.*$", "", x)
-  lines <- trimws(vapply(raw, strip_comments, character(1)))
-  lines <- lines[nzchar(lines)]
+  cleaned <- vapply(raw, strip_comments, character(1))
+  cleaned <- trimws(cleaned)
+
+  keep <- nzchar(cleaned)
+  lines <- cleaned[keep]
+  line_no <- raw_line[keep]
 
   # Gather key=value lines, allowing multi-line c(...)
   kvs <- list()
@@ -35,9 +47,11 @@
       i <- i + 1L
       next
     }
+
     parts <- strsplit(ln, "=", fixed = TRUE)[[1]]
     key <- trimws(parts[1])
     val <- trimws(paste(parts[-1], collapse = "="))
+    start_line <- line_no[i]
 
     if (grepl("^c\\s*\\(", val)) {
       # accumulate until balanced parentheses
@@ -50,12 +64,19 @@
         close <- stringr::str_count(val, "\\)")
       }
     }
-    kvs[[length(kvs) + 1L]] <- list(key = key, val = val)
+
+    kvs[[length(kvs) + 1L]] <- list(
+      key = key,
+      val = val,
+      line = start_line,
+      raw = raw[start_line] %||% ""
+    )
     i <- i + 1L
   }
 
-  parse_value <- function(v) {
+  parse_value <- function(v, ctx) {
     v <- trimws(v)
+
     # strip matching outer quotes
     v <- gsub('^"(.*)"$', "\\1", v)
     v <- gsub("^'(.*)'$", "\\1", v)
@@ -64,7 +85,12 @@
     if (grepl("^c\\s*\\(", v)) {
       out <- tryCatch(eval(parse(text = v)), error = function(e) e)
       if (inherits(out, "error")) {
-        stop("Could not parse vector literal: ", v, "\n", out$message)
+        stop(
+          "Could not parse vector literal at ", ctx$file, ":", ctx$line, "\n",
+          "Line: ", ctx$raw, "\n",
+          "Value: ", v, "\n",
+          out$message
+        )
       }
       return(out)
     }
@@ -107,7 +133,10 @@
   }
 
   out <- list()
-  for (kv in kvs) out[[kv$key]] <- parse_value(kv$val)
+  for (kv in kvs) {
+    ctx <- list(file = filename, line = kv$line, raw = kv$raw)
+    out[[kv$key]] <- parse_value(kv$val, ctx)
+  }
   out
 }
 

@@ -48,7 +48,7 @@
 # Silence R CMD check for NSE column names used in dplyr/ggplot2
 utils::globalVariables(c(
   # data columns used across verbs/plots
-  "site", "quadrat_id", "species", "x", "y", "X", "Y",
+  "site", "quadrat_id", "species", "x", "y", "X", "Y", "label",
   "Rank", "Abundance", "Source",
   "temperature_C", "elevation_m", "rainfall_mm",
   "richness", "n_ind", "Var1", "Freq",

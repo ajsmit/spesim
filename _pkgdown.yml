@@ -8,12 +8,79 @@ navbar:
     left:  [home, reference, articles, news]
     right: [github]
 
+reference:
+- title: "Getting started"
+  contents:
+  - spesim_demo
+  - spesim_run
+  - load_config
+  - validate_config
+  - list_examples
+  - spesim_use_example
+  - spesim_open_docs
+
+- title: "Simulation"
+  contents:
+  - run_spatial_simulation
+  - generate_heterogeneous_distribution
+  - create_sampling_domain
+  - create_environmental_gradients
+  - create_abundance_matrix
+  - calculate_quadrat_environment
+
+- title: "Quadrat placement"
+  contents:
+  - place_quadrats
+  - starts_with("place_quadrats_")
+
+- title: "Plotting"
+  contents:
+  - plot_quadrats
+  - plot_spatial_sampling
+  - theme_spesim
+
+- title: "Advanced analysis"
+  contents:
+  - generate_advanced_panel
+  - generate_full_report
+  - calculate_rank_abundance
+  - plot_rank_abundance
+  - calculate_occupancy_abundance
+  - plot_occupancy_abundance
+  - calculate_species_area
+  - plot_species_area
+  - calculate_distance_decay
+  - plot_distance_decay
+  - calculate_rarefaction
+  - plot_rarefaction
+
+- title: "Interactions"
+  contents:
+  - load_interactions
+  - load_interactions_inline
+  - validate_interactions
+  - print_interactions
+
+- title: "Point-process engines"
+  contents:
+  - rthomas_fast
+  - simulate_points_strauss_fast
+  - simulate_points_geyer_fast
+
+- title: "Reports"
+  contents:
+  - read_latest_report
+
+- title: "Utilities"
+  contents:
+  - generate_fisher_log_series
+
 articles:
 - title: "Articles"
   navbar: ~
   contents:
-  - spesim-public-api
   - spesim-workflow
+  - spesim-public-api
   - spesim-quadrat-placement
   - spesim-recipes-gradients
   - spesim-recipes-interactions

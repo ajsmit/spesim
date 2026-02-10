@@ -11,8 +11,8 @@ plot_quadrats(
   label_ids = c("auto", "yes", "no"),
   label_threshold = 40,
   id_col = "quadrat_id",
-  show_voronoi = FALSE,
-  show_seeds = FALSE,
+  show_voronoi = c("auto", "yes", "no"),
+  show_seeds = c("auto", "yes", "no"),
   domain_colour = "#22223b",
   quadrat_colour = "#22223b",
   quadrat_fill = "#4a4e69",
@@ -45,13 +45,15 @@ labels are shown only when the number of quadrats is at most
 \item{id_col}{Character scalar naming the quadrat id column in \code{quadrats}.
 Defaults to \code{"quadrat_id"}.}
 
-\item{show_voronoi}{Logical. If \code{TRUE}, and the \code{quadrats} object carries a
-\code{"voronoi_cells"} attribute (as returned by
+\item{show_voronoi}{Logical or character. If \code{TRUE}, and the \code{quadrats} object
+carries a \code{"voronoi_cells"} attribute (as returned by
 \code{\link[=place_quadrats_voronoi]{place_quadrats_voronoi()}} with \code{show_voronoi = TRUE}), plot those Voronoi cell
-boundaries underneath the quadrats.}
+boundaries underneath the quadrats. If \code{"auto"} (default), Voronoi overlays
+are shown only when the needed attributes are present.}
 
-\item{show_seeds}{Logical. If \code{TRUE} and \code{show_voronoi = TRUE}, also plot the
-Voronoi seed points if present as a \code{"voronoi_seeds"} attribute.}
+\item{show_seeds}{Logical or character. If \code{TRUE} and Voronoi overlays are
+enabled, also plot the Voronoi seed points if present as a \code{"voronoi_seeds"}
+attribute. If \code{"auto"} (default), seeds are shown when present.}
 
 \item{domain_colour, quadrat_colour}{Character scalars giving line colours for
 the domain outline and quadrat outlines.}

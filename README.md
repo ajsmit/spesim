@@ -63,16 +63,25 @@ package relies on common spatial/data/plotting libraries (see
 
 ## Vignettes (online)
 
-- [**Interactions (neighbour
-  effects)**](https://ajsmit.github.io/spesim/articles/spesim-interactions.html)
-- [**Full init-file
-  parameters**](https://ajsmit.github.io/spesim/articles/spesim-init-parameters.html)
-- [**Environmental
-  Gradients**](https://ajsmit.github.io/spesim/articles/spesim-env-gradients.html)
-- [**Advanced Analysis
-  Panel**](https://ajsmit.github.io/spesim/articles/spesim-advanced-panel.html)
-- [**Point
-  processes**](https://ajsmit.github.io/spesim/articles/spesim-point-processes.html)
+Start here:
+
+- [**Workflow overview**](https://ajsmit.github.io/spesim/articles/spesim-workflow.html)
+- [**Public API (what’s stable)**](https://ajsmit.github.io/spesim/articles/spesim-public-api.html)
+
+Core topics:
+
+- [**Quadrat placement**](https://ajsmit.github.io/spesim/articles/spesim-quadrat-placement.html)
+- [**Interactions (neighbour effects)**](https://ajsmit.github.io/spesim/articles/spesim-interactions.html)
+- [**Full init-file parameters**](https://ajsmit.github.io/spesim/articles/spesim-init-parameters.html)
+- [**Environmental gradients**](https://ajsmit.github.io/spesim/articles/spesim-env-gradients.html)
+- [**Advanced analysis panel**](https://ajsmit.github.io/spesim/articles/spesim-advanced-panel.html)
+- [**Point processes**](https://ajsmit.github.io/spesim/articles/spesim-point-processes.html)
+
+Recipes:
+
+- [**Recipes: gradients**](https://ajsmit.github.io/spesim/articles/spesim-recipes-gradients.html)
+- [**Recipes: interactions**](https://ajsmit.github.io/spesim/articles/spesim-recipes-interactions.html)
+- [**Recipes: point processes**](https://ajsmit.github.io/spesim/articles/spesim-recipes-point-processes.html)
 
 If reading on GitHub before the site is live, you’ll find the sources
 under `vignettes/`.
@@ -101,8 +110,8 @@ P$SAMPLING_SCHEME <- "random"
 P$N_QUADRATS <- 20
 P$QUADRAT_SIZE_OPTION <- "medium"
 
-# Run (skip writing to disk to keep examples snappy)
-res <- run_spatial_simulation(P = P, write_outputs = FALSE)
+# Run (recommended wrapper; skip writing to disk to keep examples snappy)
+res <- spesim_run(P, write_outputs = FALSE)
 
 # One-map view: individuals + quadrats (no gradient fill)
 p <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P)
@@ -122,7 +131,7 @@ p4 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P,
 ### Quick start (init file on disk)
 
 Prefer declaring everything in a text file? Point
-`run_spatial_simulation()` to it:
+`spesim_run()` to it:
 
 ``` r
 library(spesim)
@@ -134,8 +143,8 @@ init <- "inst/examples/spesim_init_complete.txt"   # or a path you created
 #          or via a separate interactions file set here:
 # interactions <- "inst/examples/interactions_init.txt"
 
-res <- run_spatial_simulation(
-  init_file = init,
+res <- spesim_run(
+  init,
   interactions_file = NULL,  # use inline settings if present
   output_prefix = "out/demo", 
   write_outputs = TRUE       # write CSVs, figures, report
@@ -152,7 +161,7 @@ str(res$abund_matrix)
 
 1.  **Set parameters**: either with an **init file** (see vignette) or
     in-memory (`load_config()` → edit fields).
-2.  **Run the simulator**: `run_spatial_simulation()`.
+2.  **Run the simulator**: `spesim_run()` (recommended) or `run_spatial_simulation()` (lower-level).
 3.  **Use the outputs**:
     - `res$abund_matrix` (site × species),
     - `res$site_coords` (quadrat centroids),
@@ -167,7 +176,8 @@ str(res$abund_matrix)
 
 | Function | Purpose |
 |----|----|
-| `run_spatial_simulation()` | End‑to‑end orchestrator; returns a results list and (optionally) writes CSVs/figures/report. |
+| `spesim_run()` | Recommended high-level runner; returns an S3 `spesim_result` and (optionally) writes outputs. |
+| `run_spatial_simulation()` | Lower-level orchestrator (more knobs; same core engine). |
 | `generate_heterogeneous_distribution()` | Place individuals using abundances, gradients, dominant clustering, and interactions. |
 | `create_abundance_matrix()` | Build site × species table by intersecting individuals with quadrats. |
 | `calculate_quadrat_environment()` | Mean environmental conditions per quadrat from the grid. |
