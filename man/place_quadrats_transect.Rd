@@ -69,8 +69,8 @@ qs <- place_quadrats_transect(
   quadrat_size = c(1.5, 1.5),
   angle = 45
 )
-plot(st_geometry(dom), col = “grey95”, border = “grey60”)
-plot(st_geometry(qs), add = TRUE, border = “black”, lwd = 1)
+plot(st_geometry(dom), col = "grey95", border = "grey60")
+plot(st_geometry(qs), add = TRUE, border = "black", lwd = 1)
 }
 }
 \seealso{

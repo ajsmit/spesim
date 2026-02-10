@@ -1,4 +1,20 @@
 url: https://ajsmit.github.io/spesim/
+
 template:
   bootstrap: 5
 
+navbar:
+  structure:
+    left:  [home, reference, articles, news]
+    right: [github]
+
+articles:
+- title: "Articles"
+  navbar: ~
+  contents:
+  - spesim-quadrat-placement
+  - spesim-advanced-panel
+  - spesim-env-gradients
+  - spesim-init-parameters
+  - spesim-interactions
+  - spesim-point-processes
