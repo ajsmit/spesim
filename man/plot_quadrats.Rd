@@ -8,15 +8,20 @@ plot_quadrats(
   domain,
   quadrats,
   title = NULL,
-  label_ids = TRUE,
+  label_ids = c("auto", "yes", "no"),
+  label_threshold = 40,
   id_col = "quadrat_id",
+  show_voronoi = FALSE,
+  show_seeds = FALSE,
   domain_colour = "#22223b",
   quadrat_colour = "#22223b",
   quadrat_fill = "#4a4e69",
   quadrat_alpha = 0.18,
   domain_linewidth = 0.7,
   quadrat_linewidth = 0.6,
-  label_size = 3
+  voronoi_linewidth = 0.5,
+  label_size = 3,
+  base_size = 12
 )
 }
 \arguments{
@@ -30,11 +35,23 @@ Typically returned by \code{\link[=place_quadrats]{place_quadrats()}}, \code{\li
 
 \item{title}{Optional character scalar used as the plot title.}
 
-\item{label_ids}{Logical. If \code{TRUE} (default), label each quadrat using the
-column given by \code{id_col}.}
+\item{label_ids}{Logical or character. If \code{TRUE}, label each quadrat using the
+column given by \code{id_col}. If \code{FALSE}, do not label. If \code{"auto"} (default),
+labels are shown only when the number of quadrats is at most
+\code{label_threshold}.}
+
+\item{label_threshold}{Integer. Only used when \code{label_ids = "auto"}.}
 
 \item{id_col}{Character scalar naming the quadrat id column in \code{quadrats}.
 Defaults to \code{"quadrat_id"}.}
+
+\item{show_voronoi}{Logical. If \code{TRUE}, and the \code{quadrats} object carries a
+\code{"voronoi_cells"} attribute (as returned by
+\code{\link[=place_quadrats_voronoi]{place_quadrats_voronoi()}} with \code{show_voronoi = TRUE}), plot those Voronoi cell
+boundaries underneath the quadrats.}
+
+\item{show_seeds}{Logical. If \code{TRUE} and \code{show_voronoi = TRUE}, also plot the
+Voronoi seed points if present as a \code{"voronoi_seeds"} attribute.}
 
 \item{domain_colour, quadrat_colour}{Character scalars giving line colours for
 the domain outline and quadrat outlines.}
@@ -45,7 +62,11 @@ the domain outline and quadrat outlines.}
 
 \item{domain_linewidth, quadrat_linewidth}{Numeric line widths.}
 
+\item{voronoi_linewidth}{Numeric line width for Voronoi cell boundaries.}
+
 \item{label_size}{Numeric text size for quadrat id labels.}
+
+\item{base_size}{Base font size passed to \code{ggplot2::theme_minimal()}.}
 }
 \value{
 A ggplot object.

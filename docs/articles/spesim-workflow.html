@@ -83,58 +83,45 @@ at each stage.</p>
 <div class="section level2">
 <h2 id="big-picture-workflow-flow-diagram">Big picture workflow (flow diagram)<a class="anchor" aria-label="anchor" href="#big-picture-workflow-flow-diagram"></a>
 </h2>
-<p>This diagram shows the main pipeline in a compact, teachable
-form.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># A dependency-free flow diagram (uses base R's grid package)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">grid</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.newpage.html" class="external-link">grid.newpage</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">box</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, <span class="va">w</span>, <span class="va">h</span>, <span class="va">label</span>, <span class="va">gp</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/gpar.html" class="external-link">gpar</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"grey95"</span>, col <span class="op">=</span> <span class="st">"grey40"</span>, lwd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/grid/grid.roundrect.html" class="external-link">grid.roundrect</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, width <span class="op">=</span> <span class="va">w</span>, height <span class="op">=</span> <span class="va">h</span>, r <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/unit.html" class="external-link">unit</a></span><span class="op">(</span><span class="fl">0.06</span>, <span class="st">"snpc"</span><span class="op">)</span>, gp <span class="op">=</span> <span class="va">gp</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/grid/grid.text.html" class="external-link">grid.text</a></span><span class="op">(</span><span class="va">label</span>, <span class="va">x</span>, <span class="va">y</span>, gp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/gpar.html" class="external-link">gpar</a></span><span class="op">(</span>col <span class="op">=</span> <span class="st">"grey10"</span>, cex <span class="op">=</span> <span class="fl">0.9</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="va">arrow_down</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">y0</span>, <span class="va">y1</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/grid/grid.lines.html" class="external-link">grid.lines</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/unit.html" class="external-link">unit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">x</span><span class="op">)</span>, <span class="st">"npc"</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/unit.html" class="external-link">unit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">y0</span>, <span class="va">y1</span><span class="op">)</span>, <span class="st">"npc"</span><span class="op">)</span>,</span>
-<span>             gp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/gpar.html" class="external-link">gpar</a></span><span class="op">(</span>col <span class="op">=</span> <span class="st">"grey30"</span>, lwd <span class="op">=</span> <span class="fl">1.2</span><span class="op">)</span>,</span>
-<span>             arrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/arrow.html" class="external-link">arrow</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"closed"</span>, length <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/unit.html" class="external-link">unit</a></span><span class="op">(</span><span class="fl">0.12</span>, <span class="st">"in"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="va">arrow_right</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x0</span>, <span class="va">x1</span>, <span class="va">y</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/grid/grid.lines.html" class="external-link">grid.lines</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/unit.html" class="external-link">unit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">x0</span>, <span class="va">x1</span><span class="op">)</span>, <span class="st">"npc"</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/unit.html" class="external-link">unit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">y</span><span class="op">)</span>, <span class="st">"npc"</span><span class="op">)</span>,</span>
-<span>             gp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/gpar.html" class="external-link">gpar</a></span><span class="op">(</span>col <span class="op">=</span> <span class="st">"grey30"</span>, lwd <span class="op">=</span> <span class="fl">1.1</span><span class="op">)</span>,</span>
-<span>             arrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/arrow.html" class="external-link">arrow</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"closed"</span>, length <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/unit.html" class="external-link">unit</a></span><span class="op">(</span><span class="fl">0.12</span>, <span class="st">"in"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="co"># Main spine</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/box.html" class="external-link">box</a></span><span class="op">(</span><span class="fl">0.30</span>, <span class="fl">0.82</span>, <span class="fl">0.52</span>, <span class="fl">0.16</span>,</span>
-<span>    <span class="st">"1) Configuration\n• load_config(init_file)\n• or tweak list P in R"</span><span class="op">)</span></span>
-<span><span class="fu">arrow_down</span><span class="op">(</span><span class="fl">0.30</span>, <span class="fl">0.74</span>, <span class="fl">0.67</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/box.html" class="external-link">box</a></span><span class="op">(</span><span class="fl">0.30</span>, <span class="fl">0.58</span>, <span class="fl">0.52</span>, <span class="fl">0.18</span>,</span>
-<span>    <span class="st">"2) Run simulation\nrun_spatial_simulation()\n• domain\n• individuals\n• quadrats\n• matrices"</span><span class="op">)</span></span>
-<span><span class="fu">arrow_down</span><span class="op">(</span><span class="fl">0.30</span>, <span class="fl">0.47</span>, <span class="fl">0.40</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/box.html" class="external-link">box</a></span><span class="op">(</span><span class="fl">0.30</span>, <span class="fl">0.30</span>, <span class="fl">0.70</span>, <span class="fl">0.22</span>,</span>
-<span>    <span class="st">"3) Primary outputs (in-memory; optional disk)\nres$species_dist  | res$quadrats\nres$abund_matrix  | res$env_gradients | res$site_coords"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Analysis branches</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/box.html" class="external-link">box</a></span><span class="op">(</span><span class="fl">0.78</span>, <span class="fl">0.38</span>, <span class="fl">0.38</span>, <span class="fl">0.12</span>, <span class="st">"Basic\nMaps + matrices"</span>, gp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/gpar.html" class="external-link">gpar</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"#d8f3dc"</span>, col <span class="op">=</span> <span class="st">"#40916c"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/box.html" class="external-link">box</a></span><span class="op">(</span><span class="fl">0.78</span>, <span class="fl">0.22</span>, <span class="fl">0.38</span>, <span class="fl">0.16</span>, <span class="st">"Intermediate\nSAD, OA, SAR,\ndistance–decay, rarefaction"</span>,</span>
-<span>    gp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/gpar.html" class="external-link">gpar</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"#e0fbfc"</span>, col <span class="op">=</span> <span class="st">"#3d5a80"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/box.html" class="external-link">box</a></span><span class="op">(</span><span class="fl">0.78</span>, <span class="fl">0.07</span>, <span class="fl">0.38</span>, <span class="fl">0.13</span>, <span class="st">"Advanced\nadvanced panel + report"</span>,</span>
-<span>    gp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/gpar.html" class="external-link">gpar</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"#ffe5d9"</span>, col <span class="op">=</span> <span class="st">"#b23a48"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">arrow_right</span><span class="op">(</span><span class="fl">0.63</span>, <span class="fl">0.66</span>, <span class="fl">0.38</span><span class="op">)</span></span>
-<span><span class="fu">arrow_right</span><span class="op">(</span><span class="fl">0.63</span>, <span class="fl">0.66</span>, <span class="fl">0.22</span><span class="op">)</span></span>
-<span><span class="fu">arrow_right</span><span class="op">(</span><span class="fl">0.63</span>, <span class="fl">0.66</span>, <span class="fl">0.07</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Minor caption</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/grid/grid.text.html" class="external-link">grid.text</a></span><span class="op">(</span><span class="st">"spesim workflow overview"</span>, x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/unit.html" class="external-link">unit</a></span><span class="op">(</span><span class="fl">0.02</span>, <span class="st">"npc"</span><span class="op">)</span>, y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/unit.html" class="external-link">unit</a></span><span class="op">(</span><span class="fl">0.98</span>, <span class="st">"npc"</span><span class="op">)</span>,</span>
-<span>          just <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"left"</span>, <span class="st">"top"</span><span class="op">)</span>, gp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/gpar.html" class="external-link">gpar</a></span><span class="op">(</span>cex <span class="op">=</span> <span class="fl">0.9</span>, col <span class="op">=</span> <span class="st">"grey30"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spesim-workflow_files/figure-html/workflow-diagram-1.png" class="r-plt" alt="" width="768" style="display: block; margin: auto;"></p>
+<p>Below is a compact workflow diagram showing the main pipeline.</p>
+<pre class="text"><code>┌──────────────────────────────┐
+│ 1) Configuration             │
+│   - load_config(init_file)   │
+│   - or tweak list P in R     │
+└───────────────┬──────────────┘
+                │
+                v
+┌──────────────────────────────┐
+│ 2) Run simulation            │
+│   run_spatial_simulation()   │
+│   - creates domain (or use)  │
+│   - simulates individuals    │
+│   - places quadrats          │
+│   - builds matrices          │
+└───────────────┬──────────────┘
+                │
+                v
+┌──────────────────────────────────────────────────────┐
+│ 3) Primary outputs (returned in-memory; optional disk)│
+│   res$species_dist   (individual points, with species)│
+│   res$quadrats       (quadrat polygons)               │
+│   res$abund_matrix   (site × species table)           │
+│   res$env_gradients  (gridded env fields)             │
+│   res$site_coords    (quadrat centroids)              │
+└───────────────┬──────────────────────────────────────┘
+                │
+                ├───────────── Basic: maps + matrices
+                │
+                ├───────────── Intermediate: derived analyses
+                │                 - rank–abundance
+                │                 - occupancy–abundance
+                │                 - SAR
+                │                 - distance–decay
+                │                 - rarefaction
+                │
+                └───────────── Advanced: panels + report
+                                  - generate_advanced_panel(res)
+                                  - generate_full_report(res)</code></pre>
 </div>
 <div class="section level2">
 <h2 id="three-levels-of-use">Three levels of use<a class="anchor" aria-label="anchor" href="#three-levels-of-use"></a>
