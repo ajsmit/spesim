@@ -230,15 +230,16 @@ screened for whether they can contain the quadrat (based on an inscribed
 circle heuristic). Quadrats are placed at cell centres.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">6</span><span class="op">)</span></span>
+<span><span class="co"># Note: very large voronoi_seed_factor values tend to create many small cells,</span></span>
+<span><span class="co"># which can make it impossible to fit larger quadrats. If you get an empty</span></span>
+<span><span class="co"># result, either reduce `voronoi_seed_factor` or use a smaller quadrat_size.</span></span>
 <span><span class="va">q_voronoi</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/place_quadrats_voronoi.html">place_quadrats_voronoi</a></span><span class="op">(</span></span>
 <span>  <span class="va">domain</span>,</span>
 <span>  n_quadrats <span class="op">=</span> <span class="fl">20</span>,</span>
-<span>  quadrat_size <span class="op">=</span> <span class="va">quadrat_size</span>,</span>
-<span>  voronoi_seed_factor <span class="op">=</span> <span class="fl">12</span></span>
+<span>  quadrat_size <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.2</span>, <span class="fl">1.2</span><span class="op">)</span>,</span>
+<span>  voronoi_seed_factor <span class="op">=</span> <span class="fl">4</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt; Warning in place_quadrats_voronoi(domain, n_quadrats = 20, quadrat_size =</span></span>
-<span><span class="co">#&gt; quadrat_size, : Voronoi placement failed: no suitable cells.</span></span>
-<span><span class="fu">plot_quadrats</span><span class="op">(</span><span class="va">domain</span>, <span class="va">q_voronoi</span>, <span class="st">"Voronoi placement (seed_factor = 12)"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">plot_quadrats</span><span class="op">(</span><span class="va">domain</span>, <span class="va">q_voronoi</span>, <span class="st">"Voronoi placement (seed_factor = 4; size = 1.2×1.2)"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="spesim-quadrat-placement_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
 <p><strong>Notes:</strong></p>
 <ul>

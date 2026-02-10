@@ -146,13 +146,16 @@ plot_quadrats(domain, q_transect, "Transect placement (2 transects, angle = 60°
 
 ```{r}
 set.seed(6)
+# Note: very large voronoi_seed_factor values tend to create many small cells,
+# which can make it impossible to fit larger quadrats. If you get an empty
+# result, either reduce `voronoi_seed_factor` or use a smaller quadrat_size.
 q_voronoi <- place_quadrats_voronoi(
   domain,
   n_quadrats = 20,
-  quadrat_size = quadrat_size,
-  voronoi_seed_factor = 12
+  quadrat_size = c(1.2, 1.2),
+  voronoi_seed_factor = 4
 )
-plot_quadrats(domain, q_voronoi, "Voronoi placement (seed_factor = 12)")
+plot_quadrats(domain, q_voronoi, "Voronoi placement (seed_factor = 4; size = 1.2×1.2)")
 ```
 
 **Notes:**
