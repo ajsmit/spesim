@@ -86,7 +86,13 @@ place_quadrats_voronoi <- function(domain, n_quadrats, quadrat_size, voronoi_see
   domain_union <- sf::st_union(domain)
   seed_points <- sf::st_sample(domain_union, size = n_seeds, type = "random")
   voronoi_polys <- sf::st_voronoi(sf::st_union(seed_points))
-  voronoi_clipped <- sf::st_intersection(sf::st_cast(voronoi_polys), domain_union)
+
+  # Cast/extract polygons and clip to the domain.
+  # Note: st_voronoi() may yield GEOMETRYCOLLECTION; extract polygons for plotting.
+  voronoi_geom <- sf::st_cast(voronoi_polys)
+  voronoi_geom <- sf::st_collection_extract(voronoi_geom, "POLYGON")
+  voronoi_clipped <- sf::st_intersection(voronoi_geom, domain_union)
+
   inscribed_circles <- suppressWarnings(sf::st_inscribed_circle(voronoi_clipped))
   quadrat_half_diag <- sqrt(quadrat_size[1]^2 + quadrat_size[2]^2) / 2
   radii <- sqrt(sf::st_area(inscribed_circles) / pi)
