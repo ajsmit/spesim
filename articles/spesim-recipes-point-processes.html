@@ -33,7 +33,8 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
+<li><a class="dropdown-item" href="../articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-quadrat-placement.html">Quadrat placement schemes in spesim</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-gradients.html">spesim recipes: environmental gradients</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-interactions.html">spesim recipes: interspecific interactions</a></li>
@@ -82,7 +83,7 @@ the dominant species (A) and for the remaining species.</p>
 <span><span class="va">P</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_config.html">load_config</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"examples/spesim_init_complete.txt"</span>, package <span class="op">=</span> <span class="st">"spesim"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========</span></span>
 <span><span class="va">P</span><span class="op">$</span><span class="va">N_SPECIES</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
-<span><span class="va">P</span><span class="op">$</span><span class="va">N_INDIVIDUALS</span> <span class="op">&lt;-</span> <span class="fl">1500</span></span>
+<span><span class="va">P</span><span class="op">$</span><span class="va">N_INDIVIDUALS</span> <span class="op">&lt;-</span> <span class="fl">1200</span></span>
 <span><span class="va">P</span><span class="op">$</span><span class="va">ADVANCED_ANALYSIS</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span></span>
 <span></span>
 <span><span class="co"># Keep interactions off for clarity</span></span>
@@ -97,13 +98,14 @@ the dominant species (A) and for the remaining species.</p>
 <span><span class="va">P1</span><span class="op">$</span><span class="va">SPATIAL_PROCESS_A</span> <span class="op">&lt;-</span> <span class="st">"poisson"</span></span>
 <span><span class="va">P1</span><span class="op">$</span><span class="va">SPATIAL_PROCESS_OTHERS</span> <span class="op">&lt;-</span> <span class="st">"poisson"</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="va">P</span><span class="op">$</span><span class="va">SEED</span><span class="op">)</span></span>
 <span><span class="va">res_pois</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_spatial_simulation.html">run_spatial_simulation</a></span><span class="op">(</span>P <span class="op">=</span> <span class="va">P1</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span>, interactions_print <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning in load_interactions(src_file, P$N_SPECIES): interactions_file not</span></span>
 <span><span class="co">#&gt; found; interactions disabled.</span></span>
 <span><span class="co">#&gt; Note: no non-1 interactions for species: A, B, C, D, E, F, G, H, I, J.</span></span>
 <span><span class="co">#&gt; ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========</span></span>
 <span><span class="co">#&gt; ========== SIMULATION PARAMETERS ==========</span></span>
-<span><span class="co">#&gt; list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1500, </span></span>
+<span><span class="co">#&gt; list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1200, </span></span>
 <span><span class="co">#&gt;     N_SPECIES = 10, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, </span></span>
 <span><span class="co">#&gt;     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D"), </span></span>
 <span><span class="co">#&gt;     GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", </span></span>
@@ -154,7 +156,7 @@ the dominant species (A) and for the remaining species.</p>
 <span><span class="co">#&gt; Note: no non-1 interactions for species: A, B, C, D, E, F, G, H, I, J.</span></span>
 <span><span class="co">#&gt; ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========</span></span>
 <span><span class="co">#&gt; ========== SIMULATION PARAMETERS ==========</span></span>
-<span><span class="co">#&gt; list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1500, </span></span>
+<span><span class="co">#&gt; list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1200, </span></span>
 <span><span class="co">#&gt;     N_SPECIES = 10, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, </span></span>
 <span><span class="co">#&gt;     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D"), </span></span>
 <span><span class="co">#&gt;     GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", </span></span>
@@ -203,7 +205,7 @@ the dominant species (A) and for the remaining species.</p>
 <span><span class="co">#&gt; Note: no non-1 interactions for species: A, B, C, D, E, F, G, H, I, J.</span></span>
 <span><span class="co">#&gt; ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========</span></span>
 <span><span class="co">#&gt; ========== SIMULATION PARAMETERS ==========</span></span>
-<span><span class="co">#&gt; list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1500, </span></span>
+<span><span class="co">#&gt; list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1200, </span></span>
 <span><span class="co">#&gt;     N_SPECIES = 10, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, </span></span>
 <span><span class="co">#&gt;     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D"), </span></span>
 <span><span class="co">#&gt;     GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", </span></span>
@@ -236,6 +238,57 @@ the dominant species (A) and for the remaining species.</p>
 <span><span class="co">#&gt; all geometries</span></span>
 <span><span class="fu"><a href="../reference/plot_spatial_sampling.html">plot_spatial_sampling</a></span><span class="op">(</span><span class="va">res_st</span><span class="op">$</span><span class="va">domain</span>, <span class="va">res_st</span><span class="op">$</span><span class="va">species_dist</span>, <span class="va">res_st</span><span class="op">$</span><span class="va">quadrats</span>, <span class="va">res_st</span><span class="op">$</span><span class="va">P</span><span class="op">)</span></span></code></pre></div>
 <p><img src="spesim-recipes-point-processes_files/figure-html/unnamed-chunk-4-1.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
+</div>
+<div class="section level2">
+<h2 id="consequences-in-the-advanced-analysis-panel-and-theory">Consequences in the advanced analysis panel (and theory)<a class="anchor" aria-label="anchor" href="#consequences-in-the-advanced-analysis-panel-and-theory"></a>
+</h2>
+<p>Different point processes correspond to different <em>mechanisms</em>
+of spatial structure:</p>
+<ul>
+<li>
+<strong>Poisson</strong> is a null model (complete spatial
+randomness).</li>
+<li>
+<strong>Thomas clustering</strong> is a proxy for limited dispersal
+or patchy habitat suitability, producing aggregated individuals.</li>
+<li>
+<strong>Strauss inhibition</strong> approximates
+territoriality/space limitation, producing repulsion among points.</li>
+</ul>
+<p>In the advanced panel, these differences often show up as:</p>
+<ul>
+<li>
+<strong>distance–decay</strong>: clustering can increase
+dissimilarity among quadrats, strengthening decay,</li>
+<li>
+<strong>species–area</strong>: more spatial structure can increase
+observed beta diversity, steepening the curve,</li>
+<li>
+<strong>rarefaction</strong>: strong aggregation can reduce
+per-quadrat richness at small sample sizes (more uneven encounter
+rates).</li>
+</ul>
+<p>Below we compare the advanced panel between Poisson, Thomas (A
+clustered), and Thomas + Strauss (others inhibited).</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p_pois</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_advanced_panel.html">generate_advanced_panel</a></span><span class="op">(</span><span class="va">res_pois</span><span class="op">)</span> <span class="op">+</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Poisson (CSR)"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="spesim-recipes-point-processes_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p_th</span>   <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_advanced_panel.html">generate_advanced_panel</a></span><span class="op">(</span><span class="va">res_th</span><span class="op">)</span>   <span class="op">+</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Thomas clustering for A"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="spesim-recipes-point-processes_files/figure-html/unnamed-chunk-5-2.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p_st</span>   <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_advanced_panel.html">generate_advanced_panel</a></span><span class="op">(</span><span class="va">res_st</span><span class="op">)</span>   <span class="op">+</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Thomas (A) + Strauss inhibition (others)"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="spesim-recipes-point-processes_files/figure-html/unnamed-chunk-5-3.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="op">(</span><span class="va">p_pois</span> <span class="op">/</span> <span class="va">p_th</span><span class="op">)</span> <span class="op">/</span> <span class="va">p_st</span></span>
+<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span>
+<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span>
+<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span>
+<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span>
+<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span>
+<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span></code></pre></div>
+<p><img src="spesim-recipes-point-processes_files/figure-html/unnamed-chunk-5-4.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
 <h2 id="notes">Notes<a class="anchor" aria-label="anchor" href="#notes"></a>

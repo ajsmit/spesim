@@ -13,9 +13,10 @@ library(spesim)
 P <- load_config(system.file("examples/spesim_init_basic.txt", package = "spesim"))
 #> ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========
 P$N_SPECIES <- 10
-P$N_INDIVIDUALS <- 1500
+P$N_INDIVIDUALS <- 1200
 P$ADVANCED_ANALYSIS <- FALSE
 
+set.seed(P$SEED)
 res0 <- run_spatial_simulation(P = P, write_outputs = FALSE)
 #> Note: no non-1 interactions for species: A, B, C, D, E, F, G, H, I, J.
 #> ---- Interactions Summary ----
@@ -38,7 +39,7 @@ res0 <- run_spatial_simulation(P = P, write_outputs = FALSE)
 #> ------------------------------
 #> ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========
 #> ========== SIMULATION PARAMETERS ==========
-#> list(SEED = 77L, OUTPUT_PREFIX = "out/run_basic", N_INDIVIDUALS = 1500, 
+#> list(SEED = 77L, OUTPUT_PREFIX = "out/run_basic", N_INDIVIDUALS = 1200, 
 #>     N_SPECIES = 10, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, 
 #>     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D"), 
 #>     GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", 
@@ -111,7 +112,7 @@ res1 <- run_spatial_simulation(P = P2, write_outputs = FALSE)
 #> ------------------------------
 #> ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========
 #> ========== SIMULATION PARAMETERS ==========
-#> list(SEED = 77L, OUTPUT_PREFIX = "out/run_basic", N_INDIVIDUALS = 1500, 
+#> list(SEED = 77L, OUTPUT_PREFIX = "out/run_basic", N_INDIVIDUALS = 1200, 
 #>     N_SPECIES = 10, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, 
 #>     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D"), 
 #>     GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", 
@@ -166,6 +167,47 @@ p2
 ```
 
 ![](spesim-recipes-gradients_files/figure-html/unnamed-chunk-2-2.png)
+
+## Consequences in the advanced analysis panel (and theory)
+
+Environmental filtering typically increases **spatial turnover** (beta
+diversity) when species have different optima along a gradient. In the
+advanced panel this often shows up as:
+
+- a stronger **distance–decay** signal (dissimilarity increases with
+  distance),
+- a steeper **species–area** curve (more quadrats needed to capture
+  gamma diversity),
+- and changes in **occupancy–abundance** patterns (specialists can be
+  abundant but occupy fewer sites).
+
+This is consistent with classic niche-based theory: species are sorted
+along environmental axes (e.g. temperature), so communities separated
+along the axis share fewer species.
+
+``` r
+# Compare advanced panels: baseline vs stronger filtering
+panel0 <- generate_advanced_panel(res0) + patchwork::plot_annotation(title = "Baseline: weak/default filtering")
+```
+
+![](spesim-recipes-gradients_files/figure-html/unnamed-chunk-3-1.png)
+
+``` r
+panel1 <- generate_advanced_panel(res1) + patchwork::plot_annotation(title = "Stronger temperature filtering")
+```
+
+![](spesim-recipes-gradients_files/figure-html/unnamed-chunk-3-2.png)
+
+``` r
+
+panel0 / panel1
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+```
+
+![](spesim-recipes-gradients_files/figure-html/unnamed-chunk-3-3.png)
 
 ## Tip: reproducibility
 

@@ -2,6 +2,8 @@
 
 ### Articles
 
+- [spesim public API (stability
+  guide)](https://ajsmit.github.io/spesim/articles/spesim-public-api.md):
 - [spesim workflow: basic → intermediate →
   advanced](https://ajsmit.github.io/spesim/articles/spesim-workflow.md):
 - [Quadrat placement schemes in

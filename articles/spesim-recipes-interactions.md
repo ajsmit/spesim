@@ -25,6 +25,7 @@ P$ADVANCED_ANALYSIS <- FALSE
 P$INTERACTION_RADIUS <- 0
 P$INTERACTIONS_EDGELIST <- NULL
 
+set.seed(P$SEED)
 res0 <- run_spatial_simulation(P = P, write_outputs = FALSE, interactions_print = FALSE)
 #> Note: no non-1 interactions for species: A, B, C, D, E, F, G, H, I, J.
 #> ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========
@@ -145,6 +146,47 @@ plot_spatial_sampling(res1$domain, res1$species_dist, res1$quadrats, res1$P)
 ```
 
 ![](spesim-recipes-interactions_files/figure-html/unnamed-chunk-2-1.png)
+
+## Consequences in the advanced analysis panel (and theory)
+
+Neighbour effects can change **co-occurrence patterns** and local
+abundance, which in turn changes what you observe in quadrats.
+
+In ecological terms, competition (coefficients \< 1) can create
+**spatial segregation** and reduce local richness in neighbourhoods
+dominated by a strong competitor, while facilitation (\> 1) can increase
+local co-occurrence.
+
+In the advanced panel, interaction effects can manifest as:
+
+- shifts in **occupancy–abundance** (suppressed species become rarer and
+  occupy fewer sites),
+- changes in **distance–decay** (if interactions amplify patchiness),
+- and altered **rarefaction** curves (effective evenness/richness per
+  site).
+
+``` r
+panel0 <- generate_advanced_panel(res0) + patchwork::plot_annotation(title = "Baseline: no interactions")
+```
+
+![](spesim-recipes-interactions_files/figure-html/unnamed-chunk-3-1.png)
+
+``` r
+panel1 <- generate_advanced_panel(res1) + patchwork::plot_annotation(title = "With neighbour interactions")
+```
+
+![](spesim-recipes-interactions_files/figure-html/unnamed-chunk-3-2.png)
+
+``` r
+
+panel0 / panel1
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+```
+
+![](spesim-recipes-interactions_files/figure-html/unnamed-chunk-3-3.png)
 
 ## Notes
 

@@ -12,7 +12,7 @@ library(spesim)
 P <- load_config(system.file("examples/spesim_init_complete.txt", package = "spesim"))
 #> ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========
 P$N_SPECIES <- 10
-P$N_INDIVIDUALS <- 1500
+P$N_INDIVIDUALS <- 1200
 P$ADVANCED_ANALYSIS <- FALSE
 
 # Keep interactions off for clarity
@@ -27,13 +27,14 @@ P1 <- P
 P1$SPATIAL_PROCESS_A <- "poisson"
 P1$SPATIAL_PROCESS_OTHERS <- "poisson"
 
+set.seed(P$SEED)
 res_pois <- run_spatial_simulation(P = P1, write_outputs = FALSE, interactions_print = FALSE)
 #> Warning in load_interactions(src_file, P$N_SPECIES): interactions_file not
 #> found; interactions disabled.
 #> Note: no non-1 interactions for species: A, B, C, D, E, F, G, H, I, J.
 #> ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========
 #> ========== SIMULATION PARAMETERS ==========
-#> list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1500, 
+#> list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1200, 
 #>     N_SPECIES = 10, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, 
 #>     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D"), 
 #>     GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", 
@@ -85,7 +86,7 @@ res_th <- run_spatial_simulation(P = P2, write_outputs = FALSE, interactions_pri
 #> Note: no non-1 interactions for species: A, B, C, D, E, F, G, H, I, J.
 #> ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========
 #> ========== SIMULATION PARAMETERS ==========
-#> list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1500, 
+#> list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1200, 
 #>     N_SPECIES = 10, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, 
 #>     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D"), 
 #>     GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", 
@@ -135,7 +136,7 @@ res_st <- run_spatial_simulation(P = P3, write_outputs = FALSE, interactions_pri
 #> Note: no non-1 interactions for species: A, B, C, D, E, F, G, H, I, J.
 #> ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========
 #> ========== SIMULATION PARAMETERS ==========
-#> list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1500, 
+#> list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1200, 
 #>     N_SPECIES = 10, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, 
 #>     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D"), 
 #>     GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", 
@@ -170,6 +171,60 @@ plot_spatial_sampling(res_st$domain, res_st$species_dist, res_st$quadrats, res_s
 ```
 
 ![](spesim-recipes-point-processes_files/figure-html/unnamed-chunk-4-1.png)
+
+## Consequences in the advanced analysis panel (and theory)
+
+Different point processes correspond to different *mechanisms* of
+spatial structure:
+
+- **Poisson** is a null model (complete spatial randomness).
+- **Thomas clustering** is a proxy for limited dispersal or patchy
+  habitat suitability, producing aggregated individuals.
+- **Strauss inhibition** approximates territoriality/space limitation,
+  producing repulsion among points.
+
+In the advanced panel, these differences often show up as:
+
+- **distance–decay**: clustering can increase dissimilarity among
+  quadrats, strengthening decay,
+- **species–area**: more spatial structure can increase observed beta
+  diversity, steepening the curve,
+- **rarefaction**: strong aggregation can reduce per-quadrat richness at
+  small sample sizes (more uneven encounter rates).
+
+Below we compare the advanced panel between Poisson, Thomas (A
+clustered), and Thomas + Strauss (others inhibited).
+
+``` r
+p_pois <- generate_advanced_panel(res_pois) + patchwork::plot_annotation(title = "Poisson (CSR)")
+```
+
+![](spesim-recipes-point-processes_files/figure-html/unnamed-chunk-5-1.png)
+
+``` r
+p_th   <- generate_advanced_panel(res_th)   + patchwork::plot_annotation(title = "Thomas clustering for A")
+```
+
+![](spesim-recipes-point-processes_files/figure-html/unnamed-chunk-5-2.png)
+
+``` r
+p_st   <- generate_advanced_panel(res_st)   + patchwork::plot_annotation(title = "Thomas (A) + Strauss inhibition (others)")
+```
+
+![](spesim-recipes-point-processes_files/figure-html/unnamed-chunk-5-3.png)
+
+``` r
+
+(p_pois / p_th) / p_st
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+```
+
+![](spesim-recipes-point-processes_files/figure-html/unnamed-chunk-5-4.png)
 
 ## Notes
 

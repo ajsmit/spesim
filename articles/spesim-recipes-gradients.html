@@ -33,7 +33,8 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
+<li><a class="dropdown-item" href="../articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-quadrat-placement.html">Quadrat placement schemes in spesim</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-gradients.html">spesim recipes: environmental gradients</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-interactions.html">spesim recipes: interspecific interactions</a></li>
@@ -83,9 +84,10 @@ filtering</strong> on and off, and how to change
 <span><span class="va">P</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_config.html">load_config</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"examples/spesim_init_basic.txt"</span>, package <span class="op">=</span> <span class="st">"spesim"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========</span></span>
 <span><span class="va">P</span><span class="op">$</span><span class="va">N_SPECIES</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
-<span><span class="va">P</span><span class="op">$</span><span class="va">N_INDIVIDUALS</span> <span class="op">&lt;-</span> <span class="fl">1500</span></span>
+<span><span class="va">P</span><span class="op">$</span><span class="va">N_INDIVIDUALS</span> <span class="op">&lt;-</span> <span class="fl">1200</span></span>
 <span><span class="va">P</span><span class="op">$</span><span class="va">ADVANCED_ANALYSIS</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span></span>
 <span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="va">P</span><span class="op">$</span><span class="va">SEED</span><span class="op">)</span></span>
 <span><span class="va">res0</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_spatial_simulation.html">run_spatial_simulation</a></span><span class="op">(</span>P <span class="op">=</span> <span class="va">P</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Note: no non-1 interactions for species: A, B, C, D, E, F, G, H, I, J.</span></span>
 <span><span class="co">#&gt; ---- Interactions Summary ----</span></span>
@@ -108,7 +110,7 @@ filtering</strong> on and off, and how to change
 <span><span class="co">#&gt; ------------------------------</span></span>
 <span><span class="co">#&gt; ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========</span></span>
 <span><span class="co">#&gt; ========== SIMULATION PARAMETERS ==========</span></span>
-<span><span class="co">#&gt; list(SEED = 77L, OUTPUT_PREFIX = "out/run_basic", N_INDIVIDUALS = 1500, </span></span>
+<span><span class="co">#&gt; list(SEED = 77L, OUTPUT_PREFIX = "out/run_basic", N_INDIVIDUALS = 1200, </span></span>
 <span><span class="co">#&gt;     N_SPECIES = 10, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, </span></span>
 <span><span class="co">#&gt;     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D"), </span></span>
 <span><span class="co">#&gt;     GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", </span></span>
@@ -180,7 +182,7 @@ temperature-responsive species prefer warmer areas by shifting their
 <span><span class="co">#&gt; ------------------------------</span></span>
 <span><span class="co">#&gt; ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========</span></span>
 <span><span class="co">#&gt; ========== SIMULATION PARAMETERS ==========</span></span>
-<span><span class="co">#&gt; list(SEED = 77L, OUTPUT_PREFIX = "out/run_basic", N_INDIVIDUALS = 1500, </span></span>
+<span><span class="co">#&gt; list(SEED = 77L, OUTPUT_PREFIX = "out/run_basic", N_INDIVIDUALS = 1200, </span></span>
 <span><span class="co">#&gt;     N_SPECIES = 10, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, </span></span>
 <span><span class="co">#&gt;     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D"), </span></span>
 <span><span class="co">#&gt;     GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", </span></span>
@@ -230,6 +232,39 @@ temperature-responsive species prefer warmer areas by shifting their
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p2</span></span></code></pre></div>
 <p><img src="spesim-recipes-gradients_files/figure-html/unnamed-chunk-2-2.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
+</div>
+<div class="section level2">
+<h2 id="consequences-in-the-advanced-analysis-panel-and-theory">Consequences in the advanced analysis panel (and theory)<a class="anchor" aria-label="anchor" href="#consequences-in-the-advanced-analysis-panel-and-theory"></a>
+</h2>
+<p>Environmental filtering typically increases <strong>spatial
+turnover</strong> (beta diversity) when species have different optima
+along a gradient. In the advanced panel this often shows up as:</p>
+<ul>
+<li>a stronger <strong>distance–decay</strong> signal (dissimilarity
+increases with distance),</li>
+<li>a steeper <strong>species–area</strong> curve (more quadrats needed
+to capture gamma diversity),</li>
+<li>and changes in <strong>occupancy–abundance</strong> patterns
+(specialists can be abundant but occupy fewer sites).</li>
+</ul>
+<p>This is consistent with classic niche-based theory: species are
+sorted along environmental axes (e.g. temperature), so communities
+separated along the axis share fewer species.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Compare advanced panels: baseline vs stronger filtering</span></span>
+<span><span class="va">panel0</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_advanced_panel.html">generate_advanced_panel</a></span><span class="op">(</span><span class="va">res0</span><span class="op">)</span> <span class="op">+</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Baseline: weak/default filtering"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="spesim-recipes-gradients_files/figure-html/unnamed-chunk-3-1.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">panel1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_advanced_panel.html">generate_advanced_panel</a></span><span class="op">(</span><span class="va">res1</span><span class="op">)</span> <span class="op">+</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Stronger temperature filtering"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="spesim-recipes-gradients_files/figure-html/unnamed-chunk-3-2.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="va">panel0</span> <span class="op">/</span> <span class="va">panel1</span></span>
+<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span>
+<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span>
+<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span>
+<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span></code></pre></div>
+<p><img src="spesim-recipes-gradients_files/figure-html/unnamed-chunk-3-3.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
 <h2 id="tip-reproducibility">Tip: reproducibility<a class="anchor" aria-label="anchor" href="#tip-reproducibility"></a>
