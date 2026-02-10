@@ -163,8 +163,6 @@ q_voronoi <- place_quadrats_voronoi(
   voronoi_seed_factor = 4,
   show_voronoi = TRUE
 )
-#> Warning in st_collection_extract.sfc(voronoi_geom, "POLYGON"): x is already of
-#> type POLYGON.
 
 # Standard view (domain + quadrats)
 plot_quadrats(domain, q_voronoi, "Voronoi placement (seed_factor = 4; size = 1.2×1.2)")
