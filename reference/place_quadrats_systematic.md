@@ -75,3 +75,17 @@ An sf object (polygons) with:
 (Voronoi‑based centers)
 
 ## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+library(sf)
+dom <- create_sampling_domain()
+qs  <- place_quadrats_systematic(
+  domain = dom,
+  n_quadrats = 24,
+  quadrat_size = c(1.5, 1.5)
+)
+plot(st_geometry(dom), col = "grey95", border = "grey60")
+plot(st_geometry(qs), add = TRUE, border = "black", lwd = 1)
+} # }
+```

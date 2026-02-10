@@ -73,3 +73,14 @@ An sf object (polygons) with two columns:
 (via Voronoi cells)
 
 ## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+library(sf)
+set.seed(1)
+dom <- create_sampling_domain()
+qs  <- place_quadrats_tiled(dom, n_quadrats = 12, quadrat_size = c(1.5, 1.5))
+plot(st_geometry(dom), col = "grey95", border = "grey60")
+plot(st_geometry(qs), add = TRUE, border = "black", lwd = 1)
+} # }
+```

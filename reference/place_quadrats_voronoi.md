@@ -11,7 +11,13 @@ well‑spaced sampling locations even in irregular polygons.
 ## Usage
 
 ``` r
-place_quadrats_voronoi(domain, n_quadrats, quadrat_size, voronoi_seed_factor)
+place_quadrats_voronoi(
+  domain,
+  n_quadrats,
+  quadrat_size,
+  voronoi_seed_factor,
+  show_voronoi = FALSE
+)
 ```
 
 ## Arguments
@@ -40,6 +46,12 @@ place_quadrats_voronoi(domain, n_quadrats, quadrat_size, voronoi_seed_factor)
   voronoi_seed_factor. Use larger values (e.g., 8–20) in very irregular
   or narrow domains to improve coverage.
 
+- show_voronoi:
+
+  Logical. If TRUE, the returned sf object (quadrats) will carry
+  additional attributes that can be used to visualise the underlying
+  Voronoi tessellation used to select candidate cells.
+
 ## Value
 
 An sf object (polygons) with:
@@ -51,6 +63,20 @@ An sf object (polygons) with:
 - geometry:
 
   Axis‑aligned rectangular polygon for each quadrat.
+
+If `show_voronoi = TRUE`, the returned object also has attributes:
+
+- voronoi_cells:
+
+  An sf object with the Voronoi polygons clipped to the domain.
+
+- voronoi_seeds:
+
+  An sfc POINT collection of the random seed points.
+
+- inscribed_circles:
+
+  An sfc POLYGON collection of inscribed-circle polygons.
 
 ## Details
 
@@ -91,3 +117,21 @@ An sf object (polygons) with:
 (parallel transects)
 
 ## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+library(sf)
+set.seed(2)
+dom <- create_sampling_domain()
+qs  <- place_quadrats_voronoi(
+  domain = dom,
+  n_quadrats = 20,
+  quadrat_size = c(1.5, 1.5),
+  voronoi_seed_factor = 12,
+  show_voronoi = TRUE
+)
+plot(st_geometry(dom), col = "grey95", border = "grey60")
+plot(st_geometry(attr(qs, "voronoi_cells")), add = TRUE, border = "grey80")
+plot(st_geometry(qs), add = TRUE, border = "black", lwd = 1)
+} # }
+```

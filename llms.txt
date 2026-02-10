@@ -311,8 +311,10 @@ MIT License — see `LICENSE`.
 
 # Articles
 
-### All vignettes
+### Articles
 
+- [Quadrat placement schemes in
+  spesim](https://ajsmit.github.io/spesim/articles/spesim-quadrat-placement.md):
 - [Inside the Advanced Analysis
   Panel](https://ajsmit.github.io/spesim/articles/spesim-advanced-panel.md):
 - [Simulating Environmental Gradients with
