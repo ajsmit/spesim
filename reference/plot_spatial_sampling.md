@@ -50,13 +50,13 @@ plot_spatial_sampling(
   - `POINT_ALPHA` (`numeric` in \\(0,1)\\, default `1`) — point
     transparency,
 
-  - `QUADRAT_COLOUR` (`character`, default `“black”`) — quadrat
+  - `QUADRAT_COLOUR` (`character`, default `"black"`) — quadrat
     outline/label colour,
 
-  - `BACKGROUND_COLOUR` (`character`, default `“white”`) — plot
+  - `BACKGROUND_COLOUR` (`character`, default `"white"`) — plot
     background,
 
-  - `FOREGROUND_COLOUR` (`character`, default `”#22223b”`) — domain
+  - `FOREGROUND_COLOUR` (`character`, default `"#22223b"`) — domain
     outline/title colour,
 
   - `N_SPECIES` (`integer`) — used to size the palette; inferred from
@@ -81,7 +81,7 @@ plot_spatial_sampling(
 - gradient_type:
 
   Character scalar naming the column in `env_gradients` to plot when
-  `show_gradient = TRUE`. Default `“temperature_C”`. The legend title is
+  `show_gradient = TRUE`. Default `"temperature_C"`. The legend title is
   derived from this name (underscores replaced with spaces and
   title‑cased).
 
@@ -92,7 +92,7 @@ A `ggplot` object that can be further modified (themes, scales, etc.).
 ## Details
 
 Colors for species are drawn from colorspace `sequential_hcl` palette
-“RdPu” (reversed) and mapped to the unique species present. All layers
+"RdPu" (reversed) and mapped to the unique species present. All layers
 are plotted in the current display CRS of the provided `sf` objects;
 ensure consistent CRS across inputs. When `show_gradient = TRUE`, the
 raster is drawn first with partial transparency so the domain outline
@@ -105,3 +105,13 @@ and points remain visible.
 [`create_environmental_gradients()`](https://ajsmit.github.io/spesim/reference/create_environmental_gradients.md)
 
 ## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+p <- plot_spatial_sampling(domain, species_sf, quadrats_sf, P,
+                           show_gradient = TRUE,
+                           env_gradients = env_df,
+                           gradient_type = "elevation_m")
+p + ggplot2::theme(legend.position = "right")
+} # }
+```
