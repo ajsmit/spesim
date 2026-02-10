@@ -12,8 +12,9 @@ FISHER_ALPHA = 3.5
 FISHER_X = 0.96
 
 # Gradients: B,C,D respond (two temperature, one elevation)
-GRADIENT_SPECIES = c(B, C, D)
-GRADIENT_ASSIGNMENTS = c(temperature, temperature, elevation)
+# NOTE: strings inside c(...) must be quoted for the init-file parser.
+GRADIENT_SPECIES = c("B", "C", "D")
+GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation")
 GRADIENT_OPTIMA = temperature:0.60, elevation:0.35
 GRADIENT_TOLERANCE = temperature:0.10, elevation:0.12
 SAMPLING_RESOLUTION = 60

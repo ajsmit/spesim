@@ -1,0 +1,31 @@
+# spesim: basic example init file
+# Designed to run quickly and work out-of-the-box.
+
+SEED = 77
+OUTPUT_PREFIX = "out/run_basic"
+
+# Community size and SAD
+N_INDIVIDUALS = 2000
+N_SPECIES = 10
+DOMINANT_FRACTION = 0.30
+FISHER_ALPHA = 4.2
+FISHER_X = 0.95
+
+# Simple gradient setup (optional; safe defaults)
+GRADIENT_SPECIES = A, B, C, D
+GRADIENT_ASSIGNMENTS = temperature, temperature, elevation, rainfall
+GRADIENT_OPTIMA = 0.50
+GRADIENT_TOLERANCE = 0.12
+SAMPLING_RESOLUTION = 50
+ENVIRONMENTAL_NOISE = 0.05
+
+# No local interaction modifier in the basic example
+INTERACTION_RADIUS = 0
+
+# Sampling
+SAMPLING_SCHEME = "random"
+N_QUADRATS = 20
+QUADRAT_SIZE_OPTION = "medium"
+
+# Output (keep examples/CI snappy)
+ADVANCED_ANALYSIS = FALSE
