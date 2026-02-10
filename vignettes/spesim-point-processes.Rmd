@@ -7,7 +7,7 @@ output:
     toc: true
     toc_depth: 3
 vignette: >
-  %\VignetteIndexEntry{Point Processes in spesim}
+  %\VignetteIndexEntry{Point Processes in spesim: Options and Intuition}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

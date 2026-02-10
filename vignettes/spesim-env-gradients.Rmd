@@ -7,7 +7,7 @@ output:
     toc: true
     toc_depth: 3
 vignette: >
-  %\VignetteIndexEntry{Simulating Environmental Gradients}
+  %\VignetteIndexEntry{Simulating Environmental Gradients with spesim}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

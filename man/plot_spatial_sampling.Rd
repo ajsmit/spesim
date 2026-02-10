@@ -30,9 +30,9 @@ if present (each has a default if missing):
 \itemize{
 \item \code{POINT_SIZE} (\code{numeric}, default \code{0.2}) — point size for individuals,
 \item \code{POINT_ALPHA} (\code{numeric} in \eqn{(0,1)}, default \code{1}) — point transparency,
-\item \code{QUADRAT_COLOUR} (\code{character}, default \code{“black”}) — quadrat outline/label colour,
-\item \code{BACKGROUND_COLOUR} (\code{character}, default \code{“white”}) — plot background,
-\item \code{FOREGROUND_COLOUR} (\code{character}, default \code{”#22223b”}) — domain outline/title colour,
+\item \code{QUADRAT_COLOUR} (\code{character}, default \code{"black"}) — quadrat outline/label colour,
+\item \code{BACKGROUND_COLOUR} (\code{character}, default \code{"white"}) — plot background,
+\item \code{FOREGROUND_COLOUR} (\code{character}, default \code{"#22223b"}) — domain outline/title colour,
 \item \code{N_SPECIES} (\code{integer}) — used to size the palette; inferred from data if absent,
 \item \code{N_INDIVIDUALS} (\code{integer}) — used only for the subtitle count if available.
 }}
@@ -46,7 +46,7 @@ numeric columns representing environmental variables (e.g., \code{temperature_C}
 \code{elevation_m}, \code{rainfall_mm}). The column named by \code{gradient_type} must exist and be numeric.}
 
 \item{gradient_type}{Character scalar naming the column in \code{env_gradients} to plot when
-\code{show_gradient = TRUE}. Default \code{“temperature_C”}. The legend title is derived from this
+\code{show_gradient = TRUE}. Default \code{"temperature_C"}. The legend title is derived from this
 name (underscores replaced with spaces and title‑cased).}
 }
 \value{
@@ -59,7 +59,7 @@ species; sampling quadrats (POLYGONs) are drawn with IDs. Optionally an environm
 raster/heat field is shown underneath for context.
 }
 \details{
-Colors for species are drawn from \pkg{colorspace} \code{sequential_hcl} palette “RdPu” (reversed)
+Colors for species are drawn from \pkg{colorspace} \code{sequential_hcl} palette "RdPu" (reversed)
 and mapped to the unique species present. All layers are plotted in the current display CRS of
 the provided \code{sf} objects; ensure consistent CRS across inputs. When \code{show_gradient = TRUE},
 the raster is drawn first with partial transparency so the domain outline and points remain visible.
@@ -69,8 +69,8 @@ the raster is drawn first with partial transparency so the domain outline and po
 p <- plot_spatial_sampling(domain, species_sf, quadrats_sf, P,
                            show_gradient = TRUE,
                            env_gradients = env_df,
-                           gradient_type = “elevation_m”)
-p + ggplot2::theme(legend.position = “right”)
+                           gradient_type = "elevation_m")
+p + ggplot2::theme(legend.position = "right")
 }
 }
 \seealso{
