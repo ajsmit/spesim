@@ -379,8 +379,14 @@ MIT License — see `LICENSE`.
 
 ### Articles
 
+- [Start
+  here](https://ajsmit.github.io/spesim/articles/spesim-start-here.md):
+- [spesim model card (what it is, and what it
+  isn't)](https://ajsmit.github.io/spesim/articles/spesim-model-card.md):
 - [spesim workflow: basic → intermediate →
   advanced](https://ajsmit.github.io/spesim/articles/spesim-workflow.md):
+- [Validation & sanity
+  checks](https://ajsmit.github.io/spesim/articles/spesim-validation.md):
 - [spesim public API (stability
   guide)](https://ajsmit.github.io/spesim/articles/spesim-public-api.md):
 - [Quadrat placement schemes in

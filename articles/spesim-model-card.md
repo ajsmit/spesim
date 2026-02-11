@@ -1,0 +1,116 @@
+# spesim model card (what it is, and what it isn't)
+
+## Purpose
+
+**spesim** is designed for **teaching**, **methods testing**, and
+**exploratory research**.
+
+It helps you create a *known* spatial “truth” (individual locations, a
+sampling design, and derived site $\times$ species data) so you can:
+
+- demonstrate concepts (environmental filtering, distance–decay,
+  $\beta$-diversity),
+- compare sampling schemes (random vs transect vs Voronoi, etc.),
+- stress-test metrics and workflows on controlled scenarios.
+
+## What the simulator actually generates
+
+A typical run produces:
+
+1.  **A domain**: an `sf` polygon. The built-in domain is synthetic and
+    uses arbitrary planar units.
+2.  **Environmental gradients**: gridded synthetic fields (temperature,
+    elevation, rainfall) generated over the domain.
+3.  **A community of individuals**: `sf` point locations with species
+    labels.
+4.  **Quadrat samples**: `sf` polygons representing the sampling design.
+5.  **Derived data**:
+    - site $\times$ species abundance matrix,
+    - per-quadrat mean environment,
+    - classic diagnostic summaries/plots (SAD, SAR, rarefaction,
+      distance–decay).
+
+## What the parameters mean (in plain language)
+
+### Species–abundance distribution (SAD)
+
+- Non-dominant species are drawn from a Fisher log-series tail.
+- A configurable dominant fraction is allocated to a “dominant species”.
+
+This is primarily a **pedagogical control**: it creates
+realistic-looking rank– abundance curves without requiring a mechanistic
+population model.
+
+### Environmental filtering
+
+Species can be assigned to named gradients with an **optimum** and
+**tolerance**.
+
+- “Optimum” = where along the gradient a species does best.
+- “Tolerance” = how broad the response is.
+
+This is implemented as a **Gaussian response** on a normalised 0–1
+gradient internally.
+
+### Spatial structure and interactions
+
+spesim supports several ways to introduce spatial structure:
+
+- **CSR baseline** (Complete Spatial Randomness): homogeneous Poisson.
+- **Clustering**: tunable clustering behaviour (including fast engines).
+- **Inhibition**: “repulsion” style processes (Strauss/Geyer fast
+  engines).
+- **Neighbour effects**: a directed coefficient matrix applied within a
+  single global interaction radius (values \< 1 suppress; \> 1
+  facilitate; 1 neutral).
+
+These are intended to create **interpretable spatial patterns** for
+teaching and experimentation.
+
+## What spesim is *not*
+
+spesim is **not** a full mechanistic ecological simulator. In
+particular, it does *not* attempt to model:
+
+- demography (births/deaths),
+- explicit dispersal kernels as a population process,
+- temporal dynamics or succession,
+- detectability/observation error (unless you add it downstream),
+- parameter inference / likelihood-based point process modelling.
+
+If you need those, consider pairing spesim with specialised tools (e.g.
+**spatstat** for point process inference/diagnostics, or domain-specific
+individual-based/metacommunity simulators).
+
+## Valid interpretations (and common misinterpretations)
+
+**Valid:**
+
+- “If I impose stronger environmental filtering, does distance–decay
+  increase?”
+- “How does a transect design compare to random quadrats for SAR shape?”
+- “Do my diversity metrics behave sensibly under known gradients?”
+
+**Not valid without extra work:**
+
+- “This coefficient equals a real competition parameter.”
+- “The ‘temperature’ units correspond to a real landscape unless I
+  supplied one with a known CRS/units.”
+
+## Reproducibility checklist
+
+- Set (and record) `SEED` in your init file (or pass `seed=` to
+  [`spesim_run()`](https://ajsmit.github.io/spesim/reference/spesim_run.md)).
+- If you regenerate advanced panels or vegan-derived summaries
+  separately, call `set.seed(SEED)` immediately beforehand.
+
+## Minimal example
+
+``` r
+library(spesim)
+
+P <- load_config(system.file("examples/spesim_init_basic.txt", package = "spesim"))
+res <- spesim_run(P, write_outputs = FALSE, seed = 77)
+
+plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P)
+```
