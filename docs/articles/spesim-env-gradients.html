@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -209,6 +209,16 @@ for perfectly smooth gradients.</li>
 join logic; or adapt <code><a href="../reference/create_environmental_gradients.html">create_environmental_gradients()</a></code> as a
 template.</li>
 </ul>
+</div>
+<div class="section level2">
+<h2 id="sanity-check-does-abundance-peak-near-the-configured-optimum">Sanity-check: does abundance peak near the configured optimum?<a class="anchor" aria-label="anchor" href="#sanity-check-does-abundance-peak-near-the-configured-optimum"></a>
+</h2>
+<p>For method testing, it’s useful to visualise whether
+gradient-responsive species show higher quadrat abundances near their
+configured optimum.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># using a results object from spesim_run() or run_spatial_simulation()</span></span>
+<span><span class="fu"><a href="../reference/plot_filtering_response.html">plot_filtering_response</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="troubleshooting">Troubleshooting<a class="anchor" aria-label="anchor" href="#troubleshooting"></a>

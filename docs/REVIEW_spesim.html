@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -161,10 +161,10 @@ Version reviewed: <strong>0.3.3</strong> (per NEWS/site)</p>
 <p>This provides a single interpretable number: <em>“your sampling frame shrank to 62% of the domain due to boundary exclusion.”</em></p>
 </div>
 <div class="section level3">
-<h3 id="r5-add-a-filtering-sanity-plot-helper">R5. Add a <strong>filtering sanity plot helper</strong>
-<a class="anchor" aria-label="anchor" href="#r5-add-a-filtering-sanity-plot-helper"></a></h3>
-<p>Create a small plotting utility that overlays expected vs realised filtering: - For each gradient species: - plot abundance vs environment, - show vertical line at configured optimum (in natural units), - show tolerance band.</p>
-<p>This would pair naturally with <code><a href="reference/audit_environmental_filtering.html">audit_environmental_filtering()</a></code>.</p>
+<h3 id="r5-add-a-filtering-sanity-plot-helper-white_check_mark-implemented-in-v038-dev">R5. Add a <strong>filtering sanity plot helper</strong> ✅ (implemented in v0.3.8-dev)<a class="anchor" aria-label="anchor" href="#r5-add-a-filtering-sanity-plot-helper-white_check_mark-implemented-in-v038-dev"></a></h3>
+<p>Create a small plotting utility that overlays expected vs realised filtering.</p>
+<p>Implemented as <code>plot_filtering_response(res)</code>: - per gradient species: abundance vs per-quadrat mean environment - dashed line at configured optimum (natural units) - shaded tolerance band (+/- tol)</p>
+<p>Pairs naturally with <code><a href="reference/audit_environmental_filtering.html">audit_environmental_filtering()</a></code>.</p>
 </div>
 <div class="section level3">
 <h3 id="r6-extend-audit-to-report-per-species-occupied-quadrat-counts">R6. Extend audit to report <strong>per-species occupied-quadrat counts</strong>

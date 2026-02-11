@@ -1,3 +1,11 @@
+# spesim 0.3.8
+
+## Filtering diagnostics: plotting helper
+
+- Add `plot_filtering_response()` to visualise environment–abundance relationships for gradient-responsive species.
+- The plot shows the configured optimum (dashed line) and tolerance band (shaded) in natural units.
+- Environmental gradients vignette updated with a filtering sanity-check section.
+
 # spesim 0.3.7
 
 ## Sampling audits: effective sampling frame (area-based)

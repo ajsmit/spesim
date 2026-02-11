@@ -163,14 +163,15 @@ Implemented changes:
 
 This provides a single interpretable number: *“your sampling frame shrank to 62% of the domain due to boundary exclusion.”*
 
-### R5. Add a **filtering sanity plot helper**
-Create a small plotting utility that overlays expected vs realised filtering:
-- For each gradient species:
-  - plot abundance vs environment,
-  - show vertical line at configured optimum (in natural units),
-  - show tolerance band.
+### R5. Add a **filtering sanity plot helper** ✅ (implemented in v0.3.8-dev)
+Create a small plotting utility that overlays expected vs realised filtering.
 
-This would pair naturally with `audit_environmental_filtering()`.
+Implemented as `plot_filtering_response(res)`:
+- per gradient species: abundance vs per-quadrat mean environment
+- dashed line at configured optimum (natural units)
+- shaded tolerance band (+/- tol)
+
+Pairs naturally with `audit_environmental_filtering()`.
 
 ### R6. Extend audit to report **per-species occupied-quadrat counts**
 Filtering checks can be unstable when the species is rare. Add:
