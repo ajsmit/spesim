@@ -3,7 +3,7 @@
 This is the quickest path through the package, depending on what you’re
 trying to do.
 
-## 1) First: understand what spesim is (and isn’t)
+## 1) First: understand what spesim is
 
 - **Model card:**
   [`vignette("spesim-model-card")`](https://ajsmit.github.io/spesim/articles/spesim-model-card.md)

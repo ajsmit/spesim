@@ -22,9 +22,7 @@ sampling domain; specific constraints differ by scheme.
 
 ``` r
 library(spesim)
-#> spesim loaded - try run_spatial_simulation() to generate a simulation.
 library(sf)
-#> Linking to GEOS 3.12.1, GDAL 3.8.4, PROJ 9.4.0; sf_use_s2() is TRUE
 library(ggplot2)
 
 set.seed(1)
@@ -215,3 +213,26 @@ print(p_voronoi_diag)
 All schemes are stochastic to some degree (even the systematic scheme
 can depend on inferred grid dimensions); for reproducible figures, set a
 seed immediately before each placement call.
+
+## Method-testing tip: inspect placement audits (boundary exclusion)
+
+Quadrat placement can fail silently in subtle ways when the domain is
+irregular (e.g., many candidates fall outside the boundary, or random
+placement hits an attempt cap).
+
+spesim attaches a `placement_audit` attribute to the returned quadrats.
+This is used by
+[`spesim_audit()`](https://ajsmit.github.io/spesim/reference/spesim_audit.md)/[`audit_sampling_scheme()`](https://ajsmit.github.io/spesim/reference/audit_sampling_scheme.md),
+and it is also useful to inspect directly.
+
+``` r
+library(spesim)
+set.seed(1)
+dom <- create_sampling_domain()
+
+q_rand <- place_quadrats(dom, n_quadrats = 20, quadrat_size = c(1.5, 1.5))
+attr(q_rand, "placement_audit")
+
+q_tile <- place_quadrats_tiled(dom, n_quadrats = 20, quadrat_size = c(1.5, 1.5))
+attr(q_tile, "placement_audit")
+```

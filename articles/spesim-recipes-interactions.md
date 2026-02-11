@@ -9,7 +9,7 @@ Values:
 - `> 1` facilitative
 - `= 1` neutral
 
-## Baseline (no interactions)
+## Baseline without interactions
 
 ``` r
 library(spesim)
@@ -147,7 +147,7 @@ plot_spatial_sampling(res1$domain, res1$species_dist, res1$quadrats, res1$P)
 
 ![](spesim-recipes-interactions_files/figure-html/unnamed-chunk-2-1.png)
 
-## Consequences in the advanced analysis panel (and theory)
+## Consequences in the advanced analysis panel
 
 Neighbour effects can change **co-occurrence patterns** and local
 abundance, which in turn changes what you observe in quadrats.
@@ -178,15 +178,20 @@ panel1 <- generate_advanced_panel(res1) + patchwork::plot_annotation(title = "Wi
 ![](spesim-recipes-interactions_files/figure-html/unnamed-chunk-3-2.png)
 
 ``` r
-
-panel0 / panel1
-#> `geom_smooth()` using formula = 'y ~ x'
-#> `geom_smooth()` using formula = 'y ~ x'
+panel0
 #> `geom_smooth()` using formula = 'y ~ x'
 #> `geom_smooth()` using formula = 'y ~ x'
 ```
 
-![](spesim-recipes-interactions_files/figure-html/unnamed-chunk-3-3.png)
+![](spesim-recipes-interactions_files/figure-html/unnamed-chunk-4-1.png)
+
+``` r
+panel1
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+```
+
+![](spesim-recipes-interactions_files/figure-html/unnamed-chunk-5-1.png)
 
 ## Notes
 

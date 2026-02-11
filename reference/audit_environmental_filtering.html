@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,9 +19,11 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-start-here.html">Start here</a></li>
-    <li><a class="dropdown-item" href="../articles/spesim-model-card.html">spesim model card (what it is, and what it isn't)</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-model-card.html">What is spesim? What isn't it?</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
-    <li><a class="dropdown-item" href="../articles/spesim-validation.html">Validation &amp; sanity checks</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-validation.html">Validation and sanity checks</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-method-testing.html">Method testing with spesim</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-performance.html">Performance notes</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-quadrat-placement.html">Quadrat placement schemes in spesim</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-gradients.html">spesim recipes: environmental gradients</a></li>
@@ -66,8 +68,29 @@
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>data.frame; one row per gradient-responsive species.</p>
-    </div>
+    <p>A data.frame; one row per gradient-responsive species, with columns:</p><dl><dt>species</dt>
+<dd><p>Species label.</p></dd>
+
+<dt>gradient</dt>
+<dd><p>Gradient name (e.g. temperature/elevation/rainfall).</p></dd>
+
+<dt>n_sites</dt>
+<dd><p>Number of sampled quadrats with finite environment + abundance.</p></dd>
+
+<dt>occupancy_sites</dt>
+<dd><p>Number of quadrats with abundance &gt; 0 (a simple sparsity check).</p></dd>
+
+<dt>rho</dt>
+<dd><p>Spearman correlation between abundance and closeness-to-optimum (higher is more consistent with filtering).</p></dd>
+
+<dt>slope</dt>
+<dd><p>Slope from a simple linear model of abundance vs distance-from-optimum (sign is diagnostic only).</p></dd>
+
+<dt>qualitative</dt>
+<dd><p>Teaching-friendly label (e.g. abundance_peaks_near_optimum, weak_or_no_signal, too_sparse_to_assess).</p></dd>
+
+
+</dl></div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

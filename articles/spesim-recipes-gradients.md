@@ -4,7 +4,7 @@ This short recipe shows how to turn **environmental filtering** on and
 off, and how to change **optima/tolerances** for gradient-responsive
 species.
 
-## Minimal run (no special gradients)
+## Minimal run without special gradients
 
 ``` r
 library(spesim)
@@ -168,7 +168,7 @@ p2
 
 ![](spesim-recipes-gradients_files/figure-html/unnamed-chunk-2-2.png)
 
-## Consequences in the advanced analysis panel (and theory)
+## Consequences in the advanced analysis panel
 
 Environmental filtering typically increases **spatial turnover** (beta
 diversity) when species have different optima along a gradient. In the
@@ -199,15 +199,20 @@ panel1 <- generate_advanced_panel(res1) + patchwork::plot_annotation(title = "St
 ![](spesim-recipes-gradients_files/figure-html/unnamed-chunk-3-2.png)
 
 ``` r
-
-panel0 / panel1
-#> `geom_smooth()` using formula = 'y ~ x'
-#> `geom_smooth()` using formula = 'y ~ x'
+panel0
 #> `geom_smooth()` using formula = 'y ~ x'
 #> `geom_smooth()` using formula = 'y ~ x'
 ```
 
-![](spesim-recipes-gradients_files/figure-html/unnamed-chunk-3-3.png)
+![](spesim-recipes-gradients_files/figure-html/unnamed-chunk-4-1.png)
+
+``` r
+panel1
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+```
+
+![](spesim-recipes-gradients_files/figure-html/unnamed-chunk-5-1.png)
 
 ## Tip: reproducibility
 

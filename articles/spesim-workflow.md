@@ -9,7 +9,7 @@ It is meant as a *map* of the package: which functions are involved,
 what inputs and outputs to expect, and which “knobs” to turn at each
 stage.
 
-## Big picture workflow (flow diagram)
+## Big picture workflow
 
 Below is a compact workflow diagram showing the main pipeline.
 
@@ -56,7 +56,7 @@ Below is a compact workflow diagram showing the main pipeline.
 
 ## Three levels of use
 
-### Level 1 — Basic (fast, minimal, robust)
+### Level 1 — Basic: fast, minimal, robust
 
 **Goal:** run a small simulation quickly and get the essential objects
 back for plotting and teaching.
@@ -150,7 +150,7 @@ plot_quadrats(res$domain, res$quadrats, title = "Quadrats")
 
 ![](spesim-workflow_files/figure-html/unnamed-chunk-2-1.png)
 
-### Level 2 — Intermediate (typical analyses + teaching plots)
+### Level 2 — Intermediate: typical analyses + teaching plots
 
 **Goal:** use the returned objects to compute common community-ecology
 summaries.
@@ -186,7 +186,7 @@ plot_rank_abundance(ra)
 
 ![](spesim-workflow_files/figure-html/unnamed-chunk-3-1.png)
 
-### Level 3 — Advanced (full diagnostics + report)
+### Level 3 — Advanced: full diagnostics + report
 
 **Goal:** generate a compact **multi-plot diagnostic panel** and a
 **human-readable report**.
@@ -209,9 +209,9 @@ cat(generate_full_report(res))
 res2 <- run_spatial_simulation(P = P, write_outputs = TRUE, output_prefix = "out/demo")
 ```
 
-## Capability map (what features live where?)
+## What features live where?
 
-### Configuration capabilities
+### Configuration options
 
 - “Init file” workflow: `load_config("path/to/init.txt")`
 - In-memory workflow:
@@ -229,7 +229,7 @@ Key configuration families:
   `INTERACTIONS_FILE`
 - **Sampling design:** `SAMPLING_SCHEME` and scheme-specific parameters
 
-### Sampling design capabilities (quadrats)
+### Sampling design: quadrat placement
 
 - random:
   [`place_quadrats()`](https://ajsmit.github.io/spesim/reference/place_quadrats.md)
@@ -244,7 +244,7 @@ Key configuration families:
 
 See the dedicated vignette: **“Quadrat placement schemes in spesim”**.
 
-## A practical “ladder” you can teach from
+## Teaching progression
 
 A suggested progression for a lab/class:
 

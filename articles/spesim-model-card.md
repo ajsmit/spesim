@@ -1,4 +1,4 @@
-# spesim model card (what it is, and what it isn't)
+# What is spesim? What isn't it?
 
 ## Purpose
 
@@ -13,7 +13,7 @@ sampling design, and derived site $\times$ species data) so you can:
 - compare sampling schemes (random vs transect vs Voronoi, etc.),
 - stress-test metrics and workflows on controlled scenarios.
 
-## What the simulator actually generates
+## What the simulator generates
 
 A typical run produces:
 
@@ -30,7 +30,7 @@ A typical run produces:
     - classic diagnostic summaries/plots (SAD, SAR, rarefaction,
       distance–decay).
 
-## What the parameters mean (in plain language)
+## What the parameters mean
 
 ### Species–abundance distribution (SAD)
 

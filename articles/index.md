@@ -4,12 +4,16 @@
 
 - [Start
   here](https://ajsmit.github.io/spesim/articles/spesim-start-here.md):
-- [spesim model card (what it is, and what it
-  isn't)](https://ajsmit.github.io/spesim/articles/spesim-model-card.md):
+- [What is spesim? What isn't
+  it?](https://ajsmit.github.io/spesim/articles/spesim-model-card.md):
 - [spesim workflow: basic → intermediate →
   advanced](https://ajsmit.github.io/spesim/articles/spesim-workflow.md):
-- [Validation & sanity
+- [Validation and sanity
   checks](https://ajsmit.github.io/spesim/articles/spesim-validation.md):
+- [Method testing with
+  spesim](https://ajsmit.github.io/spesim/articles/spesim-method-testing.md):
+- [Performance
+  notes](https://ajsmit.github.io/spesim/articles/spesim-performance.md):
 - [spesim public API (stability
   guide)](https://ajsmit.github.io/spesim/articles/spesim-public-api.md):
 - [Quadrat placement schemes in

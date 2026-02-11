@@ -26,7 +26,7 @@ tooling on the exported point patterns.
 ## Usage
 
 ``` r
-spesim_audit(res, species = "all", nn_k = 1)
+spesim_audit(res, species = "all", nn_k = 1, diagnostics = c("nn", "spatstat"))
 ```
 
 ## Arguments
@@ -47,13 +47,27 @@ spesim_audit(res, species = "all", nn_k = 1)
 
   Integer; the neighbour order used for NN distances. Default 1.
 
+- diagnostics:
+
+  Character vector controlling which diagnostics to compute. Default
+  `c("nn", "spatstat")` will try to compute both nearest-neighbour and
+  spatstat-based diagnostics; if spatstat is not installed, those
+  diagnostics are skipped with a message. Use `"nn"` only for a
+  lightweight audit.
+
 ## Value
 
 A list of class `spesim_audit` with components:
 
 - `spatial`: data.frame of NN diagnostics per species
 
-- `filtering`: data.frame of environment–abundance checks (may be empty)
+- `spatial_spatstat`: data.frame of edge-corrected diagnostics (if
+  requested)
+
+- `filtering`: data.frame of environment-abundance checks (may be empty)
 
 - `sampling`: a list describing quadrat placement rejection/exclusion
   metrics
+
+- `regime`: green/amber/red classification (see
+  [`spesim_regime()`](https://ajsmit.github.io/spesim/reference/spesim_regime.md))

@@ -20,7 +20,7 @@ P$INTERACTION_RADIUS <- 0
 P$INTERACTIONS_EDGELIST <- NULL
 ```
 
-## Poisson (complete spatial randomness)
+## Poisson: complete spatial randomness
 
 ``` r
 P1 <- P
@@ -172,7 +172,7 @@ plot_spatial_sampling(res_st$domain, res_st$species_dist, res_st$quadrats, res_s
 
 ![](spesim-recipes-point-processes_files/figure-html/unnamed-chunk-4-1.png)
 
-## Consequences in the advanced analysis panel (and theory)
+## Consequences in the advanced analysis panel
 
 Different point processes correspond to different *mechanisms* of
 spatial structure:
@@ -214,17 +214,28 @@ p_st   <- generate_advanced_panel(res_st)   + patchwork::plot_annotation(title =
 ![](spesim-recipes-point-processes_files/figure-html/unnamed-chunk-5-3.png)
 
 ``` r
-
-(p_pois / p_th) / p_st
-#> `geom_smooth()` using formula = 'y ~ x'
-#> `geom_smooth()` using formula = 'y ~ x'
-#> `geom_smooth()` using formula = 'y ~ x'
-#> `geom_smooth()` using formula = 'y ~ x'
+p_pois
 #> `geom_smooth()` using formula = 'y ~ x'
 #> `geom_smooth()` using formula = 'y ~ x'
 ```
 
-![](spesim-recipes-point-processes_files/figure-html/unnamed-chunk-5-4.png)
+![](spesim-recipes-point-processes_files/figure-html/unnamed-chunk-6-1.png)
+
+``` r
+p_th
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+```
+
+![](spesim-recipes-point-processes_files/figure-html/unnamed-chunk-7-1.png)
+
+``` r
+p_st
+#> `geom_smooth()` using formula = 'y ~ x'
+#> `geom_smooth()` using formula = 'y ~ x'
+```
+
+![](spesim-recipes-point-processes_files/figure-html/unnamed-chunk-8-1.png)
 
 ## Notes
 

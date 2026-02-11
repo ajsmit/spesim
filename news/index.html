@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,9 +19,11 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-start-here.html">Start here</a></li>
-    <li><a class="dropdown-item" href="../articles/spesim-model-card.html">spesim model card (what it is, and what it isn't)</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-model-card.html">What is spesim? What isn't it?</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
-    <li><a class="dropdown-item" href="../articles/spesim-validation.html">Validation &amp; sanity checks</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-validation.html">Validation and sanity checks</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-method-testing.html">Method testing with spesim</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-performance.html">Performance notes</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-quadrat-placement.html">Quadrat placement schemes in spesim</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-gradients.html">spesim recipes: environmental gradients</a></li>
@@ -46,6 +48,107 @@
       <small>Source: <a href="https://github.com/ajsmit/spesim/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.14" id="spesim-0314">spesim 0.3.14<a class="anchor" aria-label="anchor" href="#spesim-0314"></a></h2>
+<div class="section level3">
+<h3 id="build-hygiene-and-vignette-snippet-checks-0-3-14">Build hygiene and vignette snippet checks<a class="anchor" aria-label="anchor" href="#build-hygiene-and-vignette-snippet-checks-0-3-14"></a></h3>
+<ul><li>Removed pkgdown/vignette build warnings by aligning vignette titles and setting <code>highlight: null</code> for html vignettes.</li>
+<li>Added a test to ensure all vignette code chunks are syntactically valid (<code><a href="https://rdrr.io/pkg/knitr/man/knit.html" class="external-link">knitr::purl()</a></code> + <code><a href="https://rdrr.io/r/base/parse.html" class="external-link">parse()</a></code>).</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.13" id="spesim-0313">spesim 0.3.13<a class="anchor" aria-label="anchor" href="#spesim-0313"></a></h2>
+<div class="section level3">
+<h3 id="performance-notes-0-3-13">Performance notes<a class="anchor" aria-label="anchor" href="#performance-notes-0-3-13"></a></h3>
+<ul><li>New vignette: “Performance notes” (<code>spesim-performance</code>) with conservative interactive ranges and practical tips.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.12" id="spesim-0312">spesim 0.3.12<a class="anchor" aria-label="anchor" href="#spesim-0312"></a></h2>
+<div class="section level3">
+<h3 id="method-testing-vignette-0-3-12">Method-testing vignette<a class="anchor" aria-label="anchor" href="#method-testing-vignette-0-3-12"></a></h3>
+<ul><li>New vignette: “Method testing with spesim” (<code>spesim-method-testing</code>).</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.11" id="spesim-0311">spesim 0.3.11<a class="anchor" aria-label="anchor" href="#spesim-0311"></a></h2>
+<div class="section level3">
+<h3 id="method-testing-bundle-helper-0-3-11">Method-testing bundle helper<a class="anchor" aria-label="anchor" href="#method-testing-bundle-helper-0-3-11"></a></h3>
+<ul><li>New <code><a href="../reference/spesim_method_test.html">spesim_method_test()</a></code> convenience function returns <code>res</code>, <code>audit</code>, and optional standard tables/plots for teaching and method-testing.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.10" id="spesim-0310">spesim 0.3.10<a class="anchor" aria-label="anchor" href="#spesim-0310"></a></h2>
+<div class="section level3">
+<h3 id="report-configurable-conceptual-audit-0-3-10">Report: configurable conceptual audit<a class="anchor" aria-label="anchor" href="#report-configurable-conceptual-audit-0-3-10"></a></h3>
+<ul><li>
+<code><a href="../reference/generate_full_report.html">generate_full_report()</a></code> gains <code>include_audit</code> and <code>audit_top_n</code> to control the report’s conceptual audit section.</li>
+<li>Report audit now runs <code>spesim_audit(..., diagnostics = "nn")</code> for deterministic, lightweight behaviour.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.9" id="spesim-039">spesim 0.3.9<a class="anchor" aria-label="anchor" href="#spesim-039"></a></h2>
+<div class="section level3">
+<h3 id="filtering-audits-occupancy-aware-diagnostics-0-3-9">Filtering audits: occupancy-aware diagnostics<a class="anchor" aria-label="anchor" href="#filtering-audits-occupancy-aware-diagnostics-0-3-9"></a></h3>
+<ul><li>
+<code><a href="../reference/audit_environmental_filtering.html">audit_environmental_filtering()</a></code> now reports <code>occupancy_sites</code> (number of quadrats with abundance &gt; 0).</li>
+<li>Low occupancy is flagged as <code>too_sparse_to_assess</code>, helping prevent over-interpretation of noisy correlations.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.8" id="spesim-038">spesim 0.3.8<a class="anchor" aria-label="anchor" href="#spesim-038"></a></h2>
+<div class="section level3">
+<h3 id="filtering-diagnostics-plotting-helper-0-3-8">Filtering diagnostics: plotting helper<a class="anchor" aria-label="anchor" href="#filtering-diagnostics-plotting-helper-0-3-8"></a></h3>
+<ul><li>Add <code><a href="../reference/plot_filtering_response.html">plot_filtering_response()</a></code> to visualise environment–abundance relationships for gradient-responsive species.</li>
+<li>The plot shows the configured optimum (dashed line) and tolerance band (shaded) in natural units.</li>
+<li>Environmental gradients vignette updated with a filtering sanity-check section.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.7" id="spesim-037">spesim 0.3.7<a class="anchor" aria-label="anchor" href="#spesim-037"></a></h2>
+<div class="section level3">
+<h3 id="sampling-audits-effective-sampling-frame-area-based-0-3-7">Sampling audits: effective sampling frame (area-based)<a class="anchor" aria-label="anchor" href="#sampling-audits-effective-sampling-frame-area-based-0-3-7"></a></h3>
+<ul><li>Add <code><a href="../reference/estimate_sampling_frame.html">estimate_sampling_frame()</a></code> and include a conservative boundary constraint summary in <code>placement_audit</code>:
+<ul><li>
+<code>safe_area_fraction</code> = area(safe_domain)/area(domain), where safe_domain is the domain buffered inward by half the quadrat diagonal.</li>
+<li>
+<code>buffer_dist</code> (half-diagonal) and <code>quadrat_size</code> recorded for context.</li>
+</ul></li>
+<li>Quadrat placement audits and <code><a href="../reference/audit_sampling_scheme.html">audit_sampling_scheme()</a></code> now report the effective sampling frame fraction alongside exclusion/rejection rates.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.6" id="spesim-036">spesim 0.3.6<a class="anchor" aria-label="anchor" href="#spesim-036"></a></h2>
+<div class="section level3">
+<h3 id="sampling-audits-standardise-placement_audit-0-3-6">Sampling audits: standardise <code>placement_audit</code>
+<a class="anchor" aria-label="anchor" href="#sampling-audits-standardise-placement_audit-0-3-6"></a></h3>
+<ul><li>Quadrat placement functions now attach their <code>placement_audit</code> attribute via shared helpers and normalise a minimal common schema.</li>
+<li>
+<code><a href="../reference/audit_sampling_scheme.html">audit_sampling_scheme()</a></code> now validates/normalises <code>placement_audit</code> before reporting.</li>
+<li>Quadrat placement vignette updated with guidance on inspecting <code>placement_audit</code> for boundary exclusion.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.5" id="spesim-035">spesim 0.3.5<a class="anchor" aria-label="anchor" href="#spesim-035"></a></h2>
+<div class="section level3">
+<h3 id="method-testing-tutor-edge-corrected-spatial-diagnostics-optional-0-3-5">Method-testing tutor: edge-corrected spatial diagnostics (optional)<a class="anchor" aria-label="anchor" href="#method-testing-tutor-edge-corrected-spatial-diagnostics-optional-0-3-5"></a></h3>
+<ul><li>Extend <code><a href="../reference/spesim_audit.html">spesim_audit()</a></code> with <code>diagnostics = c("nn", "spatstat")</code>.</li>
+<li>Add optional <strong>spatstat-based, edge-corrected</strong> spatial summaries in the <em>true</em> irregular window:
+<ul><li>Ripley-style departure summary via L(r)-r (border correction)</li>
+<li>pair correlation function extrema (Ripley correction)</li>
+</ul></li>
+<li>New helper: <code><a href="../reference/spesim_spatstat_diagnostics.html">spesim_spatstat_diagnostics()</a></code> (used internally; requires <code>spatstat.geom</code> + <code>spatstat.explore</code>).</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.4" id="spesim-034">spesim 0.3.4<a class="anchor" aria-label="anchor" href="#spesim-034"></a></h2>
+<div class="section level3">
+<h3 id="method-testing-tutor-regime-classification-0-3-4">Method-testing tutor: regime classification<a class="anchor" aria-label="anchor" href="#method-testing-tutor-regime-classification-0-3-4"></a></h3>
+<ul><li>Add <code><a href="../reference/spesim_regime.html">spesim_regime()</a></code> to convert audit metrics into teaching-friendly <strong>green/amber/red</strong> regime classifications.</li>
+<li>
+<code><a href="../reference/spesim_audit.html">spesim_audit()</a></code> now includes a <code>regime</code> element and <code>print.spesim_audit()</code> prints the classification summary.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.3" id="spesim-033">spesim 0.3.3<a class="anchor" aria-label="anchor" href="#spesim-033"></a></h2>
 <div class="section level3">

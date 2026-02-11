@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,9 +34,11 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/spesim-start-here.html">Start here</a></li>
-    <li><a class="dropdown-item" href="../articles/spesim-model-card.html">spesim model card (what it is, and what it isn't)</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-model-card.html">What is spesim? What isn't it?</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
-    <li><a class="dropdown-item" href="../articles/spesim-validation.html">Validation &amp; sanity checks</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-validation.html">Validation and sanity checks</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-method-testing.html">Method testing with spesim</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-performance.html">Performance notes</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-quadrat-placement.html">Quadrat placement schemes in spesim</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-gradients.html">spesim recipes: environmental gradients</a></li>
@@ -83,7 +85,7 @@ reporting and diagnostic panels).</p>
 involved, what inputs and outputs to expect, and which “knobs” to turn
 at each stage.</p>
 <div class="section level2">
-<h2 id="big-picture-workflow-flow-diagram">Big picture workflow (flow diagram)<a class="anchor" aria-label="anchor" href="#big-picture-workflow-flow-diagram"></a>
+<h2 id="big-picture-workflow">Big picture workflow<a class="anchor" aria-label="anchor" href="#big-picture-workflow"></a>
 </h2>
 <p>Below is a compact workflow diagram showing the main pipeline.</p>
 <pre class="text"><code>┌──────────────────────────────┐
@@ -129,7 +131,7 @@ at each stage.</p>
 <h2 id="three-levels-of-use">Three levels of use<a class="anchor" aria-label="anchor" href="#three-levels-of-use"></a>
 </h2>
 <div class="section level3">
-<h3 id="level-1-basic-fast-minimal-robust">Level 1 — Basic (fast, minimal, robust)<a class="anchor" aria-label="anchor" href="#level-1-basic-fast-minimal-robust"></a>
+<h3 id="level-1-basic-fast-minimal-robust">Level 1 — Basic: fast, minimal, robust<a class="anchor" aria-label="anchor" href="#level-1-basic-fast-minimal-robust"></a>
 </h3>
 <p><strong>Goal:</strong> run a small simulation quickly and get the
 essential objects back for plotting and teaching.</p>
@@ -224,7 +226,7 @@ essential objects back for plotting and teaching.</p>
 <p><img src="spesim-workflow_files/figure-html/unnamed-chunk-2-1.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
-<h3 id="level-2-intermediate-typical-analyses-teaching-plots">Level 2 — Intermediate (typical analyses + teaching plots)<a class="anchor" aria-label="anchor" href="#level-2-intermediate-typical-analyses-teaching-plots"></a>
+<h3 id="level-2-intermediate-typical-analyses-teaching-plots">Level 2 — Intermediate: typical analyses + teaching plots<a class="anchor" aria-label="anchor" href="#level-2-intermediate-typical-analyses-teaching-plots"></a>
 </h3>
 <p><strong>Goal:</strong> use the returned objects to compute common
 community-ecology summaries.</p>
@@ -276,7 +278,7 @@ lessons.</p>
 <p><img src="spesim-workflow_files/figure-html/unnamed-chunk-3-1.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
-<h3 id="level-3-advanced-full-diagnostics-report">Level 3 — Advanced (full diagnostics + report)<a class="anchor" aria-label="anchor" href="#level-3-advanced-full-diagnostics-report"></a>
+<h3 id="level-3-advanced-full-diagnostics-report">Level 3 — Advanced: full diagnostics + report<a class="anchor" aria-label="anchor" href="#level-3-advanced-full-diagnostics-report"></a>
 </h3>
 <p><strong>Goal:</strong> generate a compact <strong>multi-plot
 diagnostic panel</strong> and a <strong>human-readable
@@ -301,10 +303,10 @@ outputs” workflows):</li>
 </div>
 </div>
 <div class="section level2">
-<h2 id="capability-map-what-features-live-where">Capability map (what features live where?)<a class="anchor" aria-label="anchor" href="#capability-map-what-features-live-where"></a>
+<h2 id="what-features-live-where">What features live where?<a class="anchor" aria-label="anchor" href="#what-features-live-where"></a>
 </h2>
 <div class="section level3">
-<h3 id="configuration-capabilities">Configuration capabilities<a class="anchor" aria-label="anchor" href="#configuration-capabilities"></a>
+<h3 id="configuration-options">Configuration options<a class="anchor" aria-label="anchor" href="#configuration-options"></a>
 </h3>
 <ul>
 <li>“Init file” workflow:
@@ -340,7 +342,7 @@ scheme-specific parameters</li>
 </ul>
 </div>
 <div class="section level3">
-<h3 id="sampling-design-capabilities-quadrats">Sampling design capabilities (quadrats)<a class="anchor" aria-label="anchor" href="#sampling-design-capabilities-quadrats"></a>
+<h3 id="sampling-design-quadrat-placement">Sampling design: quadrat placement<a class="anchor" aria-label="anchor" href="#sampling-design-quadrat-placement"></a>
 </h3>
 <ul>
 <li>random: <code><a href="../reference/place_quadrats.html">place_quadrats()</a></code>
@@ -360,7 +362,7 @@ spesim”</strong>.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="a-practical-ladder-you-can-teach-from">A practical “ladder” you can teach from<a class="anchor" aria-label="anchor" href="#a-practical-ladder-you-can-teach-from"></a>
+<h2 id="teaching-progression">Teaching progression<a class="anchor" aria-label="anchor" href="#teaching-progression"></a>
 </h2>
 <p>A suggested progression for a lab/class:</p>
 <ol style="list-style-type: decimal">

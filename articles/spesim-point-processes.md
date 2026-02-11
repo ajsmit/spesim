@@ -28,14 +28,14 @@ in safe sites, or competition for space/resources.
 **In spesim**: default placement for non-dominant species *unless* you
 impose other rules.
 
-### 2) Dominant-species clusters (fast k-NN heuristic)
+### 2) Dominant-species clusters (fast k-NN)
 
 - **What**: Choose random cluster centres; draw others with probability
   decaying by distance.
 - **Controls**: `MAX_CLUSTERS_DOMINANT`, `CLUSTER_SPREAD_DOMINANT`.
 - **Use**: Strong aggregations for one (or few) dominant species.
 
-### 3) Towards process models (conceptual mapping)
+### 3) Towards process models
 
 While spesim avoids heavy dependencies, the above can emulate key
 behaviours:

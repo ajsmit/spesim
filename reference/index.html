@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,9 +19,11 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-start-here.html">Start here</a></li>
-    <li><a class="dropdown-item" href="../articles/spesim-model-card.html">spesim model card (what it is, and what it isn't)</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-model-card.html">What is spesim? What isn't it?</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
-    <li><a class="dropdown-item" href="../articles/spesim-validation.html">Validation &amp; sanity checks</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-validation.html">Validation and sanity checks</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-method-testing.html">Method testing with spesim</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-performance.html">Performance notes</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-quadrat-placement.html">Quadrat placement schemes in spesim</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-gradients.html">spesim recipes: environmental gradients</a></li>
@@ -61,6 +63,13 @@
 
         </dt>
         <dd>Run a compact spesim demonstration workflow</dd>
+
+        <dt>
+
+          <code><a href="spesim_method_test.html">spesim_method_test()</a></code>
+
+        </dt>
+        <dd>Run a method-testing bundle (simulate + audit + standard outputs)</dd>
 
         <dt>
 
@@ -221,6 +230,13 @@
 
         </dt>
         <dd>Plot the spatial sampling simulation (domain, individuals, quadrats, optional gradient)</dd>
+
+        <dt>
+
+          <code><a href="plot_filtering_response.html">plot_filtering_response()</a></code>
+
+        </dt>
+        <dd>Plot environmental filtering responses (sanity check)</dd>
 
         <dt>
 
@@ -423,6 +439,13 @@
 
         <dt>
 
+          <code><a href="spesim_regime.html">spesim_regime()</a></code>
+
+        </dt>
+        <dd>Classify whether a spesim run matches the intended qualitative regime</dd>
+
+        <dt>
+
           <code><a href="audit_spatial_structure.html">audit_spatial_structure()</a></code>
 
         </dt>
@@ -441,6 +464,13 @@
 
         </dt>
         <dd>Audit quadrat placement: boundary exclusion and rejection metrics</dd>
+
+        <dt>
+
+          <code><a href="spesim_spatstat_diagnostics.html">spesim_spatstat_diagnostics()</a></code>
+
+        </dt>
+        <dd>Spatstat diagnostics for one or more species</dd>
       </dl></div><div class="section level2">
       <h2 id="utilities">Utilities<a class="anchor" aria-label="anchor" href="#utilities"></a></h2>
 

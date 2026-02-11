@@ -4,6 +4,8 @@
 
 - [`spesim_demo()`](https://ajsmit.github.io/spesim/reference/spesim_demo.md)
   : Run a compact spesim demonstration workflow
+- [`spesim_method_test()`](https://ajsmit.github.io/spesim/reference/spesim_method_test.md)
+  : Run a method-testing bundle (simulate + audit + standard outputs)
 - [`spesim_run()`](https://ajsmit.github.io/spesim/reference/spesim_run.md)
   : Run a complete spesim simulation (recommended)
 - [`load_config()`](https://ajsmit.github.io/spesim/reference/load_config.md)
@@ -53,6 +55,8 @@
 - [`plot_spatial_sampling()`](https://ajsmit.github.io/spesim/reference/plot_spatial_sampling.md)
   : Plot the spatial sampling simulation (domain, individuals, quadrats,
   optional gradient)
+- [`plot_filtering_response()`](https://ajsmit.github.io/spesim/reference/plot_filtering_response.md)
+  : Plot environmental filtering responses (sanity check)
 - [`theme_spesim()`](https://ajsmit.github.io/spesim/reference/theme_spesim.md)
   : A consistent ggplot2 theme for spesim teaching plots
 
@@ -113,6 +117,9 @@
 
 - [`spesim_audit()`](https://ajsmit.github.io/spesim/reference/spesim_audit.md)
   : Audit whether a spesim run matches the intended qualitative regime
+- [`spesim_regime()`](https://ajsmit.github.io/spesim/reference/spesim_regime.md)
+  : Classify whether a spesim run matches the intended qualitative
+  regime
 - [`audit_spatial_structure()`](https://ajsmit.github.io/spesim/reference/audit_spatial_structure.md)
   : Audit spatial structure via nearest-neighbour distances
 - [`audit_environmental_filtering()`](https://ajsmit.github.io/spesim/reference/audit_environmental_filtering.md)
@@ -120,6 +127,8 @@
   abundances)
 - [`audit_sampling_scheme()`](https://ajsmit.github.io/spesim/reference/audit_sampling_scheme.md)
   : Audit quadrat placement: boundary exclusion and rejection metrics
+- [`spesim_spatstat_diagnostics()`](https://ajsmit.github.io/spesim/reference/spesim_spatstat_diagnostics.md)
+  : Spatstat diagnostics for one or more species
 
 ## Utilities
 

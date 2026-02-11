@@ -117,6 +117,16 @@ p1 | p2
   [`create_environmental_gradients()`](https://ajsmit.github.io/spesim/reference/create_environmental_gradients.md)
   as a template.
 
+## Sanity-check: does abundance peak near the configured optimum?
+
+For method testing, it’s useful to visualise whether gradient-responsive
+species show higher quadrat abundances near their configured optimum.
+
+``` r
+# using a results object from spesim_run() or run_spatial_simulation()
+plot_filtering_response(res)
+```
+
 ## Troubleshooting
 
 - “Species not responding to gradients”: confirm `species` labels in

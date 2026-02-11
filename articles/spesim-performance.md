@@ -1,0 +1,80 @@
+# Performance notes
+
+spesim is intended for **teaching** and **method testing**, where you
+usually want runs to be *interactive* (seconds, not minutes).
+
+This vignette gives conservative rules of thumb for keeping runtime and
+memory use reasonable.
+
+## What tends to dominate runtime
+
+1.  **Spatial intersections**
+    ([`sf::st_intersection`](https://r-spatial.github.io/sf/reference/geos_binary_ops.html))
+    between individuals and quadrats.
+    - Roughly scales with the number of individuals × number of
+      quadrats.
+2.  **Environmental grid resolution** (the `env_gradients` raster-like
+    table).
+    - Higher resolution increases memory and slows operations that
+      summarise environment per quadrat.
+3.  **Optional analyses** (reports, panels, diversity calculations).
+    - `ADVANCED_ANALYSIS = TRUE` is intentionally heavier.
+
+## Safe interactive ranges (rules of thumb)
+
+These are not hard limits—just settings that tend to work well on a
+laptop.
+
+### Individuals
+
+- **Good default:** `N_INDIVIDUALS` ≈ 1,000–5,000
+- **Still workable for method testing:** up to ~20,000 (expect slower
+  plotting/intersections)
+
+### Quadrat sampling
+
+- **Good default:** `N_QUADRATS` ≈ 10–50
+- Very large `N_QUADRATS` increases intersection work and can make some
+  analyses noisy.
+
+### Environmental grid
+
+- `SAMPLING_RESOLUTION` is the number of grid cells per side for the
+  environmental surface.
+
+- **Good default:** 30–80
+
+- Above ~150 you should expect larger memory use and slower
+  quadrat-environment summaries.
+
+### Advanced outputs
+
+- For interactive work, start with:
+
+``` r
+P$ADVANCED_ANALYSIS <- FALSE
+x <- spesim_method_test(P = P, make_plots = TRUE)
+```
+
+- Enable advanced reporting once your parameters are stable:
+
+``` r
+P$ADVANCED_ANALYSIS <- TRUE
+res <- run_spatial_simulation(P)
+cat(generate_full_report(res, include_audit = TRUE), sep = "\n")
+```
+
+## Practical tips
+
+- When comparing sampling schemes, keep the *truth* fixed (same seed)
+  and change only sampling parameters.
+- Prefer running many small replicates over one enormous run.
+- If a sampling scheme returns **very few quadrats**, some downstream
+  summaries may be undefined or uninformative (distance–decay requires
+  ≥2 sites, etc.).
+
+## If you need to go bigger
+
+- Reduce plotting.
+- Increase `N_INDIVIDUALS` gradually.
+- Consider using the fast point-process engines when available.

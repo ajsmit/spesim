@@ -16,7 +16,7 @@ used for the point processes).
 ## Usage
 
 ``` r
-generate_full_report(res)
+generate_full_report(res, include_audit = TRUE, audit_top_n = 6)
 ```
 
 ## Arguments
@@ -60,6 +60,17 @@ generate_full_report(res)
 
   :   A data frame with columns `site`, `x`, `y` giving quadrat
       centroids in the same CRS used for analysis.
+
+- include_audit:
+
+  Logical; if TRUE (default), include a short "Conceptual audit" section
+  based on
+  [`spesim_audit()`](https://ajsmit.github.io/spesim/reference/spesim_audit.md).
+
+- audit_top_n:
+
+  Integer; number of rows to show for the environmental-filtering audit
+  (ranked by absolute correlation). Default 6.
 
 ## Value
 
