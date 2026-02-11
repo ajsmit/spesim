@@ -94,6 +94,7 @@ articles:
   - spesim-model-card
   - spesim-workflow
   - spesim-validation
+  - spesim-method-testing
   - spesim-public-api
   - spesim-quadrat-placement
   - spesim-recipes-gradients

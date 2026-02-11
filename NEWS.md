@@ -1,3 +1,9 @@
+# spesim 0.3.12
+
+## Method-testing vignette
+
+- New vignette: "Method testing with spesim" (`spesim-method-testing`).
+
 # spesim 0.3.11
 
 ## Method-testing bundle helper

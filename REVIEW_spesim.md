@@ -197,21 +197,25 @@ Added `spesim_method_test()`:
 
 This reduces the “glue code” instructors write repeatedly.
 
-### R9. Add at least one vignette explicitly about **method testing**
-A short article that demonstrates:
-- compare sampling schemes under the same underlying truth,
-- compare inferred beta diversity / distance–decay across designs,
-- show how audits change your interpretation.
+### R9. Add at least one vignette explicitly about **method testing** ✅ (implemented in v0.3.12-dev)
+Added vignette: **"Method testing with spesim"** (`vignettes/spesim-method-testing.Rmd`).
+
+It demonstrates:
+- comparing sampling schemes under the same underlying truth,
+- comparing a distance-decay summary across designs,
+- using audits (including `occupancy_sites` guards) to avoid over-interpretation.
 
 ### R10. Performance notes: document safe upper bounds for teaching
 Add a small “performance” section (or vignette appendix) giving rules of thumb:
 - N_individuals and grid resolution ranges that keep runs interactive.
 
-### R11. A thorough check and fix of all warnings
-Remove all warnings (however benign) that occur during package builds.
+### R11. Thoroughly test ALL code snippets/blocks
+Check, verify, and correct all user-facing example code blocks in ALL vignettes and help files.
 
-### R12. Thoroughly test ALL code snippets/blocks
-Check all user-facing example code blocks in ALL vignettes and help files.
+### R12. A thorough check and fix of all warnings
+Remove all warnings (however benign) that occur during package builds:
+- e.g., the known vignette-title mismatch warnings.
+- Update package number to next minor version and merge dev and main branches.
 
 ---
 

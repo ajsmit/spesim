@@ -122,6 +122,13 @@ calculate_occupancy_abundance <- function(abund_matrix) {
 #' @export
 calculate_species_area <- function(abund_matrix) {
   abund_numeric <- abund_matrix[, -which(names(abund_matrix) == "site"), drop = FALSE]
+
+  # vegan::specaccum() expects >= 2 sites for permutation-based accumulation.
+  if (nrow(abund_numeric) < 2) {
+    richness_1 <- sum(colSums(abund_numeric > 0, na.rm = TRUE) > 0)
+    return(data.frame(Sites = 1, Richness = richness_1, SD = NA_real_))
+  }
+
   sar_curve <- vegan::specaccum(abund_numeric, method = "random", permutations = 100)
   data.frame(Sites = sar_curve$sites, Richness = sar_curve$richness, SD = sar_curve$sd)
 }
@@ -153,8 +160,13 @@ calculate_species_area <- function(abund_matrix) {
 #' }
 #' @export
 calculate_distance_decay <- function(abund_matrix, site_coords) {
-  coords <- site_coords[, c("x", "y")]
+  coords <- site_coords[, c("x", "y"), drop = FALSE]
   abund_numeric <- abund_matrix[, -which(names(abund_matrix) == "site"), drop = FALSE]
+
+  if (nrow(coords) < 2 || nrow(abund_numeric) < 2) {
+    return(data.frame(Distance = numeric(0), Dissimilarity = numeric(0)))
+  }
+
   geo_dist <- stats::dist(coords, method = "euclidean")
   comm_dissim <- vegan::vegdist(abund_numeric, method = "bray", binary = TRUE)
   data.frame(Distance = as.vector(geo_dist), Dissimilarity = as.vector(comm_dissim))

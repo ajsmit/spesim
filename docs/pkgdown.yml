@@ -6,6 +6,7 @@ articles:
   spesim-env-gradients: spesim-env-gradients.html
   spesim-init-parameters: spesim-init-parameters.html
   spesim-interactions: spesim-interactions.html
+  spesim-method-testing: spesim-method-testing.html
   spesim-model-card: spesim-model-card.html
   spesim-point-processes: spesim-point-processes.html
   spesim-public-api: spesim-public-api.html
@@ -16,7 +17,7 @@ articles:
   spesim-start-here: spesim-start-here.html
   spesim-validation: spesim-validation.html
   spesim-workflow: spesim-workflow.html
-last_built: 2026-02-11T15:13Z
+last_built: 2026-02-11T16:17Z
 urls:
   reference: https://ajsmit.github.io/spesim/reference
   article: https://ajsmit.github.io/spesim/articles

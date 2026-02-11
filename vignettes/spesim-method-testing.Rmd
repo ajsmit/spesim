@@ -1,0 +1,192 @@
+---
+title: "Method testing with spesim"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Method testing with spesim}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  fig.align = "center"
+)
+
+library(spesim)
+library(dplyr)
+library(ggplot2)
+```
+
+spesim is designed for **teaching** and **method testing**.
+
+Method testing means: you keep the *underlying truth* fixed (the simulated community + spatial process), and vary the **sampling design** or **analysis choices**, then check how your conclusions change.
+
+This vignette shows a simple, reproducible workflow:
+
+1) Run a baseline simulation.
+2) Re-run the **same truth** under different sampling schemes.
+3) Compare (i) what you would conclude from the usual plots/tables and (ii) what the **audit layer** says you actually got.
+
+## 1. Start from a baseline parameter set
+
+We start from the packaged init file and then modify only a few parameters.
+
+```{r}
+`%||%` <- function(a, b) if (!is.null(a)) a else b
+
+init_file <- system.file("examples/spesim_init_basic.txt", package = "spesim")
+if (identical(init_file, "")) {
+  # Useful when rendering from the source tree without a prior install.
+  # During local rendering, the working directory is typically `vignettes/`.
+  cand <- c(
+    file.path("..", "inst", "examples", "spesim_init_basic.txt"),
+    file.path("..", "spesim_init_basic.txt")
+  )
+  init_file <- cand[file.exists(cand)][1]
+}
+
+P0 <- load_config(init_file)
+
+# Keep this vignette reasonably fast.
+P0$N_INDIVIDUALS <- 1500L
+P0$N_QUADRATS <- 25L
+
+# Ensure we have filtering species (default init already does), and keep the report light.
+P0$ADVANCED_ANALYSIS <- FALSE
+
+# Fix seed so the *truth* is reproducible.
+P0$SEED <- 123L
+```
+
+## 2. A helper to run the same truth under different sampling schemes
+
+`spesim_method_test()` is a convenience wrapper that returns:
+- `res`: the simulation result
+- `audit`: a lightweight audit of the realised regime
+- optional standard plots and tables
+
+```{r}
+run_scheme <- function(P, scheme) {
+  P2 <- P
+  P2$SAMPLING_SCHEME <- scheme
+
+  # Keep audit deterministic and dependency-minimal for vignettes.
+  spesim_method_test(P = P2, diagnostics = "nn", make_tables = TRUE, make_plots = FALSE)
+}
+
+schemes <- c("random", "systematic", "tiled", "transect", "voronoi")
+outs <- setNames(lapply(schemes, function(s) run_scheme(P0, s)), schemes)
+```
+
+## 3. Compare the sampling audits (what did the sampling design *actually* do?)
+
+Sampling schemes differ in how much they are constrained by the boundary and by the non-overlap rule.
+
+```{r}
+sampling_summary <- bind_rows(lapply(names(outs), function(s) {
+  a <- outs[[s]]$audit
+  data.frame(
+    scheme = s,
+    n_requested = a$sampling$n_requested %||% NA_integer_,
+    n_returned  = a$sampling$n_returned  %||% NA_integer_,
+    reject_boundary = a$sampling$reject_boundary %||% NA_integer_,
+    reject_overlap  = a$sampling$reject_overlap  %||% NA_integer_,
+    safe_area_fraction = a$sampling$safe_area_fraction %||% NA_real_
+  )
+}))
+
+sampling_summary
+```
+
+Interpretation tips:
+
+- `safe_area_fraction` is a conservative estimate of how much of the domain is a feasible sampling frame for quadrat *centres*.
+- High `reject_boundary` or low `safe_area_fraction` means your design is effectively sampling the interior only.
+
+## 4. Compare how the same truth looks under different schemes
+
+A small, practical comparison is to look at a few common summaries.
+
+### 4.1 Mean richness and abundance per quadrat
+
+```{r}
+quadrat_summaries <- bind_rows(lapply(names(outs), function(s) {
+  res <- outs[[s]]$res
+  abund <- res$abund_matrix[, setdiff(colnames(res$abund_matrix), "site"), drop = FALSE]
+
+  data.frame(
+    scheme = s,
+    mean_richness = mean(rowSums(abund > 0)),
+    mean_abundance = mean(rowSums(abund))
+  )
+}))
+
+quadrat_summaries
+```
+
+### 4.2 Distance-decay (beta diversity vs distance)
+
+We compute a distance-decay table for each scheme and compare the *fitted slope*.
+
+```{r}
+slopes <- bind_rows(lapply(names(outs), function(s) {
+  res <- outs[[s]]$res
+  dd <- calculate_distance_decay(res$abund_matrix, res$site_coords)
+
+  # Simple linear trend (teaching-level summary): dissimilarity ~ distance
+  if (nrow(dd) == 0) {
+    return(data.frame(scheme = s, slope = NA_real_, r2 = NA_real_))
+  }
+  fit <- lm(Dissimilarity ~ Distance, data = dd)
+
+  data.frame(
+    scheme = s,
+    slope = unname(coef(fit)["Distance"]),
+    r2 = summary(fit)$r.squared
+  )
+}))
+
+slopes
+```
+
+**Method-testing point:** If different sampling schemes change the slope materially, your inference about spatial turnover may be design-sensitive.
+
+## 5. Use the audit layer to prevent over-interpretation
+
+The audit tells you whether the regime you *think* you requested is visible in the sampled data.
+
+For example, environmental filtering checks can be noisy when a species is sparse.
+
+```{r}
+filtering_summary <- bind_rows(lapply(names(outs), function(s) {
+  f <- outs[[s]]$audit$filtering
+  if (nrow(f) == 0) return(data.frame())
+
+  # Keep a compact view for the vignette
+  f %>%
+    mutate(scheme = s) %>%
+    select(scheme, species, gradient, n_sites, occupancy_sites, rho, slope, qualitative)
+}))
+
+filtering_summary
+```
+
+Interpretation tips:
+
+- Prefer filtering interpretations when `occupancy_sites` is not tiny.
+- Treat `too_sparse_to_assess` as a guardrail: it means *your sampled data don’t support a strong statement*.
+
+## 6. What to do next
+
+To turn this into a real method-testing exercise:
+
+- Repeat the comparison under different domain shapes (e.g., very concave polygons).
+- Vary quadrat size and number of quadrats.
+- Hold sampling fixed and vary the spatial process (Poisson vs Strauss vs Thomas).
+- Use `spesim_audit(..., diagnostics = c("nn", "spatstat"))` when `spatstat` is installed for edge-corrected point-process diagnostics.
