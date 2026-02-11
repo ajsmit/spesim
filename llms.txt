@@ -1,6 +1,6 @@
 # spesim: Spatial Ecological Simulation in R
 
-AJ Smit and contributors 2025-08-12
+AJ Smit and contributors 2026-02-11
 
 # spesim
 
@@ -62,36 +62,16 @@ package relies on common spatial/data/plotting libraries (see
 
 ## Vignettes (online)
 
-Start here:
-
-- [**Workflow
-  overview**](https://ajsmit.github.io/spesim/articles/spesim-workflow.html)
-- [**Public API (what’s
-  stable)**](https://ajsmit.github.io/spesim/articles/spesim-public-api.html)
-
-Core topics:
-
-- [**Quadrat
-  placement**](https://ajsmit.github.io/spesim/articles/spesim-quadrat-placement.html)
 - [**Interactions (neighbour
   effects)**](https://ajsmit.github.io/spesim/articles/spesim-interactions.html)
 - [**Full init-file
   parameters**](https://ajsmit.github.io/spesim/articles/spesim-init-parameters.html)
 - [**Environmental
-  gradients**](https://ajsmit.github.io/spesim/articles/spesim-env-gradients.html)
-- [**Advanced analysis
-  panel**](https://ajsmit.github.io/spesim/articles/spesim-advanced-panel.html)
+  Gradients**](https://ajsmit.github.io/spesim/articles/spesim-env-gradients.html)
+- [**Advanced Analysis
+  Panel**](https://ajsmit.github.io/spesim/articles/spesim-advanced-panel.html)
 - [**Point
   processes**](https://ajsmit.github.io/spesim/articles/spesim-point-processes.html)
-
-Recipes:
-
-- [**Recipes:
-  gradients**](https://ajsmit.github.io/spesim/articles/spesim-recipes-gradients.html)
-- [**Recipes:
-  interactions**](https://ajsmit.github.io/spesim/articles/spesim-recipes-interactions.html)
-- [**Recipes: point
-  processes**](https://ajsmit.github.io/spesim/articles/spesim-recipes-point-processes.html)
 
 If reading on GitHub before the site is live, you’ll find the sources
 under `vignettes/`.
@@ -105,7 +85,7 @@ or using an **init file** on disk. The latter is more convenient for
 larger setups and reproducibility, since access to the init file gives
 you a full bird’s eye view of the simulation parameters.
 
-### Quick start (programmatic)
+### Quick start: programmatic
 
 A minimal run that *does not* write files (handy for examples/CI).
 
@@ -120,8 +100,8 @@ P$SAMPLING_SCHEME <- "random"
 P$N_QUADRATS <- 20
 P$QUADRAT_SIZE_OPTION <- "medium"
 
-# Run (recommended wrapper; skip writing to disk to keep examples snappy)
-res <- spesim_run(P, write_outputs = FALSE)
+# Run (skip writing to disk to keep examples snappy)
+res <- run_spatial_simulation(P = P, write_outputs = FALSE)
 
 # One-map view: individuals + quadrats (no gradient fill)
 p <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P)
@@ -138,10 +118,10 @@ p4 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P,
 (p1 | p2) / (p3 | p4)
 ```
 
-### Quick start (init file on disk)
+### Quick start: init file on disk
 
 Prefer declaring everything in a text file? Point
-[`spesim_run()`](https://ajsmit.github.io/spesim/reference/spesim_run.md)
+[`run_spatial_simulation()`](https://ajsmit.github.io/spesim/reference/run_spatial_simulation.md)
 to it:
 
 ``` r
@@ -154,8 +134,8 @@ init <- "inst/examples/spesim_init_complete.txt"   # or a path you created
 #          or via a separate interactions file set here:
 # interactions <- "inst/examples/interactions_init.txt"
 
-res <- spesim_run(
-  init,
+res <- run_spatial_simulation(
+  init_file = init,
   interactions_file = NULL,  # use inline settings if present
   output_prefix = "out/demo", 
   write_outputs = TRUE       # write CSVs, figures, report
@@ -175,10 +155,7 @@ str(res$abund_matrix)
     ([`load_config()`](https://ajsmit.github.io/spesim/reference/load_config.md)
     → edit fields).
 2.  **Run the simulator**:
-    [`spesim_run()`](https://ajsmit.github.io/spesim/reference/spesim_run.md)
-    (recommended) or
-    [`run_spatial_simulation()`](https://ajsmit.github.io/spesim/reference/run_spatial_simulation.md)
-    (lower-level).
+    [`run_spatial_simulation()`](https://ajsmit.github.io/spesim/reference/run_spatial_simulation.md).
 3.  **Use the outputs**:
     - `res$abund_matrix` (site × species),
     - `res$site_coords` (quadrat centroids),
@@ -194,8 +171,7 @@ str(res$abund_matrix)
 
 | Function                                                                                                                    | Purpose                                                                                          |
 |-----------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
-| [`spesim_run()`](https://ajsmit.github.io/spesim/reference/spesim_run.md)                                                   | Recommended high-level runner; returns an S3 `spesim_result` and (optionally) writes outputs.    |
-| [`run_spatial_simulation()`](https://ajsmit.github.io/spesim/reference/run_spatial_simulation.md)                           | Lower-level orchestrator (more knobs; same core engine).                                         |
+| [`run_spatial_simulation()`](https://ajsmit.github.io/spesim/reference/run_spatial_simulation.md)                           | End‑to‑end orchestrator; returns a results list and (optionally) writes CSVs/figures/report.     |
 | [`generate_heterogeneous_distribution()`](https://ajsmit.github.io/spesim/reference/generate_heterogeneous_distribution.md) | Place individuals using abundances, gradients, dominant clustering, and interactions.            |
 | [`create_abundance_matrix()`](https://ajsmit.github.io/spesim/reference/create_abundance_matrix.md)                         | Build site × species table by intersecting individuals with quadrats.                            |
 | [`calculate_quadrat_environment()`](https://ajsmit.github.io/spesim/reference/calculate_quadrat_environment.md)             | Mean environmental conditions per quadrat from the grid.                                         |
@@ -205,10 +181,11 @@ str(res$abund_matrix)
 
 ------------------------------------------------------------------------
 
-## Interactions (neighbour effects)
+## Interactions
 
 You can specify interspecific effects **inline in the init file** or via
-a simple **CSV edgelist**. See the dedicated vignette:
+a simple **CSV edgelist** (neighbour effects). See the dedicated
+vignette:
 
 - <https://ajsmit.github.io/spesim/articles/spesim-interactions.html>
 
