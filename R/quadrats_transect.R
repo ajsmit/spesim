@@ -60,18 +60,22 @@
 #' }
 #' @export
 place_quadrats_transect <- function(domain, n_transects, n_quadrats_per_transect, quadrat_size, angle) {
-  buffer_dist <- sqrt(quadrat_size[1]^2 + quadrat_size[2]^2) / 2
+  # Method-testing: estimate boundary-constrained sampling frame for centres
+  sf_est <- estimate_sampling_frame(domain, quadrat_size)
+
+  buffer_dist <- sf_est$buffer_dist
   safe_domain <- sf::st_buffer(domain, -buffer_dist)
   if (sf::st_is_empty(safe_domain) || sf::st_area(safe_domain) == 0) {
     warning("Domain too small for given quadrat size.")
     out <- sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain)))
-    safe_frac <- as.numeric(sf::st_area(safe_domain) / sf::st_area(sf::st_union(domain)))
     out <- .attach_placement_audit(out, list(
       scheme = "transect",
       n_requested = as.integer(n_transects * n_quadrats_per_transect),
       n_returned = 0L,
+      quadrat_size = as.numeric(quadrat_size),
+      buffer_dist = as.numeric(sf_est$buffer_dist),
       safe_area_empty = TRUE,
-      safe_area_fraction = safe_frac,
+      safe_area_fraction = as.numeric(sf_est$safe_area_fraction),
       transects_total = as.integer(n_transects),
       transects_with_segment = 0L
     ))
@@ -114,13 +118,14 @@ place_quadrats_transect <- function(domain, n_transects, n_quadrats_per_transect
   if (length(points_list) == 0) {
     warning("No transects intersected the safe sampling area.")
     out <- sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain)))
-    safe_frac <- as.numeric(sf::st_area(safe_domain) / sf::st_area(sf::st_union(domain)))
     out <- .attach_placement_audit(out, list(
       scheme = "transect",
       n_requested = as.integer(n_transects * n_quadrats_per_transect),
       n_returned = 0L,
+      quadrat_size = as.numeric(quadrat_size),
+      buffer_dist = as.numeric(sf_est$buffer_dist),
       safe_area_empty = FALSE,
-      safe_area_fraction = safe_frac,
+      safe_area_fraction = as.numeric(sf_est$safe_area_fraction),
       transects_total = as.integer(n_transects),
       transects_with_segment = 0L
     ))
@@ -131,13 +136,14 @@ place_quadrats_transect <- function(domain, n_transects, n_quadrats_per_transect
   quadrat_geometries <- sf::st_sfc(lapply(sf::st_geometry(candidate_centers), function(pt) create_quadrat_from_center(pt, quadrat_size)), crs = sf::st_crs(domain))
 
   out <- sf::st_sf(quadrat_id = 1:length(quadrat_geometries), geometry = quadrat_geometries)
-  safe_frac <- as.numeric(sf::st_area(safe_domain) / sf::st_area(sf::st_union(domain)))
   out <- .attach_placement_audit(out, list(
     scheme = "transect",
     n_requested = as.integer(n_transects * n_quadrats_per_transect),
     n_returned = as.integer(length(quadrat_geometries)),
+    quadrat_size = as.numeric(quadrat_size),
+    buffer_dist = as.numeric(sf_est$buffer_dist),
     safe_area_empty = FALSE,
-    safe_area_fraction = safe_frac,
+    safe_area_fraction = as.numeric(sf_est$safe_area_fraction),
     transects_total = as.integer(n_transects),
     transects_with_segment = as.integer(length(points_list))
   ))

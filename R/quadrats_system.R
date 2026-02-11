@@ -62,6 +62,9 @@ place_quadrats_systematic <- function(domain, n_quadrats, quadrat_size) {
   aspect_ratio <- (bbox["ymax"] - bbox["ymin"]) / (bbox["xmax"] - bbox["xmin"])
   nx <- round(sqrt(n_quadrats / aspect_ratio))
   ny <- round(aspect_ratio * nx)
+  # Method-testing: estimate boundary-constrained sampling frame for centres
+  sf_est <- estimate_sampling_frame(domain, quadrat_size)
+
   candidate_centers <- sf::st_make_grid(domain, n = c(nx, ny), what = "centers")
   candidate_quadrats <- sf::st_sfc(lapply(candidate_centers, function(pt) create_quadrat_from_center(pt, quadrat_size)), crs = sf::st_crs(domain))
   within_mat <- sf::st_within(candidate_quadrats, domain, sparse = FALSE)
@@ -76,7 +79,10 @@ place_quadrats_systematic <- function(domain, n_quadrats, quadrat_size) {
       n_requested = as.integer(n_quadrats),
       n_returned = 0L,
       candidates_total = as.integer(length(candidate_quadrats)),
-      candidates_valid = 0L
+      candidates_valid = 0L,
+      quadrat_size = as.numeric(quadrat_size),
+      buffer_dist = as.numeric(sf_est$buffer_dist),
+      safe_area_fraction = as.numeric(sf_est$safe_area_fraction)
     ))
     return(out)
   }
@@ -87,7 +93,10 @@ place_quadrats_systematic <- function(domain, n_quadrats, quadrat_size) {
     n_requested = as.integer(n_quadrats),
     n_returned = as.integer(length(valid_quadrats)),
     candidates_total = as.integer(length(candidate_quadrats)),
-    candidates_valid = as.integer(length(valid_quadrats))
+    candidates_valid = as.integer(length(valid_quadrats)),
+    quadrat_size = as.numeric(quadrat_size),
+    buffer_dist = as.numeric(sf_est$buffer_dist),
+    safe_area_fraction = as.numeric(sf_est$safe_area_fraction)
   ))
   out
 }

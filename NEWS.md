@@ -1,3 +1,12 @@
+# spesim 0.3.7
+
+## Sampling audits: effective sampling frame (area-based)
+
+- Add `estimate_sampling_frame()` and include a conservative boundary constraint summary in `placement_audit`:
+  - `safe_area_fraction` = area(safe_domain)/area(domain), where safe_domain is the domain buffered inward by half the quadrat diagonal.
+  - `buffer_dist` (half-diagonal) and `quadrat_size` recorded for context.
+- Quadrat placement audits and `audit_sampling_scheme()` now report the effective sampling frame fraction alongside exclusion/rejection rates.
+
 # spesim 0.3.6
 
 ## Sampling audits: standardise `placement_audit`

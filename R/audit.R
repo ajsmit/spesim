@@ -364,6 +364,10 @@ audit_sampling_scheme <- function(quadrats) {
     summary_lines <- c(summary_lines, sprintf("boundary exclusion: %.1f%% (%s/%s valid)", 100 * rate, aud$candidates_valid, aud$candidates_total))
   }
 
+  if (!is.null(aud$safe_area_fraction) && is.finite(aud$safe_area_fraction)) {
+    summary_lines <- c(summary_lines, sprintf("effective sampling frame (area fraction): %.1f%%", 100 * aud$safe_area_fraction))
+  }
+
   aud$summary_lines <- summary_lines
   aud
 }

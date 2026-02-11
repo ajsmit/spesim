@@ -149,17 +149,19 @@ Implemented changes:
 - audits always include: `scheme`, `n_requested`, `n_returned`.
 - schemes include additional standard keys where applicable (candidates, attempts, safe-area fraction, etc.).
 
-### R4. Add **effective sampling frame** reporting (area-based)
+### R4. Add **effective sampling frame** reporting (area-based) ✅ (implemented in v0.3.7-dev)
 For each sampling scheme, report an area-based summary that captures the
-boundary constraint:
-- random: estimate accessible area as the domain eroded by half diagonal of
-  quadrat, and report its fraction of original.
-- transect: report `area(safe_domain)/area(domain)`.
-- tiled/systematic: report fraction of candidate grid-centres (or cells)
-  retained.
+boundary constraint.
 
-This provides a single interpretable number: *“your sampling frame shrank to 62%
-  of the domain due to boundary exclusion.”*
+Implemented changes:
+- Added `estimate_sampling_frame()` (conservative buffer-by-half-diagonal) and record:
+  - `safe_area_fraction` (effective sampling frame)
+  - `buffer_dist` (half-diagonal)
+  - `quadrat_size`
+- Placement functions now include `safe_area_fraction` in `placement_audit`.
+- `audit_sampling_scheme()` now prints “effective sampling frame (area fraction)”.
+
+This provides a single interpretable number: *“your sampling frame shrank to 62% of the domain due to boundary exclusion.”*
 
 ### R5. Add a **filtering sanity plot helper**
 Create a small plotting utility that overlays expected vs realised filtering:

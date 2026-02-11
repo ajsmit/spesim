@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -155,8 +155,9 @@ Version reviewed: <strong>0.3.3</strong> (per NEWS/site)</p>
 <p>Implemented changes: - placement functions now attach audits via a shared helper and a permissive validator. - audits always include: <code>scheme</code>, <code>n_requested</code>, <code>n_returned</code>. - schemes include additional standard keys where applicable (candidates, attempts, safe-area fraction, etc.).</p>
 </div>
 <div class="section level3">
-<h3 id="r4-add-effective-sampling-frame-reporting-area-based">R4. Add <strong>effective sampling frame</strong> reporting (area-based)<a class="anchor" aria-label="anchor" href="#r4-add-effective-sampling-frame-reporting-area-based"></a></h3>
-<p>For each sampling scheme, report an area-based summary that captures the boundary constraint: - random: estimate accessible area as the domain eroded by half diagonal of quadrat, and report its fraction of original. - transect: report <code>area(safe_domain)/area(domain)</code>. - tiled/systematic: report fraction of candidate grid-centres (or cells) retained.</p>
+<h3 id="r4-add-effective-sampling-frame-reporting-area-based-white_check_mark-implemented-in-v037-dev">R4. Add <strong>effective sampling frame</strong> reporting (area-based) ✅ (implemented in v0.3.7-dev)<a class="anchor" aria-label="anchor" href="#r4-add-effective-sampling-frame-reporting-area-based-white_check_mark-implemented-in-v037-dev"></a></h3>
+<p>For each sampling scheme, report an area-based summary that captures the boundary constraint.</p>
+<p>Implemented changes: - Added <code><a href="reference/estimate_sampling_frame.html">estimate_sampling_frame()</a></code> (conservative buffer-by-half-diagonal) and record: - <code>safe_area_fraction</code> (effective sampling frame) - <code>buffer_dist</code> (half-diagonal) - <code>quadrat_size</code> - Placement functions now include <code>safe_area_fraction</code> in <code>placement_audit</code>. - <code><a href="reference/audit_sampling_scheme.html">audit_sampling_scheme()</a></code> now prints “effective sampling frame (area fraction)”.</p>
 <p>This provides a single interpretable number: <em>“your sampling frame shrank to 62% of the domain due to boundary exclusion.”</em></p>
 </div>
 <div class="section level3">

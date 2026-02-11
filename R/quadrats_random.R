@@ -58,6 +58,9 @@ place_quadrats <- function(domain, n_quadrats, quadrat_size) {
   reject_boundary <- 0L
   reject_overlap <- 0L
 
+  # Method-testing: estimate boundary-constrained sampling frame for centres
+  sf_est <- estimate_sampling_frame(domain, quadrat_size)
+
   while (length(quadrats) < n_quadrats && attempts < max_attempts) {
     attempts <- attempts + 1
 
@@ -100,7 +103,10 @@ place_quadrats <- function(domain, n_quadrats, quadrat_size) {
       attempts = as.integer(attempts),
       max_attempts = as.integer(max_attempts),
       reject_boundary = as.integer(reject_boundary),
-      reject_overlap = as.integer(reject_overlap)
+      reject_overlap = as.integer(reject_overlap),
+      quadrat_size = as.numeric(quadrat_size),
+      buffer_dist = as.numeric(sf_est$buffer_dist),
+      safe_area_fraction = as.numeric(sf_est$safe_area_fraction)
     ))
     return(out)
   }
@@ -114,7 +120,10 @@ place_quadrats <- function(domain, n_quadrats, quadrat_size) {
     attempts = as.integer(attempts),
     max_attempts = as.integer(max_attempts),
     reject_boundary = as.integer(reject_boundary),
-    reject_overlap = as.integer(reject_overlap)
+    reject_overlap = as.integer(reject_overlap),
+    quadrat_size = as.numeric(quadrat_size),
+    buffer_dist = as.numeric(sf_est$buffer_dist),
+    safe_area_fraction = as.numeric(sf_est$safe_area_fraction)
   ))
   out
 }

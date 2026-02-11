@@ -82,6 +82,9 @@
 #' }
 #' @export
 place_quadrats_voronoi <- function(domain, n_quadrats, quadrat_size, voronoi_seed_factor, show_voronoi = FALSE) {
+  # Method-testing: estimate boundary-constrained sampling frame for centres
+  sf_est <- estimate_sampling_frame(domain, quadrat_size)
+
   n_seeds <- n_quadrats * voronoi_seed_factor
   domain_union <- sf::st_union(domain)
   seed_points <- sf::st_sample(domain_union, size = n_seeds, type = "random")
@@ -116,7 +119,10 @@ place_quadrats_voronoi <- function(domain, n_quadrats, quadrat_size, voronoi_see
       n_returned = 0L,
       seeds = as.integer(n_seeds),
       cells_total = as.integer(length(voronoi_clipped)),
-      cells_suitable = 0L
+      cells_suitable = 0L,
+      quadrat_size = as.numeric(quadrat_size),
+      buffer_dist = as.numeric(sf_est$buffer_dist),
+      safe_area_fraction = as.numeric(sf_est$safe_area_fraction)
     ))
     return(out0)
   }
@@ -135,7 +141,10 @@ place_quadrats_voronoi <- function(domain, n_quadrats, quadrat_size, voronoi_see
     n_returned = as.integer(length(final_quadrats_sfc)),
     seeds = as.integer(n_seeds),
     cells_total = as.integer(length(voronoi_clipped)),
-    cells_suitable = as.integer(num_possible)
+    cells_suitable = as.integer(num_possible),
+    quadrat_size = as.numeric(quadrat_size),
+    buffer_dist = as.numeric(sf_est$buffer_dist),
+    safe_area_fraction = as.numeric(sf_est$safe_area_fraction)
   ))
 
   if (isTRUE(show_voronoi)) {

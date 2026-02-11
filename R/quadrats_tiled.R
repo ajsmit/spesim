@@ -54,6 +54,9 @@
 #'
 #' @export
 place_quadrats_tiled <- function(domain, n_quadrats, quadrat_size) {
+  # Method-testing: estimate boundary-constrained sampling frame for centres
+  sf_est <- estimate_sampling_frame(domain, quadrat_size)
+
   candidate_grid <- sf::st_make_grid(domain, cellsize = quadrat_size, what = "polygons")
   within_mat <- sf::st_within(candidate_grid, domain, sparse = FALSE)
   inside <- if (is.matrix(within_mat)) drop(within_mat[, 1, drop = TRUE]) else as.logical(within_mat)
@@ -70,7 +73,10 @@ place_quadrats_tiled <- function(domain, n_quadrats, quadrat_size) {
       n_requested = as.integer(n_quadrats),
       n_returned = 0L,
       candidates_total = as.integer(num_candidates),
-      candidates_valid = 0L
+      candidates_valid = 0L,
+      quadrat_size = as.numeric(quadrat_size),
+      buffer_dist = as.numeric(sf_est$buffer_dist),
+      safe_area_fraction = as.numeric(sf_est$safe_area_fraction)
     ))
     return(out)
   }
@@ -89,7 +95,10 @@ place_quadrats_tiled <- function(domain, n_quadrats, quadrat_size) {
     n_requested = as.integer(n_req),
     n_returned = as.integer(n_quadrats),
     candidates_total = as.integer(num_candidates),
-    candidates_valid = as.integer(num_possible)
+    candidates_valid = as.integer(num_possible),
+    quadrat_size = as.numeric(quadrat_size),
+    buffer_dist = as.numeric(sf_est$buffer_dist),
+    safe_area_fraction = as.numeric(sf_est$safe_area_fraction)
   ))
   out
 }

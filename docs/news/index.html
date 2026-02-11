@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,6 +46,19 @@
       <small>Source: <a href="https://github.com/ajsmit/spesim/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.7" id="spesim-037">spesim 0.3.7<a class="anchor" aria-label="anchor" href="#spesim-037"></a></h2>
+<div class="section level3">
+<h3 id="sampling-audits-effective-sampling-frame-area-based-0-3-7">Sampling audits: effective sampling frame (area-based)<a class="anchor" aria-label="anchor" href="#sampling-audits-effective-sampling-frame-area-based-0-3-7"></a></h3>
+<ul><li>Add <code><a href="../reference/estimate_sampling_frame.html">estimate_sampling_frame()</a></code> and include a conservative boundary constraint summary in <code>placement_audit</code>:
+<ul><li>
+<code>safe_area_fraction</code> = area(safe_domain)/area(domain), where safe_domain is the domain buffered inward by half the quadrat diagonal.</li>
+<li>
+<code>buffer_dist</code> (half-diagonal) and <code>quadrat_size</code> recorded for context.</li>
+</ul></li>
+<li>Quadrat placement audits and <code><a href="../reference/audit_sampling_scheme.html">audit_sampling_scheme()</a></code> now report the effective sampling frame fraction alongside exclusion/rejection rates.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.6" id="spesim-036">spesim 0.3.6<a class="anchor" aria-label="anchor" href="#spesim-036"></a></h2>
 <div class="section level3">

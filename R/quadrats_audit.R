@@ -38,11 +38,16 @@
     "transects_total", "transects_with_segment",
     "seeds", "cells_total", "cells_suitable"
   )
+
+  # quadrat_size is numeric length-2
+  if (!is.null(aud$quadrat_size)) {
+    aud$quadrat_size <- as.numeric(aud$quadrat_size)
+  }
   for (nm in .int_fields) {
     if (!is.null(aud[[nm]])) aud[[nm]] <- as.integer(aud[[nm]])
   }
 
-  .dbl_fields <- c("safe_area_fraction", "boundary_exclusion")
+  .dbl_fields <- c("safe_area_fraction", "boundary_exclusion", "buffer_dist")
   for (nm in .dbl_fields) {
     if (!is.null(aud[[nm]])) aud[[nm]] <- as.numeric(aud[[nm]])
   }
