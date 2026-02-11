@@ -109,6 +109,18 @@
 - [`read_latest_report()`](https://ajsmit.github.io/spesim/reference/read_latest_report.md)
   : Read the most recent simulation report from an output directory
 
+## Audits (method testing)
+
+- [`spesim_audit()`](https://ajsmit.github.io/spesim/reference/spesim_audit.md)
+  : Audit whether a spesim run matches the intended qualitative regime
+- [`audit_spatial_structure()`](https://ajsmit.github.io/spesim/reference/audit_spatial_structure.md)
+  : Audit spatial structure via nearest-neighbour distances
+- [`audit_environmental_filtering()`](https://ajsmit.github.io/spesim/reference/audit_environmental_filtering.md)
+  : Audit environmental filtering (optima/tolerances vs realised
+  abundances)
+- [`audit_sampling_scheme()`](https://ajsmit.github.io/spesim/reference/audit_sampling_scheme.md)
+  : Audit quadrat placement: boundary exclusion and rejection metrics
+
 ## Utilities
 
 - [`generate_fisher_log_series()`](https://ajsmit.github.io/spesim/reference/generate_fisher_log_series.md)

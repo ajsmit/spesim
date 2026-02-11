@@ -20,6 +20,9 @@
 <url><loc>https://ajsmit.github.io/spesim/authors.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/index.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/news/index.html</loc></url>
+<url><loc>https://ajsmit.github.io/spesim/reference/audit_environmental_filtering.html</loc></url>
+<url><loc>https://ajsmit.github.io/spesim/reference/audit_sampling_scheme.html</loc></url>
+<url><loc>https://ajsmit.github.io/spesim/reference/audit_spatial_structure.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/calculate_distance_decay.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/calculate_occupancy_abundance.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/calculate_quadrat_environment.html</loc></url>
@@ -68,6 +71,7 @@
 <url><loc>https://ajsmit.github.io/spesim/reference/simulate_points_strauss_fast.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/simulate_points_thomas.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/spesim-package.html</loc></url>
+<url><loc>https://ajsmit.github.io/spesim/reference/spesim_audit.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/spesim_demo.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/spesim_open_docs.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/spesim_run.html</loc></url>

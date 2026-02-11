@@ -1,5 +1,24 @@
 # Changelog
 
+## spesim 0.3.3
+
+### Method-testing audits
+
+- Add
+  [`spesim_audit()`](https://ajsmit.github.io/spesim/reference/spesim_audit.md)
+  plus supporting helpers to quantify whether a realised run matches the
+  intended qualitative regime:
+  - nearest-neighbour spatial diagnostics per species
+    (clustered/CSR-like/inhibited)
+  - environment–abundance checks for gradient-responsive species
+    (optima/tolerances vs realised quadrat environments)
+  - sampling scheme boundary exclusion / rejection summaries (when
+    available)
+- Quadrat placement functions now attach a `placement_audit` attribute
+  with rejection/exclusion metrics (scheme-dependent).
+- The text report now includes a **Conceptual audit** section
+  summarising these checks.
+
 ## spesim 0.3.2
 
 ### Documentation
