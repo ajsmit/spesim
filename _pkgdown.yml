@@ -95,6 +95,7 @@ articles:
   - spesim-workflow
   - spesim-validation
   - spesim-method-testing
+  - spesim-ordination-dbrda
   - spesim-performance
   - spesim-public-api
   - spesim-quadrat-placement

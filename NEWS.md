@@ -1,3 +1,9 @@
+# spesim 0.3.15
+
+## Ordination teaching vignette (db-RDA)
+
+- New vignette: constrained ordination on simulated data using distance-based RDA (db-RDA) via `vegan::capscale()`.
+
 # spesim 0.3.14
 
 ## Build hygiene and vignette snippet checks

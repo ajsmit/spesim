@@ -1,0 +1,271 @@
+---
+title: "Constrained ordination (db-RDA) on simulated spesim data"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    highlight: null
+vignette: >
+  %\VignetteIndexEntry{Constrained ordination (db-RDA) on simulated spesim data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r code-brewing-opts, echo=FALSE}
+knitr::opts_chunk$set(
+  comment = "R>",
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 4.5,
+  fig.height = 3.0,
+  out.width = "85%",
+  dpi = 300
+)
+
+ggplot2::theme_set(ggplot2::theme_bw(base_size = 8))
+```
+
+This vignette shows how to use **spesim** to generate a realistic (but known)
+community dataset for practising constrained ordination.
+
+We will:
+
+1. Simulate a community in an irregular domain with **strong environmental gradients**.
+2. Add **positive and negative interspecific interactions** (local neighbourhood effects).
+3. Sample the landscape with quadrats to obtain:
+   - a **site × species** abundance table
+   - a **site × environment** table (mean environment per quadrat)
+4. Fit a **distance-based RDA (db-RDA)** using **vegan**’s `capscale()`.
+5. Create db-RDA plots in the same style as Tangled Bank’s *BCB743 constrained ordination* material.
+
+## 1) Libraries
+
+```{r}
+library(spesim)
+library(dplyr)
+library(ggplot2)
+library(vegan)
+```
+
+## 2) Configure a simulation with strong gradients + interactions
+
+We start from the packaged basic init file and then modify it.
+
+```{r}
+`%||%` <- function(a, b) if (!is.null(a)) a else b
+
+init_file <- system.file("examples/spesim_init_basic.txt", package = "spesim")
+P <- load_config(init_file)
+
+# --- keep the vignette fast-ish
+P$N_INDIVIDUALS <- 3000L
+P$N_SPECIES <- 16L
+P$N_QUADRATS <- 40L
+P$SAMPLING_RESOLUTION <- 70L
+P$ENVIRONMENTAL_NOISE <- 0.02
+P$ADVANCED_ANALYSIS <- FALSE
+
+# --- strong filtering (narrow tolerances)
+P$GRADIENT_SPECIES <- LETTERS[1:10]
+P$GRADIENT_ASSIGNMENTS <- c(
+  rep("temperature", 4),
+  rep("elevation", 3),
+  rep("rainfall", 3)
+)
+P$GRADIENT_OPTIMA <- 0.5
+P$GRADIENT_TOLERANCE <- 0.06
+
+# --- local interactions
+# Values < 1 weaken neighbours (negative interactions); > 1 strengthen (positive).
+P$INTERACTION_RADIUS <- 1.0
+P$INTERACTIONS_EDGELIST <- c(
+  # negative (competition/inhibition)
+  "B,A,0.80",
+  "C,A,0.85",
+  "D,B,0.75",
+  "E,D,0.80",
+
+  # mild background pressure for some focal species (from all neighbours)
+  "B,*,0.98",
+  "C,*,0.98",
+
+  # positive (facilitation)
+  "F,G,1.25",
+  "G,F,1.15",
+  "H,I,1.20",
+  "I,H,1.10"
+)
+
+# Reproducibility
+P$SEED <- 2026L
+```
+
+Run the simulation:
+
+```{r}
+res <- spesim_run(P, write_outputs = FALSE, seed = P$SEED, quiet = TRUE)
+```
+
+## 3) The two tables we need for constrained ordination
+
+### 3.1 Species table (responses)
+
+`res$abund_matrix` is a site × species abundance table.
+
+```{r}
+A <- res$abund_matrix
+head(A)
+```
+
+### 3.2 Environmental table (constraints)
+
+`calculate_quadrat_environment()` provides mean environment per quadrat.
+
+```{r}
+E <- calculate_quadrat_environment(res$env_gradients, res$quadrats, sf::st_crs(res$domain))
+head(E)
+```
+
+For constrained ordination we need the two tables aligned by site.
+
+```{r}
+dat <- dplyr::left_join(E, A, by = "site")
+stopifnot(nrow(dat) == nrow(A))
+
+# Response matrix (species): remove site column
+Y <- dat |> dplyr::select(-site, -temperature_C, -elevation_m, -rainfall_mm)
+
+# Constraint matrix (environment)
+X <- dat |> dplyr::select(site, temperature_C, elevation_m, rainfall_mm)
+
+# Standardise constraints (z-scores), as in Tangled Bank
+Xz <- vegan::decostand(dplyr::select(X, -site), method = "standardize")
+```
+
+## 4) Fit db-RDA (vegan::capscale)
+
+Distance-based RDA (db-RDA) is a constrained ordination that lets you choose a
+non-Euclidean dissimilarity index. Here we use Bray–Curtis dissimilarity on the
+abundance matrix.
+
+```{r}
+cap_full <- vegan::capscale(Y ~ temperature_C + elevation_m + rainfall_mm,
+                           data = Xz,
+                           distance = "bray",
+                           add = TRUE)
+cap_full
+```
+
+Permutation test for the overall constrained model:
+
+```{r}
+anova(cap_full)
+```
+
+Adjusted R² (variance explained by constraints):
+
+```{r}
+round(vegan::RsquareAdj(cap_full)$adj.r.squared, 3)
+```
+
+Check multicollinearity via variance inflation factors (VIF):
+
+```{r}
+vegan::vif.cca(cap_full)
+```
+
+## 5) Ordination plots (Tangled Bank style)
+
+We create a clean ggplot of the first two constrained axes:
+
+- **Sites** as points
+- **Environmental vectors** as arrows
+- Optional grouping by a simple “bioregion” proxy (temperature quartiles)
+
+### 5.1 Extract scores
+
+```{r}
+sc_sites <- as.data.frame(vegan::scores(cap_full, display = "sites", scaling = 2))
+sc_bp <- as.data.frame(vegan::scores(cap_full, display = "bp", scaling = 2))
+
+sc_sites$site <- dat$site
+sc_sites <- dplyr::left_join(sc_sites, X, by = c("site" = "site"))
+
+# Simple temperature-based grouping (for teaching): 4 bins
+sc_sites$temp_bin <- cut(sc_sites$temperature_C,
+                         breaks = quantile(sc_sites$temperature_C, probs = seq(0, 1, 0.25), na.rm = TRUE),
+                         include.lowest = TRUE)
+
+# Arrow scaling: make biplot vectors visible in the same coordinate system
+arrow_mul <- 1.3
+sc_bp$var <- rownames(sc_bp)
+sc_bp$CAP1 <- sc_bp$CAP1 * arrow_mul
+sc_bp$CAP2 <- sc_bp$CAP2 * arrow_mul
+```
+
+### 5.2 Plot sites + biplot arrows
+
+```{r}
+cap_plot <- ggplot(sc_sites, aes(x = CAP1, y = CAP2)) +
+  geom_hline(yintercept = 0, linewidth = 0.2, colour = "grey70") +
+  geom_vline(xintercept = 0, linewidth = 0.2, colour = "grey70") +
+  geom_point(aes(colour = temp_bin), size = 1.6, alpha = 0.85) +
+  coord_equal() +
+  labs(
+    x = "db-RDA axis 1 (CAP1)",
+    y = "db-RDA axis 2 (CAP2)",
+    colour = "Temperature bin",
+    title = "db-RDA on spesim quadrat data",
+    subtitle = "Sites (quadrats) constrained by mean environment; Bray–Curtis distances"
+  )
+
+cap_plot
+```
+
+Add environmental vectors:
+
+```{r}
+cap_plot +
+  geom_segment(
+    data = sc_bp,
+    aes(x = 0, y = 0, xend = CAP1, yend = CAP2),
+    inherit.aes = FALSE,
+    arrow = arrow(length = unit(0.15, "cm")),
+    linewidth = 0.3,
+    colour = "black"
+  ) +
+  geom_text(
+    data = sc_bp,
+    aes(x = CAP1, y = CAP2, label = var),
+    inherit.aes = FALSE,
+    size = 2.6,
+    vjust = -0.6
+  )
+```
+
+### 5.3 Sanity check: which gradients align with CAP1?
+
+```{r}
+sc_sites |>
+  dplyr::summarise(
+    cor_cap1_temp = cor(CAP1, temperature_C),
+    cor_cap1_elev = cor(CAP1, elevation_m),
+    cor_cap1_rain = cor(CAP1, rainfall_mm)
+  )
+```
+
+## 6) Why this is useful for teaching
+
+Because spesim generates:
+- the **site × species** matrix (`abund_matrix`), and
+- the corresponding **site × environment** matrix (via `calculate_quadrat_environment()`),
+
+you can repeatedly create controlled datasets where you *know the truth* (strong
+gradients and interactions were imposed) and then practise ordination workflows
+that aim to recover the dominant drivers.
+
+### Suggested exercises
+
+- Increase/decrease `GRADIENT_TOLERANCE` and see how the constrained R² changes.
+- Turn interactions off (`INTERACTION_RADIUS <- 0`) and compare db-RDA fits.
+- Compare sampling schemes (random vs transect vs Voronoi) and see how sampling
+  design alters ordination stability.

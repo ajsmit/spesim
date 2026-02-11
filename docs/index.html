@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.14</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.15</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,6 +46,7 @@
     <li><a class="dropdown-item" href="articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
     <li><a class="dropdown-item" href="articles/spesim-validation.html">Validation and sanity checks</a></li>
     <li><a class="dropdown-item" href="articles/spesim-method-testing.html">Method testing with spesim</a></li>
+    <li><a class="dropdown-item" href="articles/spesim-ordination-dbrda.html">Constrained ordination (db-RDA) on simulated spesim data</a></li>
     <li><a class="dropdown-item" href="articles/spesim-performance.html">Performance notes</a></li>
     <li><a class="dropdown-item" href="articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
     <li><a class="dropdown-item" href="articles/spesim-quadrat-placement.html">Quadrat placement schemes in spesim</a></li>
@@ -75,11 +76,13 @@
 <img src="logo.svg" class="logo" alt=""><h1 id="spesim-spatial-ecological-simulation-in-r">spesim: Spatial Ecological Simulation in R<a class="anchor" aria-label="anchor" href="#spesim-spatial-ecological-simulation-in-r"></a>
 </h1>
 </div>
-<p>AJ Smit and contributors 2025-08-12</p>
+<p>AJ Smit and contributors 2026-02-11</p>
 </div>
 <div class="section level1">
 <h1 id="spesim-">spesim <a class="anchor" aria-label="anchor" href="#spesim-"></a>
 </h1>
+<!-- badges: start -->
+
 <p><strong>spesim</strong> is an R package for simulating, sampling, and analysing <em>spatially heterogeneous ecological communities</em> in irregular landscapes.<br>
 It’s built for teaching, methods testing, and exploratory research in <strong>biogeography</strong> and <strong>community ecology</strong>.</p>
 <ul>
@@ -123,25 +126,12 @@ It’s built for teaching, methods testing, and exploratory research in <strong>
 <div class="section level2">
 <h2 id="vignettes-online">Vignettes (online)<a class="anchor" aria-label="anchor" href="#vignettes-online"></a>
 </h2>
-<p>Start here:</p>
 <ul>
-<li><a href="https://ajsmit.github.io/spesim/articles/spesim-workflow.html"><strong>Workflow overview</strong></a></li>
-<li><a href="https://ajsmit.github.io/spesim/articles/spesim-public-api.html"><strong>Public API (what’s stable)</strong></a></li>
-</ul>
-<p>Core topics:</p>
-<ul>
-<li><a href="https://ajsmit.github.io/spesim/articles/spesim-quadrat-placement.html"><strong>Quadrat placement</strong></a></li>
 <li><a href="https://ajsmit.github.io/spesim/articles/spesim-interactions.html"><strong>Interactions (neighbour effects)</strong></a></li>
 <li><a href="https://ajsmit.github.io/spesim/articles/spesim-init-parameters.html"><strong>Full init-file parameters</strong></a></li>
-<li><a href="https://ajsmit.github.io/spesim/articles/spesim-env-gradients.html"><strong>Environmental gradients</strong></a></li>
-<li><a href="https://ajsmit.github.io/spesim/articles/spesim-advanced-panel.html"><strong>Advanced analysis panel</strong></a></li>
+<li><a href="https://ajsmit.github.io/spesim/articles/spesim-env-gradients.html"><strong>Environmental Gradients</strong></a></li>
+<li><a href="https://ajsmit.github.io/spesim/articles/spesim-advanced-panel.html"><strong>Advanced Analysis Panel</strong></a></li>
 <li><a href="https://ajsmit.github.io/spesim/articles/spesim-point-processes.html"><strong>Point processes</strong></a></li>
-</ul>
-<p>Recipes:</p>
-<ul>
-<li><a href="https://ajsmit.github.io/spesim/articles/spesim-recipes-gradients.html"><strong>Recipes: gradients</strong></a></li>
-<li><a href="https://ajsmit.github.io/spesim/articles/spesim-recipes-interactions.html"><strong>Recipes: interactions</strong></a></li>
-<li><a href="https://ajsmit.github.io/spesim/articles/spesim-recipes-point-processes.html"><strong>Recipes: point processes</strong></a></li>
 </ul>
 <p>If reading on GitHub before the site is live, you’ll find the sources under <code>vignettes/</code>.</p>
 <hr>
@@ -151,7 +141,7 @@ It’s built for teaching, methods testing, and exploratory research in <strong>
 </h2>
 <p>You can run a simulation in two ways: <strong>programmatically</strong> (in-memory) or using an <strong>init file</strong> on disk. The latter is more convenient for larger setups and reproducibility, since access to the init file gives you a full bird’s eye view of the simulation parameters.</p>
 <div class="section level3">
-<h3 id="quick-start-programmatic">Quick start (programmatic)<a class="anchor" aria-label="anchor" href="#quick-start-programmatic"></a>
+<h3 id="quick-start-programmatic">Quick start: programmatic<a class="anchor" aria-label="anchor" href="#quick-start-programmatic"></a>
 </h3>
 <p>A minimal run that <em>does not</em> write files (handy for examples/CI).</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -165,8 +155,8 @@ It’s built for teaching, methods testing, and exploratory research in <strong>
 <span><span class="va">P</span><span class="op">$</span><span class="va">N_QUADRATS</span> <span class="op">&lt;-</span> <span class="fl">20</span></span>
 <span><span class="va">P</span><span class="op">$</span><span class="va">QUADRAT_SIZE_OPTION</span> <span class="op">&lt;-</span> <span class="st">"medium"</span></span>
 <span></span>
-<span><span class="co"># Run (recommended wrapper; skip writing to disk to keep examples snappy)</span></span>
-<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/spesim_run.html">spesim_run</a></span><span class="op">(</span><span class="va">P</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co"># Run (skip writing to disk to keep examples snappy)</span></span>
+<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_spatial_simulation.html">run_spatial_simulation</a></span><span class="op">(</span>P <span class="op">=</span> <span class="va">P</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># One-map view: individuals + quadrats (no gradient fill)</span></span>
 <span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/plot_spatial_sampling.html">plot_spatial_sampling</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">domain</span>, <span class="va">res</span><span class="op">$</span><span class="va">species_dist</span>, <span class="va">res</span><span class="op">$</span><span class="va">quadrats</span>, <span class="va">res</span><span class="op">$</span><span class="va">P</span><span class="op">)</span></span>
@@ -183,9 +173,9 @@ It’s built for teaching, methods testing, and exploratory research in <strong>
 <span><span class="op">(</span><span class="va">p1</span> <span class="op">|</span> <span class="va">p2</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="va">p3</span> <span class="op">|</span> <span class="va">p4</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="quick-start-init-file-on-disk">Quick start (init file on disk)<a class="anchor" aria-label="anchor" href="#quick-start-init-file-on-disk"></a>
+<h3 id="quick-start-init-file-on-disk">Quick start: init file on disk<a class="anchor" aria-label="anchor" href="#quick-start-init-file-on-disk"></a>
 </h3>
-<p>Prefer declaring everything in a text file? Point <code><a href="reference/spesim_run.html">spesim_run()</a></code> to it:</p>
+<p>Prefer declaring everything in a text file? Point <code><a href="reference/run_spatial_simulation.html">run_spatial_simulation()</a></code> to it:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ajsmit/spesim" class="external-link">spesim</a></span><span class="op">)</span></span>
 <span></span>
@@ -196,8 +186,8 @@ It’s built for teaching, methods testing, and exploratory research in <strong>
 <span><span class="co">#          or via a separate interactions file set here:</span></span>
 <span><span class="co"># interactions &lt;- "inst/examples/interactions_init.txt"</span></span>
 <span></span>
-<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/spesim_run.html">spesim_run</a></span><span class="op">(</span></span>
-<span>  <span class="va">init</span>,</span>
+<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_spatial_simulation.html">run_spatial_simulation</a></span><span class="op">(</span></span>
+<span>  init_file <span class="op">=</span> <span class="va">init</span>,</span>
 <span>  interactions_file <span class="op">=</span> <span class="cn">NULL</span>,  <span class="co"># use inline settings if present</span></span>
 <span>  output_prefix <span class="op">=</span> <span class="st">"out/demo"</span>, </span>
 <span>  write_outputs <span class="op">=</span> <span class="cn">TRUE</span>       <span class="co"># write CSVs, figures, report</span></span>
@@ -216,7 +206,7 @@ It’s built for teaching, methods testing, and exploratory research in <strong>
 <li>
 <strong>Set parameters</strong>: either with an <strong>init file</strong> (see vignette) or in-memory (<code><a href="reference/load_config.html">load_config()</a></code> → edit fields).</li>
 <li>
-<strong>Run the simulator</strong>: <code><a href="reference/spesim_run.html">spesim_run()</a></code> (recommended) or <code><a href="reference/run_spatial_simulation.html">run_spatial_simulation()</a></code> (lower-level).</li>
+<strong>Run the simulator</strong>: <code><a href="reference/run_spatial_simulation.html">run_spatial_simulation()</a></code>.</li>
 <li>
 <strong>Use the outputs</strong>:
 <ul>
@@ -248,12 +238,8 @@ It’s built for teaching, methods testing, and exploratory research in <strong>
 </tr></thead>
 <tbody>
 <tr>
-<td><code><a href="reference/spesim_run.html">spesim_run()</a></code></td>
-<td>Recommended high-level runner; returns an S3 <code>spesim_result</code> and (optionally) writes outputs.</td>
-</tr>
-<tr>
 <td><code><a href="reference/run_spatial_simulation.html">run_spatial_simulation()</a></code></td>
-<td>Lower-level orchestrator (more knobs; same core engine).</td>
+<td>End‑to‑end orchestrator; returns a results list and (optionally) writes CSVs/figures/report.</td>
 </tr>
 <tr>
 <td><code><a href="reference/generate_heterogeneous_distribution.html">generate_heterogeneous_distribution()</a></code></td>
@@ -284,9 +270,9 @@ It’s built for teaching, methods testing, and exploratory research in <strong>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="interactions-neighbour-effects">Interactions (neighbour effects)<a class="anchor" aria-label="anchor" href="#interactions-neighbour-effects"></a>
+<h2 id="interactions">Interactions<a class="anchor" aria-label="anchor" href="#interactions"></a>
 </h2>
-<p>You can specify interspecific effects <strong>inline in the init file</strong> or via a simple <strong>CSV edgelist</strong>. See the dedicated vignette:</p>
+<p>You can specify interspecific effects <strong>inline in the init file</strong> or via a simple <strong>CSV edgelist</strong> (neighbour effects). See the dedicated vignette:</p>
 <ul>
 <li><a href="https://ajsmit.github.io/spesim/articles/spesim-interactions.html" class="uri">https://ajsmit.github.io/spesim/articles/spesim-interactions.html</a></li>
 </ul>
@@ -364,7 +350,13 @@ It’s built for teaching, methods testing, and exploratory research in <strong>
 </ul>
 </div>
 
-
+<div class="dev-status">
+<h2 data-toc-skip>Dev status</h2>
+<ul class="list-unstyled">
+<li><a href="https://github.com/ajsmit/spesim/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/ajsmit/spesim/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://github.com/ajsmit/spesim" class="external-link"><img src="https://img.shields.io/github/r-package/v/ajsmit/spesim?label=version" alt="version"></a></li>
+</ul>
+</div>
 
   </aside>
 </div>
