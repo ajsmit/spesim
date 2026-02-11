@@ -74,6 +74,7 @@ reference:
 - title: "Audits (method testing)"
   contents:
   - spesim_audit
+  - spesim_regime
   - audit_spatial_structure
   - audit_environmental_filtering
   - audit_sampling_scheme

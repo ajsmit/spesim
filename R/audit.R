@@ -30,7 +30,7 @@
 #' @return A list of class `spesim_audit` with components:
 #' 
 #' - `spatial`: data.frame of NN diagnostics per species
-#' - `filtering`: data.frame of environment–abundance checks (may be empty)
+#' - `filtering`: data.frame of environment-abundance checks (may be empty)
 #' - `sampling`: a list describing quadrat placement rejection/exclusion metrics
 #'
 #' @export
@@ -47,6 +47,8 @@ spesim_audit <- function(res, species = "all", nn_k = 1) {
   sampling <- audit_sampling_scheme(res$quadrats %||% NULL)
 
   out <- list(spatial = spatial, filtering = filtering, sampling = sampling)
+  out$regime <- spesim_regime(res, audit = out)
+
   class(out) <- "spesim_audit"
   out
 }
@@ -54,6 +56,22 @@ spesim_audit <- function(res, species = "all", nn_k = 1) {
 #' @export
 print.spesim_audit <- function(x, ...) {
   cat("<spesim_audit>\n")
+
+  if (!is.null(x$regime) && is.list(x$regime)) {
+    cat("\nRegime classification (teaching-friendly):\n")
+    # print in a compact way
+    for (nm in names(x$regime)) {
+      if (nm %in% c("spatial", "filtering", "sampling")) {
+        r <- x$regime[[nm]]
+        if (is.list(r) && !is.null(r$grade)) {
+          cat(sprintf("  %s: %s", nm, r$grade))
+          if (!is.null(r$reason)) cat(sprintf(" - %s", r$reason))
+          cat("\n")
+        }
+      }
+    }
+  }
+
   cat("\nSpatial structure (nearest-neighbour diagnostics):\n")
   if (nrow(x$spatial) == 0) {
     cat("  (no spatial diagnostics available)\n")

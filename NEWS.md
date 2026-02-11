@@ -1,3 +1,10 @@
+# spesim 0.3.4
+
+## Method-testing tutor: regime classification
+
+- Add `spesim_regime()` to convert audit metrics into teaching-friendly **green/amber/red** regime classifications.
+- `spesim_audit()` now includes a `regime` element and `print.spesim_audit()` prints the classification summary.
+
 # spesim 0.3.3
 
 ## Method-testing audits

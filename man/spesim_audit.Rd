@@ -19,7 +19,7 @@ structure. Default \code{"all"} audits all species present.}
 A list of class \code{spesim_audit} with components:
 \itemize{
 \item \code{spatial}: data.frame of NN diagnostics per species
-\item \code{filtering}: data.frame of environment–abundance checks (may be empty)
+\item \code{filtering}: data.frame of environment-abundance checks (may be empty)
 \item \code{sampling}: a list describing quadrat placement rejection/exclusion metrics
 }
 }
