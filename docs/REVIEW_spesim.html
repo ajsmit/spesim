@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -23,6 +23,7 @@
     <li><a class="dropdown-item" href="articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
     <li><a class="dropdown-item" href="articles/spesim-validation.html">Validation and sanity checks</a></li>
     <li><a class="dropdown-item" href="articles/spesim-method-testing.html">Method testing with spesim</a></li>
+    <li><a class="dropdown-item" href="articles/spesim-performance.html">Performance notes</a></li>
     <li><a class="dropdown-item" href="articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
     <li><a class="dropdown-item" href="articles/spesim-quadrat-placement.html">Quadrat placement schemes in spesim</a></li>
     <li><a class="dropdown-item" href="articles/spesim-recipes-gradients.html">spesim recipes: environmental gradients</a></li>
@@ -188,8 +189,9 @@ Version reviewed: <strong>0.3.3</strong> (per NEWS/site)</p>
 <p>It demonstrates: - comparing sampling schemes under the same underlying truth, - comparing a distance-decay summary across designs, - using audits (including <code>occupancy_sites</code> guards) to avoid over-interpretation.</p>
 </div>
 <div class="section level3">
-<h3 id="r10-performance-notes-document-safe-upper-bounds-for-teaching">R10. Performance notes: document safe upper bounds for teaching<a class="anchor" aria-label="anchor" href="#r10-performance-notes-document-safe-upper-bounds-for-teaching"></a></h3>
-<p>Add a small “performance” section (or vignette appendix) giving rules of thumb: - N_individuals and grid resolution ranges that keep runs interactive.</p>
+<h3 id="r10-performance-notes-document-safe-upper-bounds-for-teaching-white_check_mark-implemented-in-v0313-dev">R10. Performance notes: document safe upper bounds for teaching ✅ (implemented in v0.3.13-dev)<a class="anchor" aria-label="anchor" href="#r10-performance-notes-document-safe-upper-bounds-for-teaching-white_check_mark-implemented-in-v0313-dev"></a></h3>
+<p>Added vignette: <strong>“Performance notes”</strong> (<code>vignettes/spesim-performance.Rmd</code>).</p>
+<p>Includes conservative rules of thumb for interactive use: - <code>N_INDIVIDUALS</code> (teaching vs method-testing ranges) - <code>N_QUADRATS</code> typical ranges - <code>SAMPLING_RESOLUTION</code> guidance - practical tips (when to turn off advanced analysis; when summaries become undefined)</p>
 </div>
 <div class="section level3">
 <h3 id="r11-thoroughly-test-all-code-snippetsblocks">R11. Thoroughly test ALL code snippets/blocks<a class="anchor" aria-label="anchor" href="#r11-thoroughly-test-all-code-snippetsblocks"></a></h3>

@@ -1,3 +1,9 @@
+# spesim 0.3.13
+
+## Performance notes
+
+- New vignette: "Performance notes" (`spesim-performance`) with conservative interactive ranges and practical tips.
+
 # spesim 0.3.12
 
 ## Method-testing vignette

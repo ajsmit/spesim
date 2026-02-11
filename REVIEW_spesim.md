@@ -205,9 +205,14 @@ It demonstrates:
 - comparing a distance-decay summary across designs,
 - using audits (including `occupancy_sites` guards) to avoid over-interpretation.
 
-### R10. Performance notes: document safe upper bounds for teaching
-Add a small “performance” section (or vignette appendix) giving rules of thumb:
-- N_individuals and grid resolution ranges that keep runs interactive.
+### R10. Performance notes: document safe upper bounds for teaching ✅ (implemented in v0.3.13-dev)
+Added vignette: **"Performance notes"** (`vignettes/spesim-performance.Rmd`).
+
+Includes conservative rules of thumb for interactive use:
+- `N_INDIVIDUALS` (teaching vs method-testing ranges)
+- `N_QUADRATS` typical ranges
+- `SAMPLING_RESOLUTION` guidance
+- practical tips (when to turn off advanced analysis; when summaries become undefined)
 
 ### R11. Thoroughly test ALL code snippets/blocks
 Check, verify, and correct all user-facing example code blocks in ALL vignettes and help files.
