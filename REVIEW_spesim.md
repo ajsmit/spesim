@@ -173,10 +173,13 @@ Implemented as `plot_filtering_response(res)`:
 
 Pairs naturally with `audit_environmental_filtering()`.
 
-### R6. Extend audit to report **per-species occupied-quadrat counts**
-Filtering checks can be unstable when the species is rare. Add:
-- occupancy in quadrats (count of sites with abundance>0)
-- warn when occupancy is below a threshold (e.g., <5).
+### R6. Extend audit to report **per-species occupied-quadrat counts** ✅ (implemented in v0.3.9-dev)
+Filtering checks can be unstable when the species is rare.
+
+Implemented changes:
+- `audit_environmental_filtering()` now reports `occupancy_sites` (number of quadrats with abundance > 0).
+- The qualitative label becomes `too_sparse_to_assess` when occupancy is low (default threshold currently 5).
+- `print.spesim_audit()` now prints `occupancy_sites` alongside `n_sites`.
 
 ### R7. Make the report’s “Conceptual audit” reproducible and configurable
 - Keep current defaults (lightweight).

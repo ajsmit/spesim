@@ -1,3 +1,10 @@
+# spesim 0.3.9
+
+## Filtering audits: occupancy-aware diagnostics
+
+- `audit_environmental_filtering()` now reports `occupancy_sites` (number of quadrats with abundance > 0).
+- Low occupancy is flagged as `too_sparse_to_assess`, helping prevent over-interpretation of noisy correlations.
+
 # spesim 0.3.8
 
 ## Filtering diagnostics: plotting helper

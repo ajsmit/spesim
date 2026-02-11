@@ -10,7 +10,16 @@ audit_environmental_filtering(res)
 \item{res}{Simulation results list.}
 }
 \value{
-data.frame; one row per gradient-responsive species.
+A data.frame; one row per gradient-responsive species, with columns:
+\describe{
+\item{species}{Species label.}
+\item{gradient}{Gradient name (e.g. temperature/elevation/rainfall).}
+\item{n_sites}{Number of sampled quadrats with finite environment + abundance.}
+\item{occupancy_sites}{Number of quadrats with abundance > 0 (a simple sparsity check).}
+\item{rho}{Spearman correlation between abundance and closeness-to-optimum (higher is more consistent with filtering).}
+\item{slope}{Slope from a simple linear model of abundance vs distance-from-optimum (sign is diagnostic only).}
+\item{qualitative}{Teaching-friendly label (e.g. abundance_peaks_near_optimum, weak_or_no_signal, too_sparse_to_assess).}
+}
 }
 \description{
 Audit environmental filtering (optima/tolerances vs realised abundances)

@@ -121,7 +121,7 @@ print.spesim_audit <- function(x, ...) {
   if (nrow(x$filtering) == 0) {
     cat("  (no gradient-responsive species configured)\n")
   } else {
-    keep <- c("species", "gradient", "n_sites", "rho", "slope", "qualitative")
+    keep <- c("species", "gradient", "n_sites", "occupancy_sites", "rho", "slope", "qualitative")
     keep <- keep[keep %in% names(x$filtering)]
     print(x$filtering[, keep, drop = FALSE], row.names = FALSE)
   }
@@ -223,7 +223,16 @@ audit_spatial_structure <- function(species_dist, domain, species = "all", nn_k 
 #'
 #' @param res Simulation results list.
 #'
-#' @return data.frame; one row per gradient-responsive species.
+#' @return A data.frame; one row per gradient-responsive species, with columns:
+#' \describe{
+#'   \item{species}{Species label.}
+#'   \item{gradient}{Gradient name (e.g. temperature/elevation/rainfall).}
+#'   \item{n_sites}{Number of sampled quadrats with finite environment + abundance.}
+#'   \item{occupancy_sites}{Number of quadrats with abundance > 0 (a simple sparsity check).}
+#'   \item{rho}{Spearman correlation between abundance and closeness-to-optimum (higher is more consistent with filtering).}
+#'   \item{slope}{Slope from a simple linear model of abundance vs distance-from-optimum (sign is diagnostic only).}
+#'   \item{qualitative}{Teaching-friendly label (e.g. abundance_peaks_near_optimum, weak_or_no_signal, too_sparse_to_assess).}
+#' }
 #' @export
 audit_environmental_filtering <- function(res) {
   `%||%` <- function(a, b) if (!is.null(a)) a else b
@@ -287,14 +296,17 @@ audit_environmental_filtering <- function(res) {
     ok <- is.finite(env) & is.finite(abund)
     env <- env[ok]; abund <- abund[ok]
 
-    if (length(env) < 5) {
+    occupancy_sites <- sum(abund > 0, na.rm = TRUE)
+
+    if (length(env) < 5 || occupancy_sites < 2) {
       return(data.frame(
         species = s,
         gradient = g,
         n_sites = length(env),
+        occupancy_sites = occupancy_sites,
         rho = NA_real_,
         slope = NA_real_,
-        qualitative = "too_few_sites"
+        qualitative = if (length(env) < 5) "too_few_sites" else "too_sparse_to_assess"
       ))
     }
 
@@ -316,13 +328,22 @@ audit_environmental_filtering <- function(res) {
 
     qualitative <- NA_character_
     if (is.finite(rho)) {
-      qualitative <- if (rho > 0.2) "abundance_peaks_near_optimum" else if (rho < -0.2) "opposite_of_expected" else "weak_or_no_signal"
+      qualitative <- if (occupancy_sites < 5) {
+        "too_sparse_to_assess"
+      } else if (rho > 0.2) {
+        "abundance_peaks_near_optimum"
+      } else if (rho < -0.2) {
+        "opposite_of_expected"
+      } else {
+        "weak_or_no_signal"
+      }
     }
 
     data.frame(
       species = s,
       gradient = g,
       n_sites = length(env),
+      occupancy_sites = occupancy_sites,
       rho = rho,
       slope = slope,
       qualitative = qualitative

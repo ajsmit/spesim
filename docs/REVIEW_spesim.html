@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -167,9 +167,9 @@ Version reviewed: <strong>0.3.3</strong> (per NEWS/site)</p>
 <p>Pairs naturally with <code><a href="reference/audit_environmental_filtering.html">audit_environmental_filtering()</a></code>.</p>
 </div>
 <div class="section level3">
-<h3 id="r6-extend-audit-to-report-per-species-occupied-quadrat-counts">R6. Extend audit to report <strong>per-species occupied-quadrat counts</strong>
-<a class="anchor" aria-label="anchor" href="#r6-extend-audit-to-report-per-species-occupied-quadrat-counts"></a></h3>
-<p>Filtering checks can be unstable when the species is rare. Add: - occupancy in quadrats (count of sites with abundance&gt;0) - warn when occupancy is below a threshold (e.g., &lt;5).</p>
+<h3 id="r6-extend-audit-to-report-per-species-occupied-quadrat-counts-white_check_mark-implemented-in-v039-dev">R6. Extend audit to report <strong>per-species occupied-quadrat counts</strong> ✅ (implemented in v0.3.9-dev)<a class="anchor" aria-label="anchor" href="#r6-extend-audit-to-report-per-species-occupied-quadrat-counts-white_check_mark-implemented-in-v039-dev"></a></h3>
+<p>Filtering checks can be unstable when the species is rare.</p>
+<p>Implemented changes: - <code><a href="reference/audit_environmental_filtering.html">audit_environmental_filtering()</a></code> now reports <code>occupancy_sites</code> (number of quadrats with abundance &gt; 0). - The qualitative label becomes <code>too_sparse_to_assess</code> when occupancy is low (default threshold currently 5). - <code>print.spesim_audit()</code> now prints <code>occupancy_sites</code> alongside <code>n_sites</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="r7-make-the-reports-conceptual-audit-reproducible-and-configurable">R7. Make the report’s “Conceptual audit” reproducible and configurable<a class="anchor" aria-label="anchor" href="#r7-make-the-reports-conceptual-audit-reproducible-and-configurable"></a></h3>

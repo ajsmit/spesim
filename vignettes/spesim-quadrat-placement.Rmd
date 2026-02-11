@@ -17,6 +17,10 @@ knitr::opts_chunk$set(
   fig.height = 5,
   fig.align = "center"
 )
+
+library(spesim)
+library(sf)
+library(ggplot2)
 ```
 
 This vignette shows the **five quadrat placement schemes** available in **spesim**, with reproducible code and simple visualisations for each:
