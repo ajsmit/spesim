@@ -189,10 +189,11 @@ Implemented changes:
 - When `include_audit = TRUE`, the report runs `spesim_audit(res, diagnostics = "nn")` to avoid optional heavy dependencies and to keep report generation deterministic.
 - The filtering lines in the report now include occupancy (`occ=...`) when available.
 
-### R8. Provide a single “method-testing bundle” function
-Consider a convenience function:
-- `spesim_method_test(P, ...)` that returns:
-  - res, audit, plus a small list of standard plots.
+### R8. Provide a single “method-testing bundle” function ✅ (implemented in v0.3.11-dev)
+Added `spesim_method_test()`:
+- runs a simulation from `P` or an `init_file`
+- returns `res` and `audit` (via `spesim_audit()`)
+- optionally returns standard analysis `tables` and `plots` (rank–abundance, occupancy–abundance, SAR, distance–decay, rarefaction; plus spatial/quadrats; and filtering response when gradients exist)
 
 This reduces the “glue code” instructors write repeatedly.
 
@@ -205,6 +206,12 @@ A short article that demonstrates:
 ### R10. Performance notes: document safe upper bounds for teaching
 Add a small “performance” section (or vignette appendix) giving rules of thumb:
 - N_individuals and grid resolution ranges that keep runs interactive.
+
+### R11. A thorough check and fix of all warnings
+Remove all warnings (however benign) that occur during package builds.
+
+### R12. Thoroughly test ALL code snippets/blocks
+Check all user-facing example code blocks in ALL vignettes and help files.
 
 ---
 

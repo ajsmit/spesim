@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.11</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -177,8 +177,8 @@ Version reviewed: <strong>0.3.3</strong> (per NEWS/site)</p>
 </ul><p>Implemented changes: - <code>generate_full_report(res, include_audit = TRUE, audit_top_n = 6)</code>. - When <code>include_audit = TRUE</code>, the report runs <code>spesim_audit(res, diagnostics = "nn")</code> to avoid optional heavy dependencies and to keep report generation deterministic. - The filtering lines in the report now include occupancy (<code>occ=...</code>) when available.</p>
 </div>
 <div class="section level3">
-<h3 id="r8-provide-a-single-method-testing-bundle-function">R8. Provide a single “method-testing bundle” function<a class="anchor" aria-label="anchor" href="#r8-provide-a-single-method-testing-bundle-function"></a></h3>
-<p>Consider a convenience function: - <code>spesim_method_test(P, ...)</code> that returns: - res, audit, plus a small list of standard plots.</p>
+<h3 id="r8-provide-a-single-method-testing-bundle-function-white_check_mark-implemented-in-v0311-dev">R8. Provide a single “method-testing bundle” function ✅ (implemented in v0.3.11-dev)<a class="anchor" aria-label="anchor" href="#r8-provide-a-single-method-testing-bundle-function-white_check_mark-implemented-in-v0311-dev"></a></h3>
+<p>Added <code><a href="reference/spesim_method_test.html">spesim_method_test()</a></code>: - runs a simulation from <code>P</code> or an <code>init_file</code> - returns <code>res</code> and <code>audit</code> (via <code><a href="reference/spesim_audit.html">spesim_audit()</a></code>) - optionally returns standard analysis <code>tables</code> and <code>plots</code> (rank–abundance, occupancy–abundance, SAR, distance–decay, rarefaction; plus spatial/quadrats; and filtering response when gradients exist)</p>
 <p>This reduces the “glue code” instructors write repeatedly.</p>
 </div>
 <div class="section level3">
@@ -189,6 +189,14 @@ Version reviewed: <strong>0.3.3</strong> (per NEWS/site)</p>
 <div class="section level3">
 <h3 id="r10-performance-notes-document-safe-upper-bounds-for-teaching">R10. Performance notes: document safe upper bounds for teaching<a class="anchor" aria-label="anchor" href="#r10-performance-notes-document-safe-upper-bounds-for-teaching"></a></h3>
 <p>Add a small “performance” section (or vignette appendix) giving rules of thumb: - N_individuals and grid resolution ranges that keep runs interactive.</p>
+</div>
+<div class="section level3">
+<h3 id="r11-a-thorough-check-and-fix-of-all-warnings">R11. A thorough check and fix of all warnings<a class="anchor" aria-label="anchor" href="#r11-a-thorough-check-and-fix-of-all-warnings"></a></h3>
+<p>Remove all warnings (however benign) that occur during package builds.</p>
+</div>
+<div class="section level3">
+<h3 id="r12-thoroughly-test-all-code-snippetsblocks">R12. Thoroughly test ALL code snippets/blocks<a class="anchor" aria-label="anchor" href="#r12-thoroughly-test-all-code-snippetsblocks"></a></h3>
+<p>Check all user-facing example code blocks in ALL vignettes and help files.</p>
 <hr></div>
 </div>
 <div class="section level2">
@@ -345,7 +353,7 @@ Version reviewed: <strong>0.3.3</strong> (per NEWS/site)</p>
 <div class="section level3">
 <h3 id="r8-single-method-testing-bundle-function">R8. Single “method-testing bundle” function<a class="anchor" aria-label="anchor" href="#r8-single-method-testing-bundle-function"></a></h3>
 <ul><li>
-<strong>Add</strong>: <code>R/method_test.R</code> (new): <code>spesim_method_test()</code>
+<strong>Add</strong>: <code>R/method_test.R</code> (new): <code><a href="reference/spesim_method_test.html">spesim_method_test()</a></code>
 </li>
 <li>
 <strong>Wraps</strong>:

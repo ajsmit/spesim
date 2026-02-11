@@ -1,3 +1,9 @@
+# spesim 0.3.11
+
+## Method-testing bundle helper
+
+- New `spesim_method_test()` convenience function returns `res`, `audit`, and optional standard tables/plots for teaching and method-testing.
+
 # spesim 0.3.10
 
 ## Report: configurable conceptual audit

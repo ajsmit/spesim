@@ -12,6 +12,7 @@ reference:
 - title: "Getting started"
   contents:
   - spesim_demo
+  - spesim_method_test
   - spesim_run
   - load_config
   - validate_config
