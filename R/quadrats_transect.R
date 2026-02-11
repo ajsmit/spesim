@@ -64,7 +64,14 @@ place_quadrats_transect <- function(domain, n_transects, n_quadrats_per_transect
   safe_domain <- sf::st_buffer(domain, -buffer_dist)
   if (sf::st_is_empty(safe_domain) || sf::st_area(safe_domain) == 0) {
     warning("Domain too small for given quadrat size.")
-    return(sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain))))
+    out <- sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain)))
+    attr(out, "placement_audit") <- list(
+      scheme = "transect",
+      n_requested = as.integer(n_transects * n_quadrats_per_transect),
+      n_returned = 0L,
+      safe_area_empty = TRUE
+    )
+    return(out)
   }
 
   bbox <- sf::st_bbox(domain)
@@ -102,9 +109,27 @@ place_quadrats_transect <- function(domain, n_transects, n_quadrats_per_transect
   points_list <- Filter(Negate(is.null), points_list)
   if (length(points_list) == 0) {
     warning("No transects intersected the safe sampling area.")
-    return(sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain))))
+    out <- sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain)))
+    attr(out, "placement_audit") <- list(
+      scheme = "transect",
+      n_requested = as.integer(n_transects * n_quadrats_per_transect),
+      n_returned = 0L,
+      transects_with_segment = 0L,
+      transects_total = as.integer(n_transects)
+    )
+    return(out)
   }
+
   candidate_centers <- do.call(rbind, points_list)
   quadrat_geometries <- sf::st_sfc(lapply(sf::st_geometry(candidate_centers), function(pt) create_quadrat_from_center(pt, quadrat_size)), crs = sf::st_crs(domain))
-  sf::st_sf(quadrat_id = 1:length(quadrat_geometries), geometry = quadrat_geometries)
+
+  out <- sf::st_sf(quadrat_id = 1:length(quadrat_geometries), geometry = quadrat_geometries)
+  attr(out, "placement_audit") <- list(
+    scheme = "transect",
+    n_requested = as.integer(n_transects * n_quadrats_per_transect),
+    n_returned = as.integer(length(quadrat_geometries)),
+    transects_with_segment = as.integer(length(points_list)),
+    transects_total = as.integer(n_transects)
+  )
+  out
 }

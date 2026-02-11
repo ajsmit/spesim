@@ -109,7 +109,16 @@ place_quadrats_voronoi <- function(domain, n_quadrats, quadrat_size, voronoi_see
   num_possible <- length(suitable_indices)
   if (num_possible == 0) {
     warning("Voronoi placement failed: no suitable cells.")
-    return(sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain))))
+    out0 <- sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain)))
+    attr(out0, "placement_audit") <- list(
+      scheme = "voronoi",
+      n_requested = as.integer(n_quadrats),
+      n_returned = 0L,
+      seeds = as.integer(n_seeds),
+      cells_total = as.integer(length(voronoi_clipped)),
+      cells_suitable = 0L
+    )
+    return(out0)
   }
   if (num_possible < n_quadrats) {
     warning(sprintf("Voronoi placement found %d suitable locations; using all.", num_possible))
@@ -120,6 +129,14 @@ place_quadrats_voronoi <- function(domain, n_quadrats, quadrat_size, voronoi_see
   quadrat_list <- lapply(sf::st_geometry(final_centers), function(pt) create_quadrat_from_center(pt, quadrat_size))
   final_quadrats_sfc <- sf::st_sfc(quadrat_list, crs = sf::st_crs(domain))
   out <- sf::st_sf(quadrat_id = 1:length(final_quadrats_sfc), geometry = final_quadrats_sfc)
+  attr(out, "placement_audit") <- list(
+    scheme = "voronoi",
+    n_requested = as.integer(n_quadrats),
+    n_returned = as.integer(length(final_quadrats_sfc)),
+    seeds = as.integer(n_seeds),
+    cells_total = as.integer(length(voronoi_clipped)),
+    cells_suitable = as.integer(num_possible)
+  )
 
   if (isTRUE(show_voronoi)) {
     attr(out, "voronoi_cells") <- sf::st_as_sf(voronoi_clipped)

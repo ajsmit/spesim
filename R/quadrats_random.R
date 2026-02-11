@@ -55,6 +55,9 @@ place_quadrats <- function(domain, n_quadrats, quadrat_size) {
   attempts <- 0
   max_attempts <- n_quadrats * 100
 
+  reject_boundary <- 0L
+  reject_overlap <- 0L
+
   while (length(quadrats) < n_quadrats && attempts < max_attempts) {
     attempts <- attempts + 1
 
@@ -68,25 +71,52 @@ place_quadrats <- function(domain, n_quadrats, quadrat_size) {
     within_mat <- sf::st_within(new_quadrat_poly, domain, sparse = FALSE)
     is_within <- isTRUE(within_mat[, 1, drop = TRUE][1])
 
-    if (is_within) {
-      is_overlapping <- FALSE
-      if (length(quadrats) > 0) {
-        existing_quadrats_sfc <- do.call(c, quadrats)
-        overlap_mat <- sf::st_intersects(new_quadrat_poly, existing_quadrats_sfc, sparse = FALSE)
-        is_overlapping <- any(overlap_mat[1, , drop = TRUE])
-      }
-      if (!is_overlapping) {
-        quadrats[[length(quadrats) + 1]] <- new_quadrat_poly
-      }
+    if (!is_within) {
+      reject_boundary <- reject_boundary + 1L
+      next
     }
+
+    is_overlapping <- FALSE
+    if (length(quadrats) > 0) {
+      existing_quadrats_sfc <- do.call(c, quadrats)
+      overlap_mat <- sf::st_intersects(new_quadrat_poly, existing_quadrats_sfc, sparse = FALSE)
+      is_overlapping <- any(overlap_mat[1, , drop = TRUE])
+    }
+
+    if (is_overlapping) {
+      reject_overlap <- reject_overlap + 1L
+      next
+    }
+
+    quadrats[[length(quadrats) + 1]] <- new_quadrat_poly
   }
 
   if (length(quadrats) == 0) {
-    return(sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain))))
+    out <- sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain)))
+    attr(out, "placement_audit") <- list(
+      scheme = "random",
+      n_requested = as.integer(n_quadrats),
+      n_returned = 0L,
+      attempts = as.integer(attempts),
+      reject_boundary = as.integer(reject_boundary),
+      reject_overlap = as.integer(reject_overlap),
+      max_attempts = as.integer(max_attempts)
+    )
+    return(out)
   }
 
   sfc <- do.call(c, quadrats)
-  sf::st_sf(quadrat_id = seq_along(sfc), geometry = sfc)
+  out <- sf::st_sf(quadrat_id = seq_along(sfc), geometry = sfc)
+  attr(out, "placement_audit") <- list(
+    scheme = "random",
+    n_requested = as.integer(n_quadrats),
+    n_returned = as.integer(length(sfc)),
+    attempts = as.integer(attempts),
+    reject_boundary = as.integer(reject_boundary),
+    reject_overlap = as.integer(reject_overlap),
+    max_attempts = as.integer(max_attempts)
+  )
+  out
 }
 
 

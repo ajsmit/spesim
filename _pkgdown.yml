@@ -71,6 +71,13 @@ reference:
   contents:
   - read_latest_report
 
+- title: "Audits (method testing)"
+  contents:
+  - spesim_audit
+  - audit_spatial_structure
+  - audit_environmental_filtering
+  - audit_sampling_scheme
+
 - title: "Utilities"
   contents:
   - generate_fisher_log_series

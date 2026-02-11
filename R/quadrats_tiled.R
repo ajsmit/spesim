@@ -58,16 +58,38 @@ place_quadrats_tiled <- function(domain, n_quadrats, quadrat_size) {
   within_mat <- sf::st_within(candidate_grid, domain, sparse = FALSE)
   inside <- if (is.matrix(within_mat)) drop(within_mat[, 1, drop = TRUE]) else as.logical(within_mat)
   valid_locations <- candidate_grid[inside]
+
+  num_candidates <- length(candidate_grid)
   num_possible <- length(valid_locations)
+
   if (num_possible == 0) {
     warning("Systematic placement failed: no quadrats fit inside the domain.")
-    return(sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain))))
+    out <- sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain)))
+    attr(out, "placement_audit") <- list(
+      scheme = "tiled",
+      n_requested = as.integer(n_quadrats),
+      n_returned = 0L,
+      candidates_total = as.integer(num_candidates),
+      candidates_valid = 0L
+    )
+    return(out)
   }
+
+  n_req <- n_quadrats
   if (num_possible < n_quadrats) {
     warning(sprintf("Could only place %d of %d requested quadrats.", num_possible, n_quadrats))
     n_quadrats <- num_possible
   }
+
   sampled_indices <- sample.int(num_possible, size = n_quadrats)
   final_quadrats_sfc <- valid_locations[sampled_indices]
-  sf::st_sf(quadrat_id = seq_len(n_quadrats), geometry = final_quadrats_sfc)
+  out <- sf::st_sf(quadrat_id = seq_len(n_quadrats), geometry = final_quadrats_sfc)
+  attr(out, "placement_audit") <- list(
+    scheme = "tiled",
+    n_requested = as.integer(n_req),
+    n_returned = as.integer(n_quadrats),
+    candidates_total = as.integer(num_candidates),
+    candidates_valid = as.integer(num_possible)
+  )
+  out
 }

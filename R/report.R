@@ -330,6 +330,57 @@ generate_full_report <- function(res) {
   comp_notes <- c("\nComputation Notes:", note_A, note_O)
   ## --------------------------------------------------------------------------
 
+  ## --- Conceptual audit -----------------------------------------------------
+  audit_section <- tryCatch(
+    {
+      a <- spesim_audit(res)
+
+      lines <- c("\nConceptual audit (did you get the regime you asked for?):")
+
+      # Spatial structure: show dominant + top 3 most abundant (if present)
+      if (nrow(a$spatial) > 0) {
+        sp <- a$spatial
+        sp$..prio <- ifelse(sp$species == "A", Inf, sp$n)
+        sp <- sp[order(-sp$..prio), , drop = FALSE]
+        sp <- utils::head(sp, 4)
+        lines <- c(lines, "  Spatial structure (NN ratio vs CSR; <1 clustered, >1 inhibited):")
+        for (i in seq_len(nrow(sp))) {
+          lines <- c(lines, sprintf(
+            "    %s: n=%d | nn_ratio=%.2f | %s",
+            sp$species[i], sp$n[i], sp$nn_ratio[i], sp$qualitative[i]
+          ))
+        }
+      }
+
+      # Environmental filtering
+      if (nrow(a$filtering) > 0) {
+        lines <- c(lines, "  Environmental filtering (Spearman corr of -|z| with abundance):")
+        f <- a$filtering
+        f <- f[order(-abs(f$rho)), , drop = FALSE]
+        f <- utils::head(f, 6)
+        for (i in seq_len(nrow(f))) {
+          lines <- c(lines, sprintf(
+            "    %s (%s): rho=%.2f | slope=%.3f | %s",
+            f$species[i], f$gradient[i], f$rho[i], f$slope[i], f$qualitative[i]
+          ))
+        }
+      }
+
+      # Sampling scheme
+      if (length(a$sampling) > 0 && !is.null(a$sampling$summary_lines)) {
+        lines <- c(lines, sprintf("  Sampling scheme: %s", a$sampling$scheme %||% "?"))
+        for (ln in a$sampling$summary_lines) lines <- c(lines, paste0("    ", ln))
+      }
+
+      lines
+    },
+    error = function(e) {
+      c("\nConceptual audit:", paste0("  (audit failed: ", e$message, ")"))
+    }
+  )
+
+  ## --------------------------------------------------------------------------
+
   full_report <- c(
     "========== ANALYSIS REPORT ==========",
     env_report,
@@ -340,6 +391,7 @@ generate_full_report <- function(res) {
     spat_report,
     fisher_report,
     comp_notes,
+    audit_section,
     "\nSIMULATION COMPLETED SUCCESSFULLY."
   )
   paste(full_report, collapse = "\n")
