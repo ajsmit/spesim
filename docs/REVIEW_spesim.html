@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -172,10 +172,10 @@ Version reviewed: <strong>0.3.3</strong> (per NEWS/site)</p>
 <p>Implemented changes: - <code><a href="reference/audit_environmental_filtering.html">audit_environmental_filtering()</a></code> now reports <code>occupancy_sites</code> (number of quadrats with abundance &gt; 0). - The qualitative label becomes <code>too_sparse_to_assess</code> when occupancy is low (default threshold currently 5). - <code>print.spesim_audit()</code> now prints <code>occupancy_sites</code> alongside <code>n_sites</code>.</p>
 </div>
 <div class="section level3">
-<h3 id="r7-make-the-reports-conceptual-audit-reproducible-and-configurable">R7. Make the report’s “Conceptual audit” reproducible and configurable<a class="anchor" aria-label="anchor" href="#r7-make-the-reports-conceptual-audit-reproducible-and-configurable"></a></h3>
+<h3 id="r7-make-the-reports-conceptual-audit-reproducible-and-configurable-white_check_mark-implemented-in-v0310-dev">R7. Make the report’s “Conceptual audit” reproducible and configurable ✅ (implemented in v0.3.10-dev)<a class="anchor" aria-label="anchor" href="#r7-make-the-reports-conceptual-audit-reproducible-and-configurable-white_check_mark-implemented-in-v0310-dev"></a></h3>
 <ul><li>Keep current defaults (lightweight).</li>
-<li>Add <code>generate_full_report(..., include_audit = TRUE, audit_top_n = 6)</code>.</li>
-</ul></div>
+</ul><p>Implemented changes: - <code>generate_full_report(res, include_audit = TRUE, audit_top_n = 6)</code>. - When <code>include_audit = TRUE</code>, the report runs <code>spesim_audit(res, diagnostics = "nn")</code> to avoid optional heavy dependencies and to keep report generation deterministic. - The filtering lines in the report now include occupancy (<code>occ=...</code>) when available.</p>
+</div>
 <div class="section level3">
 <h3 id="r8-provide-a-single-method-testing-bundle-function">R8. Provide a single “method-testing bundle” function<a class="anchor" aria-label="anchor" href="#r8-provide-a-single-method-testing-bundle-function"></a></h3>
 <p>Consider a convenience function: - <code>spesim_method_test(P, ...)</code> that returns: - res, audit, plus a small list of standard plots.</p>

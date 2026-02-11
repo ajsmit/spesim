@@ -1,3 +1,10 @@
+# spesim 0.3.10
+
+## Report: configurable conceptual audit
+
+- `generate_full_report()` gains `include_audit` and `audit_top_n` to control the report's conceptual audit section.
+- Report audit now runs `spesim_audit(..., diagnostics = "nn")` for deterministic, lightweight behaviour.
+
 # spesim 0.3.9
 
 ## Filtering audits: occupancy-aware diagnostics

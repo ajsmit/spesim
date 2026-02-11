@@ -181,9 +181,13 @@ Implemented changes:
 - The qualitative label becomes `too_sparse_to_assess` when occupancy is low (default threshold currently 5).
 - `print.spesim_audit()` now prints `occupancy_sites` alongside `n_sites`.
 
-### R7. Make the report’s “Conceptual audit” reproducible and configurable
+### R7. Make the report’s “Conceptual audit” reproducible and configurable ✅ (implemented in v0.3.10-dev)
 - Keep current defaults (lightweight).
-- Add `generate_full_report(..., include_audit = TRUE, audit_top_n = 6)`.
+
+Implemented changes:
+- `generate_full_report(res, include_audit = TRUE, audit_top_n = 6)`.
+- When `include_audit = TRUE`, the report runs `spesim_audit(res, diagnostics = "nn")` to avoid optional heavy dependencies and to keep report generation deterministic.
+- The filtering lines in the report now include occupancy (`occ=...`) when available.
 
 ### R8. Provide a single “method-testing bundle” function
 Consider a convenience function:

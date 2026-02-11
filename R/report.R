@@ -90,9 +90,14 @@
 #' \code{\link{run_spatial_simulation}}, \code{\link{read_latest_report}},
 #' \code{\link{create_abundance_matrix}}, \code{\link{calculate_quadrat_environment}}
 #'
+#' @param include_audit Logical; if TRUE (default), include a short "Conceptual audit"
+#'   section based on [spesim_audit()].
+#' @param audit_top_n Integer; number of rows to show for the environmental-filtering
+#'   audit (ranked by absolute correlation). Default 6.
+#'
 #' @keywords internal
 #' @export
-generate_full_report <- function(res) {
+generate_full_report <- function(res, include_audit = TRUE, audit_top_n = 6) {
   `%||%` <- function(a, b) if (!is.null(a)) a else b
 
   .opt_to_units <- function(opt, gname) {
@@ -331,11 +336,15 @@ generate_full_report <- function(res) {
   ## --------------------------------------------------------------------------
 
   ## --- Conceptual audit -----------------------------------------------------
-  audit_section <- tryCatch(
-    {
-      a <- spesim_audit(res)
+  audit_section <- if (!isTRUE(include_audit)) {
+    character(0)
+  } else {
+    tryCatch(
+      {
+        # For reports, keep this lightweight and deterministic: avoid optional heavy deps.
+        a <- spesim_audit(res, diagnostics = "nn")
 
-      lines <- c("\nConceptual audit (did you get the regime you asked for?):")
+        lines <- c("\nConceptual audit (did you get the regime you asked for?):")
 
       # Spatial structure: show dominant + top 3 most abundant (if present)
       if (nrow(a$spatial) > 0) {
@@ -357,11 +366,12 @@ generate_full_report <- function(res) {
         lines <- c(lines, "  Environmental filtering (Spearman corr of -|z| with abundance):")
         f <- a$filtering
         f <- f[order(-abs(f$rho)), , drop = FALSE]
-        f <- utils::head(f, 6)
+        f <- utils::head(f, audit_top_n)
         for (i in seq_len(nrow(f))) {
+          occ_str <- if ("occupancy_sites" %in% names(f)) sprintf(" | occ=%d", f$occupancy_sites[i]) else ""
           lines <- c(lines, sprintf(
-            "    %s (%s): rho=%.2f | slope=%.3f | %s",
-            f$species[i], f$gradient[i], f$rho[i], f$slope[i], f$qualitative[i]
+            "    %s (%s): rho=%.2f | slope=%.3f%s | %s",
+            f$species[i], f$gradient[i], f$rho[i], f$slope[i], occ_str, f$qualitative[i]
           ))
         }
       }
@@ -372,12 +382,13 @@ generate_full_report <- function(res) {
         for (ln in a$sampling$summary_lines) lines <- c(lines, paste0("    ", ln))
       }
 
-      lines
-    },
-    error = function(e) {
-      c("\nConceptual audit:", paste0("  (audit failed: ", e$message, ")"))
-    }
-  )
+        lines
+      },
+      error = function(e) {
+        c("\nConceptual audit:", paste0("  (audit failed: ", e$message, ")"))
+      }
+    )
+  }
 
   ## --------------------------------------------------------------------------
 

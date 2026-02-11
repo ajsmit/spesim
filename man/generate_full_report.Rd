@@ -4,7 +4,7 @@
 \alias{generate_full_report}
 \title{(Advanced) Build a human-readable multi-section report}
 \usage{
-generate_full_report(res)
+generate_full_report(res, include_audit = TRUE, audit_top_n = 6)
 }
 \arguments{
 \item{res}{A named list produced by the simulator with at least the elements:
@@ -27,6 +27,12 @@ used to compute per-site alpha summaries.}
 \item{\code{site_coords}}{A data frame with columns \code{site}, \code{x},
 \code{y} giving quadrat centroids in the same CRS used for analysis.}
 }}
+
+\item{include_audit}{Logical; if TRUE (default), include a short "Conceptual audit"
+section based on \code{\link[=spesim_audit]{spesim_audit()}}.}
+
+\item{audit_top_n}{Integer; number of rows to show for the environmental-filtering
+audit (ranked by absolute correlation). Default 6.}
 }
 \value{
 A single character scalar containing the full report text. No files
