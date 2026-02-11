@@ -28,7 +28,7 @@ Values:
 - `> 1` facilitative
 - `= 1` neutral
 
-## Baseline (no interactions)
+## Baseline without interactions
 
 ```{r}
 library(spesim)
@@ -65,7 +65,7 @@ res1 <- run_spatial_simulation(P = P2, write_outputs = FALSE, interactions_print
 plot_spatial_sampling(res1$domain, res1$species_dist, res1$quadrats, res1$P)
 ```
 
-## Consequences in the advanced analysis panel (and theory)
+## Consequences in the advanced analysis panel
 
 Neighbour effects can change **co-occurrence patterns** and local abundance,
 which in turn changes what you observe in quadrats.
@@ -84,8 +84,14 @@ In the advanced panel, interaction effects can manifest as:
 ```{r}
 panel0 <- generate_advanced_panel(res0) + patchwork::plot_annotation(title = "Baseline: no interactions")
 panel1 <- generate_advanced_panel(res1) + patchwork::plot_annotation(title = "With neighbour interactions")
+```
 
-panel0 / panel1
+```{r fig.width=8, fig.height=9}
+panel0
+```
+
+```{r fig.width=8, fig.height=9}
+panel1
 ```
 
 ## Notes

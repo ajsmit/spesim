@@ -68,7 +68,7 @@ If reading on GitHub before the site is live, you’ll find the sources under `v
 
 You can run a simulation in two ways: **programmatically** (in-memory) or using an **init file** on disk. The latter is more convenient for larger setups and reproducibility, since access to the init file gives you a full bird's eye view of the simulation parameters.
 
-### Quick start (programmatic)
+### Quick start: programmatic
 
 A minimal run that *does not* write files (handy for examples/CI).
 
@@ -101,7 +101,7 @@ p4 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P,
 (p1 | p2) / (p3 | p4)
 ```
 
-### Quick start (init file on disk)
+### Quick start: init file on disk
 
 Prefer declaring everything in a text file? Point `run_spatial_simulation()` to it:
 
@@ -156,9 +156,9 @@ str(res$abund_matrix)
 
 ---
 
-## Interactions (neighbour effects)
+## Interactions
 
-You can specify interspecific effects **inline in the init file** or via a simple **CSV edgelist**. See the dedicated vignette:
+You can specify interspecific effects **inline in the init file** or via a simple **CSV edgelist** (neighbour effects). See the dedicated vignette:
 
 - <https://ajsmit.github.io/spesim/articles/spesim-interactions.html>
 

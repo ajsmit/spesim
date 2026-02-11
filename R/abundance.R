@@ -46,7 +46,13 @@
 #'
 #' @seealso \code{\link{generate_heterogeneous_distribution}}
 #' @export
-generate_fisher_log_series <- function(n_species, n_individuals, dominant_fraction, alpha, x) {
+generate_fisher_log_series <- function(
+  n_species,
+  n_individuals,
+  dominant_fraction,
+  alpha,
+  x
+) {
   stopifnot(n_species >= 1L, n_individuals >= 1L)
   n_dominant <- round(n_individuals * dominant_fraction)
   n_remaining <- n_individuals - n_dominant
@@ -59,11 +65,19 @@ generate_fisher_log_series <- function(n_species, n_individuals, dominant_fracti
 
   ranks <- 2:n_species
   rel <- alpha * (x^ranks) / ranks
-  abund <- if (sum(rel) > 0) round(rel / sum(rel) * n_remaining) else rep(0L, length(rel))
+  abund <- if (sum(rel) > 0) {
+    round(rel / sum(rel) * n_remaining)
+  } else {
+    rep(0L, length(rel))
+  }
 
   all_abund <- c(n_dominant, abund)
   adj <- n_individuals - sum(all_abund)
-  if (length(all_abund) >= 2L) all_abund[2L] <- all_abund[2L] + adj else all_abund[1L] <- all_abund[1L] + adj
+  if (length(all_abund) >= 2L) {
+    all_abund[2L] <- all_abund[2L] + adj
+  } else {
+    all_abund[1L] <- all_abund[1L] + adj
+  }
 
   names(all_abund) <- LETTERS[seq_len(n_species)]
   all_abund[all_abund > 0]
@@ -200,7 +214,11 @@ generate_heterogeneous_distribution <- function(domain, P) {
     if (NROW(xy) == 0) {
       return(logical(0))
     }
-    pts <- sf::st_as_sf(data.frame(x = xy[, 1], y = xy[, 2]), coords = c("x", "y"), crs = sf::st_crs(poly))
+    pts <- sf::st_as_sf(
+      data.frame(x = xy[, 1], y = xy[, 2]),
+      coords = c("x", "y"),
+      crs = sf::st_crs(poly)
+    )
     as.logical(sf::st_within(pts, poly, sparse = FALSE)[, 1])
   }
   .sample_uniform_in_domain <- function(n, poly, max_tries = n * 50) {
@@ -214,18 +232,30 @@ generate_heterogeneous_distribution <- function(domain, P) {
         stats::runif(need, bb["ymin"], bb["ymax"])
       )
       keep <- .in_domain(cand, poly)
-      if (any(keep)) res <- rbind(res, cand[keep, , drop = FALSE])
+      if (any(keep)) {
+        res <- rbind(res, cand[keep, , drop = FALSE])
+      }
       tries <- tries + 1L
     }
-    if (nrow(res) > n) res <- res[seq_len(n), , drop = FALSE]
+    if (nrow(res) > n) {
+      res <- res[seq_len(n), , drop = FALSE]
+    }
     res
   }
-  .simulate_thomas_points <- function(n, poly, mu = 10, sigma = 1, kappa = NA_real_) {
+  .simulate_thomas_points <- function(
+    n,
+    poly,
+    mu = 10,
+    sigma = 1,
+    kappa = NA_real_
+  ) {
     if (n <= 0) {
       return(matrix(numeric(0), ncol = 2))
     }
     area <- as.numeric(sf::st_area(sf::st_as_sf(poly)[1, ]))
-    if (!is.finite(kappa) || kappa <= 0) kappa <- max(1e-6, n / (mu * area))
+    if (!is.finite(kappa) || kappa <= 0) {
+      kappa <- max(1e-6, n / (mu * area))
+    }
     # parents
     n_par <- stats::rpois(1L, lambda = kappa * area)
     par_xy <- .sample_uniform_in_domain(max(1L, n_par), poly)
@@ -235,15 +265,21 @@ generate_heterogeneous_distribution <- function(domain, P) {
       # Poisson(mu) per parent
       k_vec <- stats::rpois(nrow(par_xy), mu)
       if (sum(k_vec) > 0) {
-        ox <- rep(par_xy[, 1], times = k_vec) + stats::rnorm(sum(k_vec), 0, sigma)
-        oy <- rep(par_xy[, 2], times = k_vec) + stats::rnorm(sum(k_vec), 0, sigma)
+        ox <- rep(par_xy[, 1], times = k_vec) +
+          stats::rnorm(sum(k_vec), 0, sigma)
+        oy <- rep(par_xy[, 2], times = k_vec) +
+          stats::rnorm(sum(k_vec), 0, sigma)
         off <- cbind(ox, oy)
         keep <- .in_domain(off, poly)
         if (any(keep)) out <- off[keep, , drop = FALSE]
       }
     }
-    if (nrow(out) == 0) out <- .sample_uniform_in_domain(n, poly)
-    if (nrow(out) > n) out <- out[sample.int(nrow(out), n), , drop = FALSE]
+    if (nrow(out) == 0) {
+      out <- .sample_uniform_in_domain(n, poly)
+    }
+    if (nrow(out) > n) {
+      out <- out[sample.int(nrow(out), n), , drop = FALSE]
+    }
     out
   }
   .simulate_strauss_points <- function(n, poly, r, s = 0.7) {
@@ -297,7 +333,9 @@ generate_heterogeneous_distribution <- function(domain, P) {
       }
       acc_prob <- (as.numeric(gamma))^(min(m, as.integer(s)))
       acc_prob <- max(0, min(1, acc_prob / (1 + acc_prob))) # squash to (0,1)
-      if (stats::runif(1) < acc_prob) out <- rbind(out, xy)
+      if (stats::runif(1) < acc_prob) {
+        out <- rbind(out, xy)
+      }
       if (nrow(out) >= n) break
     }
     if (nrow(out) < n) {
@@ -310,30 +348,52 @@ generate_heterogeneous_distribution <- function(domain, P) {
     if (NROW(xy) == 0) {
       return(sf::st_sfc(crs = crs))
     }
-    sf::st_sfc(lapply(seq_len(NROW(xy)), function(i) sf::st_point(as.numeric(xy[i, 1:2]))), crs = crs)
+    sf::st_sfc(
+      lapply(seq_len(NROW(xy)), function(i) {
+        sf::st_point(as.numeric(xy[i, 1:2]))
+      }),
+      crs = crs
+    )
   }
 
   # --- 1) Target abundances --------------------------------------------
   abund <- generate_fisher_log_series(
-    P$N_SPECIES, P$N_INDIVIDUALS,
-    P$DOMINANT_FRACTION, P$FISHER_ALPHA, P$FISHER_X
+    P$N_SPECIES,
+    P$N_INDIVIDUALS,
+    P$DOMINANT_FRACTION,
+    P$FISHER_ALPHA,
+    P$FISHER_X
   )
   n_A <- unname(abund["A"] %||% 0)
-  other_species <- rep(names(abund)[names(abund) != "A"], times = abund[names(abund) != "A"])
+  other_species <- rep(
+    names(abund)[names(abund) != "A"],
+    times = abund[names(abund) != "A"]
+  )
 
   # --- 2) Environmental grid (for later joins/weights) -----------------
-  env_grid <- create_environmental_gradients(domain, P$SAMPLING_RESOLUTION, P$ENVIRONMENTAL_NOISE)
-  env_sf <- sf::st_as_sf(env_grid, coords = c("x", "y"), crs = sf::st_crs(domain))
+  env_grid <- create_environmental_gradients(
+    domain,
+    P$SAMPLING_RESOLUTION,
+    P$ENVIRONMENTAL_NOISE
+  )
+  env_sf <- sf::st_as_sf(
+    env_grid,
+    coords = c("x", "y"),
+    crs = sf::st_crs(domain)
+  )
 
   # --- 3) Simulate A / others -----------------------------------------
   crs_dom <- sf::st_crs(domain)
 
   # Dominant A
   proc_A <- tolower(P$SPATIAL_PROCESS_A %||% "poisson")
-  xy_A <- switch(proc_A,
+  xy_A <- switch(
+    proc_A,
     "poisson" = .sample_uniform_in_domain(n_A, domain),
-    "thomas" = .simulate_thomas_points(n_A, domain,
-      mu    = as.numeric(P$A_MEAN_OFFSPRING %||% 10),
+    "thomas" = .simulate_thomas_points(
+      n_A,
+      domain,
+      mu = as.numeric(P$A_MEAN_OFFSPRING %||% 10),
       sigma = as.numeric(P$A_CLUSTER_SCALE %||% 1),
       kappa = as.numeric(P$A_PARENT_INTENSITY %||% NA_real_)
     ),
@@ -344,18 +404,25 @@ generate_heterogeneous_distribution <- function(domain, P) {
   # Others as one pool of points; species assigned later by counts
   n_all_others <- length(other_species)
   proc_O <- tolower(P$SPATIAL_PROCESS_OTHERS %||% "poisson")
-  xy_O <- switch(proc_O,
+  xy_O <- switch(
+    proc_O,
     "poisson" = .sample_uniform_in_domain(n_all_others, domain),
-    "thomas" = .simulate_thomas_points(n_all_others, domain,
-      mu    = as.numeric(P$OTHERS_MU %||% 10),
+    "thomas" = .simulate_thomas_points(
+      n_all_others,
+      domain,
+      mu = as.numeric(P$OTHERS_MU %||% 10),
       sigma = as.numeric(P$OTHERS_SIGMA %||% 1),
       kappa = as.numeric(P$OTHERS_BETA %||% NA_real_)
     ), # treat as kappa if given
-    "strauss" = .simulate_strauss_points(n_all_others, domain,
+    "strauss" = .simulate_strauss_points(
+      n_all_others,
+      domain,
       r = as.numeric(P$OTHERS_R %||% 1),
       s = as.numeric(P$OTHERS_S %||% 0.7)
     ),
-    "geyer" = .simulate_geyer_points(n_all_others, domain,
+    "geyer" = .simulate_geyer_points(
+      n_all_others,
+      domain,
       r = as.numeric(P$OTHERS_R %||% 1),
       gamma = as.numeric(P$OTHERS_GAMMA %||% 1.5),
       s = as.numeric(P$OTHERS_S %||% 2)
@@ -370,10 +437,16 @@ generate_heterogeneous_distribution <- function(domain, P) {
   pts_A <- if (length(sfc_A) > 0) {
     sf::st_sf(species = factor(rep("A", length(sfc_A))), geometry = sfc_A)
   } else {
-    sf::st_sf(species = factor(character(0)), geometry = sf::st_sfc(crs = crs_dom))
+    sf::st_sf(
+      species = factor(character(0)),
+      geometry = sf::st_sfc(crs = crs_dom)
+    )
   }
   pts_O <- if (length(sfc_O) > 0) {
-    sf::st_sf(species = factor(other_species, levels = LETTERS[1:P$N_SPECIES]), geometry = sfc_O)
+    sf::st_sf(
+      species = factor(other_species, levels = LETTERS[1:P$N_SPECIES]),
+      geometry = sfc_O
+    )
   } else {
     sf::st_sf(
       species = factor(character(0), levels = LETTERS[1:P$N_SPECIES]),
@@ -397,21 +470,27 @@ generate_heterogeneous_distribution <- function(domain, P) {
     for (sp in sp_levels) {
       ids <- which(tmp$species == sp)
       q <- length(ids)
-      if (q == 0) next
+      if (q == 0) {
+        next
+      }
 
       probs <- rep(1, q)
       if (sp %in% P$GRADIENT$species) {
         row <- P$GRADIENT[P$GRADIENT$species == sp, , drop = FALSE][1, ]
-        env_col <- switch(row$gradient,
+        env_col <- switch(
+          row$gradient,
           temperature = "temperature",
-          elevation   = "elevation",
-          rainfall    = "rainfall"
+          elevation = "elevation",
+          rainfall = "rainfall"
         )
         vals <- tmp[[env_col]][ids]
         probs <- exp(-((vals - row$optimum)^2) / (2 * row$tol^2))
         if (!all(is.finite(probs)) || all(probs <= 0)) probs <- rep(1, q)
       }
-      resel_idx <- c(resel_idx, sample(ids, size = q, prob = probs, replace = FALSE))
+      resel_idx <- c(
+        resel_idx,
+        sample(ids, size = q, prob = probs, replace = FALSE)
+      )
     }
     pts <- pts[sort(resel_idx), , drop = FALSE]
   }

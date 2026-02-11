@@ -37,7 +37,7 @@ P$INTERACTION_RADIUS <- 0
 P$INTERACTIONS_EDGELIST <- NULL
 ```
 
-## Poisson (complete spatial randomness)
+## Poisson: complete spatial randomness
 
 ```{r}
 P1 <- P
@@ -75,7 +75,7 @@ res_st <- run_spatial_simulation(P = P3, write_outputs = FALSE, interactions_pri
 plot_spatial_sampling(res_st$domain, res_st$species_dist, res_st$quadrats, res_st$P)
 ```
 
-## Consequences in the advanced analysis panel (and theory)
+## Consequences in the advanced analysis panel
 
 Different point processes correspond to different *mechanisms* of spatial
 structure:
@@ -102,9 +102,20 @@ Thomas + Strauss (others inhibited).
 p_pois <- generate_advanced_panel(res_pois) + patchwork::plot_annotation(title = "Poisson (CSR)")
 p_th   <- generate_advanced_panel(res_th)   + patchwork::plot_annotation(title = "Thomas clustering for A")
 p_st   <- generate_advanced_panel(res_st)   + patchwork::plot_annotation(title = "Thomas (A) + Strauss inhibition (others)")
-
-(p_pois / p_th) / p_st
 ```
+
+```{r fig.width=8, fig.height=9}
+p_pois
+```
+
+```{r fig.width=8, fig.height=9}
+p_th
+```
+
+```{r fig.width=8, fig.height=9}
+p_st
+```
+
 
 ## Notes
 

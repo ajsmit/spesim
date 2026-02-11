@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 This short recipe shows how to turn **environmental filtering** on and off, and
 how to change **optima/tolerances** for gradient-responsive species.
 
-## Minimal run (no special gradients)
+## Minimal run without special gradients
 
 ```{r}
 library(spesim)
@@ -67,7 +67,7 @@ p1
 p2
 ```
 
-## Consequences in the advanced analysis panel (and theory)
+## Consequences in the advanced analysis panel
 
 Environmental filtering typically increases **spatial turnover** (beta diversity)
 when species have different optima along a gradient. In the advanced panel this
@@ -86,8 +86,14 @@ share fewer species.
 # Compare advanced panels: baseline vs stronger filtering
 panel0 <- generate_advanced_panel(res0) + patchwork::plot_annotation(title = "Baseline: weak/default filtering")
 panel1 <- generate_advanced_panel(res1) + patchwork::plot_annotation(title = "Stronger temperature filtering")
+```
 
-panel0 / panel1
+```{r fig.width=8, fig.height=9}
+panel0
+```
+
+```{r fig.width=8, fig.height=9}
+panel1
 ```
 
 ## Tip: reproducibility

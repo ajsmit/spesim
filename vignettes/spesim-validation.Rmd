@@ -1,5 +1,5 @@
 ---
-title: "Validation & sanity checks"
+title: "Validation and sanity checks"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Validation & sanity checks}

@@ -53,6 +53,10 @@ Thumbs.db
 # Build outputs
 spesim_*.tar.gz
 
+# Local run outputs (do not commit)
+/out/
+spesim_init_basic.txt
+
 # Python or other language artifacts ----
 *.py[cod]
 __pycache__/
