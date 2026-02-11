@@ -15,9 +15,11 @@ permissions: read-all
 jobs:
   pkgdown:
     runs-on: ubuntu-latest
-    # Only restrict concurrency for non-PR jobs
+    # Avoid a backlog: when you push multiple times, cancel older site builds
+    # and deploy only the most recent commit.
     concurrency:
-      group: pkgdown-${{ github.event_name != 'pull_request' || github.run_id }}
+      group: pkgdown-${{ github.ref }}
+      cancel-in-progress: true
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     permissions:
