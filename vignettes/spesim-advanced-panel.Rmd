@@ -4,6 +4,7 @@ author: "spesim team"
 date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:
+    highlight: null
     toc: true
     toc_depth: 3
 vignette: >

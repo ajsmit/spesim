@@ -3,6 +3,7 @@ title: "spesim recipes: interspecific interactions"
 output:
   rmarkdown::html_vignette:
     toc: true
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{spesim recipes: interspecific interactions}
   %\VignetteEngine{knitr::rmarkdown}

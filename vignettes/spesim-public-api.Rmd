@@ -3,6 +3,7 @@ title: "spesim public API (stability guide)"
 output:
   rmarkdown::html_vignette:
     toc: true
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{spesim public API (stability guide)}
   %\VignetteEngine{knitr::rmarkdown}

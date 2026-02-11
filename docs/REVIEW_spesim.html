@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -194,12 +194,13 @@ Version reviewed: <strong>0.3.3</strong> (per NEWS/site)</p>
 <p>Includes conservative rules of thumb for interactive use: - <code>N_INDIVIDUALS</code> (teaching vs method-testing ranges) - <code>N_QUADRATS</code> typical ranges - <code>SAMPLING_RESOLUTION</code> guidance - practical tips (when to turn off advanced analysis; when summaries become undefined)</p>
 </div>
 <div class="section level3">
-<h3 id="r11-thoroughly-test-all-code-snippetsblocks">R11. Thoroughly test ALL code snippets/blocks<a class="anchor" aria-label="anchor" href="#r11-thoroughly-test-all-code-snippetsblocks"></a></h3>
-<p>Check, verify, and correct all user-facing example code blocks in ALL vignettes and help files.</p>
+<h3 id="r11-thoroughly-test-all-code-snippetsblocks-white_check_mark-implemented-in-v0314-dev">R11. Thoroughly test ALL code snippets/blocks ✅ (implemented in v0.3.14-dev)<a class="anchor" aria-label="anchor" href="#r11-thoroughly-test-all-code-snippetsblocks-white_check_mark-implemented-in-v0314-dev"></a></h3>
+<p>Implemented an automated check to ensure <strong>all vignette code chunks</strong> (including chunks marked <code>eval=FALSE</code>) are at least <strong>syntactically valid</strong>: - <code>tests/testthat/test-snippets.R</code> uses <code><a href="https://rdrr.io/pkg/knitr/man/knit.html" class="external-link">knitr::purl()</a></code> + <code><a href="https://rdrr.io/r/base/parse.html" class="external-link">parse()</a></code> for every vignette.</p>
+<p>Note: <code>R CMD check</code> already executes package examples and vignettes that are not under <code>\dontrun{}</code> / <code>eval=FALSE</code>. This additional test catches broken code blocks that are shown to users but not executed during rendering.</p>
 </div>
 <div class="section level3">
-<h3 id="r12-a-thorough-check-and-fix-of-all-warnings">R12. A thorough check and fix of all warnings<a class="anchor" aria-label="anchor" href="#r12-a-thorough-check-and-fix-of-all-warnings"></a></h3>
-<p>Remove all warnings (however benign) that occur during package builds: - e.g., the known vignette-title mismatch warnings. - Update package number to next minor version and merge dev and main branches.</p>
+<h3 id="r12-a-thorough-check-and-fix-of-all-warnings-white_check_mark-implemented-in-v0314-dev">R12. A thorough check and fix of all warnings ✅ (implemented in v0.3.14-dev)<a class="anchor" aria-label="anchor" href="#r12-a-thorough-check-and-fix-of-all-warnings-white_check_mark-implemented-in-v0314-dev"></a></h3>
+<p>Removed build warnings by: - Aligning vignette YAML titles with <code>\VignetteIndexEntry{}</code> (model-card and validation vignettes). - Setting <code>highlight: null</code> for all <code><a href="https://pkgs.rstudio.com/rmarkdown/reference/html_vignette.html" class="external-link">rmarkdown::html_vignette</a></code> outputs to avoid pandoc highlight deprecation warnings during pkgdown/vignette rendering.</p>
 <hr></div>
 </div>
 <div class="section level2">

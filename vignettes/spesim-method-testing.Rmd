@@ -3,6 +3,7 @@ title: "Method testing with spesim"
 output:
   rmarkdown::html_vignette:
     toc: true
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Method testing with spesim}
   %\VignetteEngine{knitr::rmarkdown}

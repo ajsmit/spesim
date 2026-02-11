@@ -3,6 +3,7 @@ title: "spesim recipes: environmental gradients"
 output:
   rmarkdown::html_vignette:
     toc: true
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{spesim recipes: environmental gradients}
   %\VignetteEngine{knitr::rmarkdown}

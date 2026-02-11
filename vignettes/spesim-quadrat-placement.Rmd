@@ -3,6 +3,7 @@ title: "Quadrat placement schemes in spesim"
 output:
   rmarkdown::html_vignette:
     toc: true
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Quadrat placement schemes in spesim}
   %\VignetteEngine{knitr::rmarkdown}

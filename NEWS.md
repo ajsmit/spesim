@@ -1,3 +1,10 @@
+# spesim 0.3.14
+
+## Build hygiene and vignette snippet checks
+
+- Removed pkgdown/vignette build warnings by aligning vignette titles and setting `highlight: null` for html vignettes.
+- Added a test to ensure all vignette code chunks are syntactically valid (`knitr::purl()` + `parse()`).
+
 # spesim 0.3.13
 
 ## Performance notes

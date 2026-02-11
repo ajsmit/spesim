@@ -1,8 +1,10 @@
 ---
 title: "Validation and sanity checks"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    highlight: null
 vignette: >
-  %\VignetteIndexEntry{Validation & sanity checks}
+  %\VignetteIndexEntry{Validation and sanity checks}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

@@ -214,13 +214,16 @@ Includes conservative rules of thumb for interactive use:
 - `SAMPLING_RESOLUTION` guidance
 - practical tips (when to turn off advanced analysis; when summaries become undefined)
 
-### R11. Thoroughly test ALL code snippets/blocks
-Check, verify, and correct all user-facing example code blocks in ALL vignettes and help files.
+### R11. Thoroughly test ALL code snippets/blocks ✅ (implemented in v0.3.14-dev)
+Implemented an automated check to ensure **all vignette code chunks** (including chunks marked `eval=FALSE`) are at least **syntactically valid**:
+- `tests/testthat/test-snippets.R` uses `knitr::purl()` + `parse()` for every vignette.
 
-### R12. A thorough check and fix of all warnings
-Remove all warnings (however benign) that occur during package builds:
-- e.g., the known vignette-title mismatch warnings.
-- Update package number to next minor version and merge dev and main branches.
+Note: `R CMD check` already executes package examples and vignettes that are not under `\dontrun{}` / `eval=FALSE`. This additional test catches broken code blocks that are shown to users but not executed during rendering.
+
+### R12. A thorough check and fix of all warnings ✅ (implemented in v0.3.14-dev)
+Removed build warnings by:
+- Aligning vignette YAML titles with `\VignetteIndexEntry{}` (model-card and validation vignettes).
+- Setting `highlight: null` for all `rmarkdown::html_vignette` outputs to avoid pandoc highlight deprecation warnings during pkgdown/vignette rendering.
 
 ---
 

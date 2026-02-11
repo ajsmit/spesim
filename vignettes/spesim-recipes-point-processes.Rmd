@@ -3,6 +3,7 @@ title: "spesim recipes: point processes (Poisson vs Thomas vs Strauss/Geyer)"
 output:
   rmarkdown::html_vignette:
     toc: true
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{spesim recipes: point processes (Poisson vs Thomas vs Strauss/Geyer)}
   %\VignetteEngine{knitr::rmarkdown}

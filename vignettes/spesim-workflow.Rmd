@@ -3,6 +3,7 @@ title: "spesim workflow: basic → intermediate → advanced"
 output:
   rmarkdown::html_vignette:
     toc: true
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{spesim workflow: basic → intermediate → advanced}
   %\VignetteEngine{knitr::rmarkdown}

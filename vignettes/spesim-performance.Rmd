@@ -3,6 +3,7 @@ title: "Performance notes"
 output:
   rmarkdown::html_vignette:
     toc: true
+    highlight: null
 vignette: >
   %\VignetteIndexEntry{Performance notes}
   %\VignetteEngine{knitr::rmarkdown}
