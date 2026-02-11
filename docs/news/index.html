@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -18,7 +18,10 @@
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/spesim-start-here.html">Start here</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-model-card.html">spesim model card (what it is, and what it isn't)</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-workflow.html">spesim workflow: basic → intermediate → advanced</a></li>
+    <li><a class="dropdown-item" href="../articles/spesim-validation.html">Validation &amp; sanity checks</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-public-api.html">spesim public API (stability guide)</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-quadrat-placement.html">Quadrat placement schemes in spesim</a></li>
     <li><a class="dropdown-item" href="../articles/spesim-recipes-gradients.html">spesim recipes: environmental gradients</a></li>
@@ -43,6 +46,20 @@
       <small>Source: <a href="https://github.com/ajsmit/spesim/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.2" id="spesim-032">spesim 0.3.2<a class="anchor" aria-label="anchor" href="#spesim-032"></a></h2>
+<div class="section level3">
+<h3 id="documentation-0-3-2">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-3-2"></a></h3>
+<ul><li>Add <strong>Start here</strong> article to improve pkgdown discoverability.</li>
+<li>Add a <strong>model card</strong> vignette clarifying what spesim does/does not model and how to interpret results.</li>
+<li>Add a <strong>validation &amp; sanity checks</strong> vignette with suggested diagnostics (including optional spatstat checks).</li>
+<li>Clarify that the default sampling domain is synthetic/unitless (users can supply a real-world <code>sf</code> domain).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="reproducibility-0-3-2">Reproducibility<a class="anchor" aria-label="anchor" href="#reproducibility-0-3-2"></a></h3>
+<ul><li>Reset <code>set.seed(P$SEED)</code> before generating advanced panels and text reports when <code>write_outputs = TRUE</code>, improving determinism for vegan-based components.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.1" id="spesim-031">spesim 0.3.1<a class="anchor" aria-label="anchor" href="#spesim-031"></a></h2>
 <div class="section level3">

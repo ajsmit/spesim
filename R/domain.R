@@ -6,6 +6,10 @@
 #' outline is derived from a parameterized radius-angle curve with added
 #' sinusoidal perturbations and random noise to produce an "organic" shape.
 #'
+#' **Units:** The default domain uses an arbitrary planar coordinate system
+#' (i.e., it is *unitless*). If you need real-world units (m, km) or a known CRS,
+#' supply your own `sf` polygon domain to the simulation/plotting functions.
+#'
 #' The output is returned as an \code{sf} object containing one polygon in its
 #' geometry column. This can be used directly in plotting or as the spatial
 #' domain within which individuals, quadrats, or transects are placed.

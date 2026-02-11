@@ -79,7 +79,10 @@ articles:
 - title: "Articles"
   navbar: ~
   contents:
+  - spesim-start-here
+  - spesim-model-card
   - spesim-workflow
+  - spesim-validation
   - spesim-public-api
   - spesim-quadrat-placement
   - spesim-recipes-gradients

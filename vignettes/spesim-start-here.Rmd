@@ -1,0 +1,62 @@
+---
+title: "Start here"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Start here}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+This is the quickest path through the package, depending on what you’re trying
+to do.
+
+## 1) First: understand what spesim is (and isn’t)
+
+- **Model card:** `vignette("spesim-model-card")`
+
+If you’re teaching with spesim, start there: it sets expectations and prevents
+over-interpretation.
+
+## 2) Run your first simulation
+
+- **Workflow overview:** `vignette("spesim-workflow")`
+
+Minimal, in-memory run:
+
+```{r, eval=FALSE}
+library(spesim)
+
+P <- load_config(system.file("examples/spesim_init_basic.txt", package = "spesim"))
+res <- spesim_run(P, write_outputs = FALSE, seed = 77)
+
+plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P)
+```
+
+## 3) Choose a sampling design
+
+- **Quadrat placement schemes:** `vignette("spesim-quadrat-placement")`
+
+## 4) Add structure (gradients, interactions, point processes)
+
+- **Environmental gradients:** `vignette("spesim-env-gradients")`
+- **Interactions:** `vignette("spesim-interactions")`
+- **Point processes:** `vignette("spesim-point-processes")`
+
+## 5) Validate that the patterns match your intent
+
+- **Validation & sanity checks:** `vignette("spesim-validation")`
+
+## 6) Stability / teaching materials
+
+If you rely on specific functions in teaching content:
+
+- **Public API (what’s stable):** `vignette("spesim-public-api")`

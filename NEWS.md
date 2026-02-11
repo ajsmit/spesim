@@ -1,3 +1,16 @@
+# spesim 0.3.2
+
+## Documentation
+
+- Add **Start here** article to improve pkgdown discoverability.
+- Add a **model card** vignette clarifying what spesim does/does not model and how to interpret results.
+- Add a **validation & sanity checks** vignette with suggested diagnostics (including optional spatstat checks).
+- Clarify that the default sampling domain is synthetic/unitless (users can supply a real-world `sf` domain).
+
+## Reproducibility
+
+- Reset `set.seed(P$SEED)` before generating advanced panels and text reports when `write_outputs = TRUE`, improving determinism for vegan-based components.
+
 # spesim 0.3.1
 
 ## Usability

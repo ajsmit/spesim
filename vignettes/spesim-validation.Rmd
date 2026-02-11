@@ -1,0 +1,108 @@
+---
+title: "Validation & sanity checks"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Validation & sanity checks}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+This article is a **confidence-building checklist**. It shows simple checks that
+help you confirm that a spesim run is producing the patterns you think you asked
+for.
+
+## 1) Species–abundance distribution (SAD)
+
+The rank–abundance plot compares realised counts to the target Fisher log-series
+settings.
+
+```{r, eval=FALSE}
+library(spesim)
+
+P <- load_config(system.file("examples/spesim_init_basic.txt", package = "spesim"))
+res <- spesim_run(P, write_outputs = FALSE, seed = 77)
+
+ra <- calculate_rank_abundance(res$species_dist)
+plot_rank_abundance(ra)
+```
+
+What to look for:
+
+- Realised counts are close to the theoretical curve (on log-scale) when sample
+  sizes are large.
+- Big departures usually indicate strong filtering / strong interactions / very
+  small sample sizes.
+
+## 2) Quadrat placement geometry
+
+Always sanity-check the design visually.
+
+```{r, eval=FALSE}
+plot_quadrats(res$domain, res$quadrats, title = "Quadrat layout")
+```
+
+## 3) Distance–decay behaves sensibly
+
+```{r, eval=FALSE}
+dd <- calculate_distance_decay(res$abund_matrix, res$site_coords)
+plot_distance_decay(dd)
+```
+
+What to look for:
+
+- With strong gradients or dispersal limitation-like structure, dissimilarity
+  should generally increase with distance.
+- Under CSR + no filtering, distance–decay should be weak.
+
+## 4) Optional: point-process diagnostics with spatstat
+
+spesim aims to stay lightweight, but if you have **spatstat** installed you can
+use it to validate clustering/inhibition patterns (e.g., Ripley’s K, pair
+correlation \(g(r)\)).
+
+```{r, eval=FALSE}
+if (requireNamespace("spatstat.geom", quietly = TRUE) &&
+    requireNamespace("spatstat.explore", quietly = TRUE)) {
+
+  library(spatstat.geom)
+  library(spatstat.explore)
+
+  # Example: diagnose the dominant species pattern
+  dom <- res$species_dist[res$species_dist$species == "A", ]
+
+  # Convert to spatstat ppp (note: uses the bbox window as a first approximation)
+  xy <- sf::st_coordinates(dom)
+  win <- as.owin(sf::st_bbox(res$domain))
+  X <- ppp(xy[,1], xy[,2], window = win)
+
+  plot(Kest(X), main = "Ripley's K: dominant species (approx bbox window)")
+  plot(pcf(X), main = "Pair correlation g(r): dominant species")
+}
+```
+
+Notes:
+
+- For exact diagnostics in an **irregular polygon**, you can convert the domain
+  to an `owin` (requires additional steps). The bbox-based check is a quick first
+  pass.
+
+## 5) Reproducibility note (vegan)
+
+Some summaries (e.g., `vegan::specaccum(method = "random")`) use internal random
+permutations.
+
+- If you want deterministic repeats, set a seed immediately beforehand:
+
+```{r, eval=FALSE}
+set.seed(res$P$SEED)
+# then regenerate SAR/rarefaction plots
+```

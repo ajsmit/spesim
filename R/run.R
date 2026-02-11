@@ -297,6 +297,15 @@ run_spatial_simulation <- function(init_file = NULL,
     tryCatch(
       {
         cat("\n========== ADVANCED ANALYSIS ==========\n")
+
+        # Reproducibility note:
+        # Some advanced-panel components call vegan functions that use internal
+        # random permutations (e.g., specaccum(method = "random")). Resetting the
+        # seed here makes the panel deterministic when P$SEED is set.
+        if (!is.null(results_list$P$SEED) && is.finite(results_list$P$SEED)) {
+          set.seed(as.integer(results_list$P$SEED))
+        }
+
         f_adv <- paste0(stamped_prefix, "_fig_advanced_panel.png")
         ap <- generate_advanced_panel(results_list)
         ggplot2::ggsave(f_adv, ap, width = 12, height = 14, dpi = 300, bg = "white")
@@ -310,6 +319,11 @@ run_spatial_simulation <- function(init_file = NULL,
 
   # --- 5) Text report (optional) ---------------------------------------------
   if (!is.null(results_list) && isTRUE(write_outputs)) {
+    # Keep any stochastic report components deterministic when P$SEED is set.
+    if (!is.null(results_list$P$SEED) && is.finite(results_list$P$SEED)) {
+      set.seed(as.integer(results_list$P$SEED))
+    }
+
     cat("\n", generate_full_report(results_list), "\n", sep = "")
     cat("Outputs saved to: ", normalizePath(dirname(stamped_prefix)), "\n", sep = "")
   }
