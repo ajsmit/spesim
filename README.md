@@ -1,13 +1,19 @@
 spesim: Spatial Ecological Simulation in R
 ================
 AJ Smit and contributors
-2025-08-12
+2026-02-11
 
 # spesim <img src="man/figures/logo.png" alt="spesim logo" align="right" width="120" />
 
+<!-- badges: start -->
+
+[![R-CMD-check](https://github.com/ajsmit/spesim/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ajsmit/spesim/actions/workflows/R-CMD-check.yaml)
+[![version](https://img.shields.io/github/r-package/v/ajsmit/spesim?label=version)](https://github.com/ajsmit/spesim)
+<!-- badges: end -->
+
 **spesim** is an R package for simulating, sampling, and analysing
 *spatially heterogeneous ecological communities* in irregular
-landscapes.  
+landscapes.\
 It’s built for teaching, methods testing, and exploratory research in
 **biogeography** and **community ecology**.
 
@@ -63,25 +69,16 @@ package relies on common spatial/data/plotting libraries (see
 
 ## Vignettes (online)
 
-Start here:
-
-- [**Workflow overview**](https://ajsmit.github.io/spesim/articles/spesim-workflow.html)
-- [**Public API (what’s stable)**](https://ajsmit.github.io/spesim/articles/spesim-public-api.html)
-
-Core topics:
-
-- [**Quadrat placement**](https://ajsmit.github.io/spesim/articles/spesim-quadrat-placement.html)
-- [**Interactions (neighbour effects)**](https://ajsmit.github.io/spesim/articles/spesim-interactions.html)
-- [**Full init-file parameters**](https://ajsmit.github.io/spesim/articles/spesim-init-parameters.html)
-- [**Environmental gradients**](https://ajsmit.github.io/spesim/articles/spesim-env-gradients.html)
-- [**Advanced analysis panel**](https://ajsmit.github.io/spesim/articles/spesim-advanced-panel.html)
-- [**Point processes**](https://ajsmit.github.io/spesim/articles/spesim-point-processes.html)
-
-Recipes:
-
-- [**Recipes: gradients**](https://ajsmit.github.io/spesim/articles/spesim-recipes-gradients.html)
-- [**Recipes: interactions**](https://ajsmit.github.io/spesim/articles/spesim-recipes-interactions.html)
-- [**Recipes: point processes**](https://ajsmit.github.io/spesim/articles/spesim-recipes-point-processes.html)
+- [**Interactions (neighbour
+  effects)**](https://ajsmit.github.io/spesim/articles/spesim-interactions.html)
+- [**Full init-file
+  parameters**](https://ajsmit.github.io/spesim/articles/spesim-init-parameters.html)
+- [**Environmental
+  Gradients**](https://ajsmit.github.io/spesim/articles/spesim-env-gradients.html)
+- [**Advanced Analysis
+  Panel**](https://ajsmit.github.io/spesim/articles/spesim-advanced-panel.html)
+- [**Point
+  processes**](https://ajsmit.github.io/spesim/articles/spesim-point-processes.html)
 
 If reading on GitHub before the site is live, you’ll find the sources
 under `vignettes/`.
@@ -95,7 +92,7 @@ or using an **init file** on disk. The latter is more convenient for
 larger setups and reproducibility, since access to the init file gives
 you a full bird’s eye view of the simulation parameters.
 
-### Quick start (programmatic)
+### Quick start: programmatic
 
 A minimal run that *does not* write files (handy for examples/CI).
 
@@ -110,8 +107,8 @@ P$SAMPLING_SCHEME <- "random"
 P$N_QUADRATS <- 20
 P$QUADRAT_SIZE_OPTION <- "medium"
 
-# Run (recommended wrapper; skip writing to disk to keep examples snappy)
-res <- spesim_run(P, write_outputs = FALSE)
+# Run (skip writing to disk to keep examples snappy)
+res <- run_spatial_simulation(P = P, write_outputs = FALSE)
 
 # One-map view: individuals + quadrats (no gradient fill)
 p <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P)
@@ -128,10 +125,10 @@ p4 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P,
 (p1 | p2) / (p3 | p4)
 ```
 
-### Quick start (init file on disk)
+### Quick start: init file on disk
 
 Prefer declaring everything in a text file? Point
-`spesim_run()` to it:
+`run_spatial_simulation()` to it:
 
 ``` r
 library(spesim)
@@ -143,8 +140,8 @@ init <- "inst/examples/spesim_init_complete.txt"   # or a path you created
 #          or via a separate interactions file set here:
 # interactions <- "inst/examples/interactions_init.txt"
 
-res <- spesim_run(
-  init,
+res <- run_spatial_simulation(
+  init_file = init,
   interactions_file = NULL,  # use inline settings if present
   output_prefix = "out/demo", 
   write_outputs = TRUE       # write CSVs, figures, report
@@ -161,7 +158,7 @@ str(res$abund_matrix)
 
 1.  **Set parameters**: either with an **init file** (see vignette) or
     in-memory (`load_config()` → edit fields).
-2.  **Run the simulator**: `spesim_run()` (recommended) or `run_spatial_simulation()` (lower-level).
+2.  **Run the simulator**: `run_spatial_simulation()`.
 3.  **Use the outputs**:
     - `res$abund_matrix` (site × species),
     - `res$site_coords` (quadrat centroids),
@@ -176,8 +173,7 @@ str(res$abund_matrix)
 
 | Function | Purpose |
 |----|----|
-| `spesim_run()` | Recommended high-level runner; returns an S3 `spesim_result` and (optionally) writes outputs. |
-| `run_spatial_simulation()` | Lower-level orchestrator (more knobs; same core engine). |
+| `run_spatial_simulation()` | End‑to‑end orchestrator; returns a results list and (optionally) writes CSVs/figures/report. |
 | `generate_heterogeneous_distribution()` | Place individuals using abundances, gradients, dominant clustering, and interactions. |
 | `create_abundance_matrix()` | Build site × species table by intersecting individuals with quadrats. |
 | `calculate_quadrat_environment()` | Mean environmental conditions per quadrat from the grid. |
@@ -187,16 +183,17 @@ str(res$abund_matrix)
 
 ------------------------------------------------------------------------
 
-## Interactions (neighbour effects)
+## Interactions
 
 You can specify interspecific effects **inline in the init file** or via
-a simple **CSV edgelist**. See the dedicated vignette:
+a simple **CSV edgelist** (neighbour effects). See the dedicated
+vignette:
 
 - <https://ajsmit.github.io/spesim/articles/spesim-interactions.html>
 
 Key points:
 
-- Rules are **directed** (`A -> B` may differ from `B -> A`).  
+- Rules are **directed** (`A -> B` may differ from `B -> A`).\
 - Default is **neutral** (`1.0`); only list deviations.
 - Set the global `INTERACTION_RADIUS` (0 disables the modifier).
 

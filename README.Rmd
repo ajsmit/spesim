@@ -12,6 +12,11 @@ vignette: >
 
 # spesim <img src="man/figures/logo.png" alt="spesim logo" align="right" width="120" />
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/ajsmit/spesim/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ajsmit/spesim/actions/workflows/R-CMD-check.yaml)
+[![version](https://img.shields.io/github/r-package/v/ajsmit/spesim?label=version)](https://github.com/ajsmit/spesim)
+<!-- badges: end -->
+
 **spesim** is an R package for simulating, sampling, and analysing *spatially heterogeneous ecological communities* in irregular landscapes.  
 It’s built for teaching, methods testing, and exploratory research in **biogeography** and **community ecology**.
 
