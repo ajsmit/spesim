@@ -65,12 +65,16 @@ place_quadrats_transect <- function(domain, n_transects, n_quadrats_per_transect
   if (sf::st_is_empty(safe_domain) || sf::st_area(safe_domain) == 0) {
     warning("Domain too small for given quadrat size.")
     out <- sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain)))
-    attr(out, "placement_audit") <- list(
+    safe_frac <- as.numeric(sf::st_area(safe_domain) / sf::st_area(sf::st_union(domain)))
+    out <- .attach_placement_audit(out, list(
       scheme = "transect",
       n_requested = as.integer(n_transects * n_quadrats_per_transect),
       n_returned = 0L,
-      safe_area_empty = TRUE
-    )
+      safe_area_empty = TRUE,
+      safe_area_fraction = safe_frac,
+      transects_total = as.integer(n_transects),
+      transects_with_segment = 0L
+    ))
     return(out)
   }
 
@@ -110,13 +114,16 @@ place_quadrats_transect <- function(domain, n_transects, n_quadrats_per_transect
   if (length(points_list) == 0) {
     warning("No transects intersected the safe sampling area.")
     out <- sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain)))
-    attr(out, "placement_audit") <- list(
+    safe_frac <- as.numeric(sf::st_area(safe_domain) / sf::st_area(sf::st_union(domain)))
+    out <- .attach_placement_audit(out, list(
       scheme = "transect",
       n_requested = as.integer(n_transects * n_quadrats_per_transect),
       n_returned = 0L,
-      transects_with_segment = 0L,
-      transects_total = as.integer(n_transects)
-    )
+      safe_area_empty = FALSE,
+      safe_area_fraction = safe_frac,
+      transects_total = as.integer(n_transects),
+      transects_with_segment = 0L
+    ))
     return(out)
   }
 
@@ -124,12 +131,15 @@ place_quadrats_transect <- function(domain, n_transects, n_quadrats_per_transect
   quadrat_geometries <- sf::st_sfc(lapply(sf::st_geometry(candidate_centers), function(pt) create_quadrat_from_center(pt, quadrat_size)), crs = sf::st_crs(domain))
 
   out <- sf::st_sf(quadrat_id = 1:length(quadrat_geometries), geometry = quadrat_geometries)
-  attr(out, "placement_audit") <- list(
+  safe_frac <- as.numeric(sf::st_area(safe_domain) / sf::st_area(sf::st_union(domain)))
+  out <- .attach_placement_audit(out, list(
     scheme = "transect",
     n_requested = as.integer(n_transects * n_quadrats_per_transect),
     n_returned = as.integer(length(quadrat_geometries)),
-    transects_with_segment = as.integer(length(points_list)),
-    transects_total = as.integer(n_transects)
-  )
+    safe_area_empty = FALSE,
+    safe_area_fraction = safe_frac,
+    transects_total = as.integer(n_transects),
+    transects_with_segment = as.integer(length(points_list))
+  ))
   out
 }

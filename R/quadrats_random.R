@@ -93,29 +93,29 @@ place_quadrats <- function(domain, n_quadrats, quadrat_size) {
 
   if (length(quadrats) == 0) {
     out <- sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain)))
-    attr(out, "placement_audit") <- list(
+    out <- .attach_placement_audit(out, list(
       scheme = "random",
       n_requested = as.integer(n_quadrats),
       n_returned = 0L,
       attempts = as.integer(attempts),
+      max_attempts = as.integer(max_attempts),
       reject_boundary = as.integer(reject_boundary),
-      reject_overlap = as.integer(reject_overlap),
-      max_attempts = as.integer(max_attempts)
-    )
+      reject_overlap = as.integer(reject_overlap)
+    ))
     return(out)
   }
 
   sfc <- do.call(c, quadrats)
   out <- sf::st_sf(quadrat_id = seq_along(sfc), geometry = sfc)
-  attr(out, "placement_audit") <- list(
+  out <- .attach_placement_audit(out, list(
     scheme = "random",
     n_requested = as.integer(n_quadrats),
     n_returned = as.integer(length(sfc)),
     attempts = as.integer(attempts),
+    max_attempts = as.integer(max_attempts),
     reject_boundary = as.integer(reject_boundary),
-    reject_overlap = as.integer(reject_overlap),
-    max_attempts = as.integer(max_attempts)
-  )
+    reject_overlap = as.integer(reject_overlap)
+  ))
   out
 }
 

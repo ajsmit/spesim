@@ -181,3 +181,25 @@ print(p_voronoi_diag)
 ## Reproducibility tip
 
 All schemes are stochastic to some degree (even the systematic scheme can depend on inferred grid dimensions); for reproducible figures, set a seed immediately before each placement call.
+
+## Method-testing tip: inspect placement audits (boundary exclusion)
+
+Quadrat placement can fail silently in subtle ways when the domain is irregular
+(e.g., many candidates fall outside the boundary, or random placement hits an
+attempt cap).
+
+spesim attaches a `placement_audit` attribute to the returned quadrats. This is
+used by `spesim_audit()`/`audit_sampling_scheme()`, and it is also useful to
+inspect directly.
+
+```{r, eval=FALSE}
+library(spesim)
+set.seed(1)
+dom <- create_sampling_domain()
+
+q_rand <- place_quadrats(dom, n_quadrats = 20, quadrat_size = c(1.5, 1.5))
+attr(q_rand, "placement_audit")
+
+q_tile <- place_quadrats_tiled(dom, n_quadrats = 20, quadrat_size = c(1.5, 1.5))
+attr(q_tile, "placement_audit")
+```

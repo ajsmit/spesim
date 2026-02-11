@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -294,6 +294,28 @@ spatial coverage and spacing.</li>
 <p>All schemes are stochastic to some degree (even the systematic scheme
 can depend on inferred grid dimensions); for reproducible figures, set a
 seed immediately before each placement call.</p>
+</div>
+<div class="section level2">
+<h2 id="method-testing-tip-inspect-placement-audits-boundary-exclusion">Method-testing tip: inspect placement audits (boundary
+exclusion)<a class="anchor" aria-label="anchor" href="#method-testing-tip-inspect-placement-audits-boundary-exclusion"></a>
+</h2>
+<p>Quadrat placement can fail silently in subtle ways when the domain is
+irregular (e.g., many candidates fall outside the boundary, or random
+placement hits an attempt cap).</p>
+<p>spesim attaches a <code>placement_audit</code> attribute to the
+returned quadrats. This is used by
+<code><a href="../reference/spesim_audit.html">spesim_audit()</a></code>/<code><a href="../reference/audit_sampling_scheme.html">audit_sampling_scheme()</a></code>, and it
+is also useful to inspect directly.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ajsmit/spesim" class="external-link">spesim</a></span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">dom</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_sampling_domain.html">create_sampling_domain</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">q_rand</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/place_quadrats.html">place_quadrats</a></span><span class="op">(</span><span class="va">dom</span>, n_quadrats <span class="op">=</span> <span class="fl">20</span>, quadrat_size <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">q_rand</span>, <span class="st">"placement_audit"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">q_tile</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/place_quadrats_tiled.html">place_quadrats_tiled</a></span><span class="op">(</span><span class="va">dom</span>, n_quadrats <span class="op">=</span> <span class="fl">20</span>, quadrat_size <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">q_tile</span>, <span class="st">"placement_audit"</span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

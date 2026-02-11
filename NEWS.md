@@ -1,3 +1,11 @@
+# spesim 0.3.6
+
+## Sampling audits: standardise `placement_audit`
+
+- Quadrat placement functions now attach their `placement_audit` attribute via shared helpers and normalise a minimal common schema.
+- `audit_sampling_scheme()` now validates/normalises `placement_audit` before reporting.
+- Quadrat placement vignette updated with guidance on inspecting `placement_audit` for boundary exclusion.
+
 # spesim 0.3.5
 
 ## Method-testing tutor: edge-corrected spatial diagnostics (optional)

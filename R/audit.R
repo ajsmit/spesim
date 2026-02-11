@@ -342,8 +342,8 @@ audit_environmental_filtering <- function(res) {
 #' @export
 audit_sampling_scheme <- function(quadrats) {
   if (is.null(quadrats)) return(list())
-  aud <- attr(quadrats, "placement_audit")
-  if (is.null(aud) || !is.list(aud)) return(list())
+  aud <- .validate_placement_audit(quadrats, stop_on_error = FALSE)
+  if (length(aud) == 0) return(list())
 
   # Provide a couple of compact summary lines for printing.
   summary_lines <- character(0)

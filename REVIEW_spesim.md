@@ -140,13 +140,14 @@ Provide optional spatstat-based checks that can be turned on via an argument:
   - convert domain to `owin` (proper polygon window),
   - compute K/L and pcf summaries for selected species.
 
-### R3. Standardise and document the `placement_audit` schema
+### R3. Standardise and document the `placement_audit` schema ✅ (implemented in v0.3.6-dev)
 Right now `placement_audit` is scheme-dependent (reasonable), but you’ll get
-better downstream tooling if you standardise keys:
-- always include: `scheme`, `n_requested`, `n_returned`
-- candidate accounting where relevant: `candidates_total`, `candidates_valid`
-- rejection accounting where relevant: `attempts`, `reject_boundary`, `reject_overlap`
-- safe-area accounting (transect): `safe_area_fraction` (see R4)
+better downstream tooling if you standardise keys.
+
+Implemented changes:
+- placement functions now attach audits via a shared helper and a permissive validator.
+- audits always include: `scheme`, `n_requested`, `n_returned`.
+- schemes include additional standard keys where applicable (candidates, attempts, safe-area fraction, etc.).
 
 ### R4. Add **effective sampling frame** reporting (area-based)
 For each sampling scheme, report an area-based summary that captures the

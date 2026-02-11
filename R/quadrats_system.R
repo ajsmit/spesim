@@ -71,23 +71,23 @@ place_quadrats_systematic <- function(domain, n_quadrats, quadrat_size) {
   if (length(valid_quadrats) == 0) {
     warning("Systematic sampling failed to place any quadrats.")
     out <- sf::st_sf(quadrat_id = integer(0), geometry = sf::st_sfc(crs = sf::st_crs(domain)))
-    attr(out, "placement_audit") <- list(
+    out <- .attach_placement_audit(out, list(
       scheme = "systematic",
       n_requested = as.integer(n_quadrats),
       n_returned = 0L,
       candidates_total = as.integer(length(candidate_quadrats)),
       candidates_valid = 0L
-    )
+    ))
     return(out)
   }
 
   out <- sf::st_sf(quadrat_id = seq_len(length(valid_quadrats)), geometry = valid_quadrats)
-  attr(out, "placement_audit") <- list(
+  out <- .attach_placement_audit(out, list(
     scheme = "systematic",
     n_requested = as.integer(n_quadrats),
     n_returned = as.integer(length(valid_quadrats)),
     candidates_total = as.integer(length(candidate_quadrats)),
     candidates_valid = as.integer(length(valid_quadrats))
-  )
+  ))
   out
 }

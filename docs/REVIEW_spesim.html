@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -150,8 +150,9 @@ Version reviewed: <strong>0.3.3</strong> (per NEWS/site)</p>
 <p>Provide optional spatstat-based checks that can be turned on via an argument: - <code>spesim_audit(res, diagnostics = c("nn", "spatstat"))</code> - If spatstat is installed: - convert domain to <code>owin</code> (proper polygon window), - compute K/L and pcf summaries for selected species.</p>
 </div>
 <div class="section level3">
-<h3 id="r3-standardise-and-document-the-placement_audit-schema">R3. Standardise and document the <code>placement_audit</code> schema<a class="anchor" aria-label="anchor" href="#r3-standardise-and-document-the-placement_audit-schema"></a></h3>
-<p>Right now <code>placement_audit</code> is scheme-dependent (reasonable), but you’ll get better downstream tooling if you standardise keys: - always include: <code>scheme</code>, <code>n_requested</code>, <code>n_returned</code> - candidate accounting where relevant: <code>candidates_total</code>, <code>candidates_valid</code> - rejection accounting where relevant: <code>attempts</code>, <code>reject_boundary</code>, <code>reject_overlap</code> - safe-area accounting (transect): <code>safe_area_fraction</code> (see R4)</p>
+<h3 id="r3-standardise-and-document-the-placement_audit-schema-white_check_mark-implemented-in-v036-dev">R3. Standardise and document the <code>placement_audit</code> schema ✅ (implemented in v0.3.6-dev)<a class="anchor" aria-label="anchor" href="#r3-standardise-and-document-the-placement_audit-schema-white_check_mark-implemented-in-v036-dev"></a></h3>
+<p>Right now <code>placement_audit</code> is scheme-dependent (reasonable), but you’ll get better downstream tooling if you standardise keys.</p>
+<p>Implemented changes: - placement functions now attach audits via a shared helper and a permissive validator. - audits always include: <code>scheme</code>, <code>n_requested</code>, <code>n_returned</code>. - schemes include additional standard keys where applicable (candidates, attempts, safe-area fraction, etc.).</p>
 </div>
 <div class="section level3">
 <h3 id="r4-add-effective-sampling-frame-reporting-area-based">R4. Add <strong>effective sampling frame</strong> reporting (area-based)<a class="anchor" aria-label="anchor" href="#r4-add-effective-sampling-frame-reporting-area-based"></a></h3>
@@ -275,7 +276,7 @@ Version reviewed: <strong>0.3.3</strong> (per NEWS/site)</p>
 <li><code>R/quadrats_voronoi.R</code></li>
 </ul></li>
 <li>
-<strong>Add</strong>: a small validator helper (e.g., <code>.validate_placement_audit()</code>)</li>
+<strong>Add</strong>: a small validator helper (e.g., <code><a href="reference/dot-validate_placement_audit.html">.validate_placement_audit()</a></code>)</li>
 <li>
 <strong>Docs</strong>:
 <ul><li>add a short section to <code>vignettes/spesim-quadrat-placement.Rmd</code>
