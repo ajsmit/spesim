@@ -26,27 +26,54 @@
 #' @param species Character vector of species labels to audit for spatial
 #'   structure. Default `"all"` audits all species present.
 #' @param nn_k Integer; the neighbour order used for NN distances. Default 1.
+#' @param diagnostics Character vector controlling which diagnostics to compute.
+#'   Default `c("nn", "spatstat")` will try to compute both nearest-neighbour
+#'   and spatstat-based diagnostics; if spatstat is not installed, those
+#'   diagnostics are skipped with a message. Use `"nn"` only for a lightweight
+#'   audit.
 #'
 #' @return A list of class `spesim_audit` with components:
-#' 
+#'
 #' - `spatial`: data.frame of NN diagnostics per species
+#' - `spatial_spatstat`: data.frame of edge-corrected diagnostics (if requested)
 #' - `filtering`: data.frame of environment-abundance checks (may be empty)
 #' - `sampling`: a list describing quadrat placement rejection/exclusion metrics
+#' - `regime`: green/amber/red classification (see [spesim_regime()])
 #'
 #' @export
-spesim_audit <- function(res, species = "all", nn_k = 1) {
+spesim_audit <- function(res, species = "all", nn_k = 1, diagnostics = c("nn", "spatstat")) {
   `%||%` <- function(a, b) if (!is.null(a)) a else b
 
   if (is.null(res$species_dist) || is.null(res$P) || is.null(res$domain)) {
     stop("`res` must contain at least: P, domain, species_dist")
   }
 
-  spatial <- audit_spatial_structure(res$species_dist, res$domain,
-                                     species = species, nn_k = nn_k)
+  diagnostics <- unique(as.character(diagnostics))
+
+  spatial <- if ("nn" %in% diagnostics) {
+    audit_spatial_structure(res$species_dist, res$domain, species = species, nn_k = nn_k)
+  } else {
+    data.frame()
+  }
+
+  spatial_spatstat <- data.frame()
+  if ("spatstat" %in% diagnostics) {
+    if (requireNamespace("spatstat.geom", quietly = TRUE) && requireNamespace("spatstat.explore", quietly = TRUE)) {
+      spatial_spatstat <- spesim_spatstat_diagnostics(res$species_dist, res$domain, species = species)
+    } else {
+      message("spesim_audit: spatstat diagnostics requested but spatstat is not installed; skipping.")
+    }
+  }
+
   filtering <- audit_environmental_filtering(res)
   sampling <- audit_sampling_scheme(res$quadrats %||% NULL)
 
-  out <- list(spatial = spatial, filtering = filtering, sampling = sampling)
+  out <- list(
+    spatial = spatial,
+    spatial_spatstat = spatial_spatstat,
+    filtering = filtering,
+    sampling = sampling
+  )
   out$regime <- spesim_regime(res, audit = out)
 
   class(out) <- "spesim_audit"
@@ -74,12 +101,20 @@ print.spesim_audit <- function(x, ...) {
 
   cat("\nSpatial structure (nearest-neighbour diagnostics):\n")
   if (nrow(x$spatial) == 0) {
-    cat("  (no spatial diagnostics available)\n")
+    cat("  (no NN spatial diagnostics available)\n")
   } else {
-    # compact print
     keep <- c("species", "n", "nn_mean", "nn_expected_csr", "nn_ratio", "qualitative")
     keep <- keep[keep %in% names(x$spatial)]
     print(x$spatial[, keep, drop = FALSE], row.names = FALSE)
+  }
+
+  cat("\nSpatial structure (spatstat; edge-corrected):\n")
+  if (is.null(x$spatial_spatstat) || nrow(x$spatial_spatstat) == 0) {
+    cat("  (no spatstat diagnostics available)\n")
+  } else {
+    keep <- c("species", "n", "Lmr_mean", "g_max", "g_min", "qualitative")
+    keep <- keep[keep %in% names(x$spatial_spatstat)]
+    print(x$spatial_spatstat[, keep, drop = FALSE], row.names = FALSE)
   }
 
   cat("\nEnvironmental filtering checks:\n")

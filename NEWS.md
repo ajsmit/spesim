@@ -1,3 +1,13 @@
+# spesim 0.3.5
+
+## Method-testing tutor: edge-corrected spatial diagnostics (optional)
+
+- Extend `spesim_audit()` with `diagnostics = c("nn", "spatstat")`.
+- Add optional **spatstat-based, edge-corrected** spatial summaries in the *true* irregular window:
+  - Ripley-style departure summary via L(r)-r (border correction)
+  - pair correlation function extrema (Ripley correction)
+- New helper: `spesim_spatstat_diagnostics()` (used internally; requires `spatstat.geom` + `spatstat.explore`).
+
 # spesim 0.3.4
 
 ## Method-testing tutor: regime classification

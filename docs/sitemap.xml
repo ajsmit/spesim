@@ -40,6 +40,7 @@
 <url><loc>https://ajsmit.github.io/spesim/reference/dot-has_cpp_strauss.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/dot-has_cpp_thomas.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/dot-require_spatstat.html</loc></url>
+<url><loc>https://ajsmit.github.io/spesim/reference/dot-spesim_require_spatstat.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/generate_advanced_panel.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/generate_fisher_log_series.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/generate_full_report.html</loc></url>
@@ -77,6 +78,7 @@
 <url><loc>https://ajsmit.github.io/spesim/reference/spesim_open_docs.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/spesim_regime.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/spesim_run.html</loc></url>
+<url><loc>https://ajsmit.github.io/spesim/reference/spesim_spatstat_diagnostics.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/spesim_use_example.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/theme_spesim.html</loc></url>
 <url><loc>https://ajsmit.github.io/spesim/reference/validate_config.html</loc></url>

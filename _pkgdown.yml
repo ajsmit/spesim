@@ -78,6 +78,7 @@ reference:
   - audit_spatial_structure
   - audit_environmental_filtering
   - audit_sampling_scheme
+  - spesim_spatstat_diagnostics
 
 - title: "Utilities"
   contents:

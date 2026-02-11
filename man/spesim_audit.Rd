@@ -4,7 +4,7 @@
 \alias{spesim_audit}
 \title{Audit whether a spesim run matches the intended qualitative regime}
 \usage{
-spesim_audit(res, species = "all", nn_k = 1)
+spesim_audit(res, species = "all", nn_k = 1, diagnostics = c("nn", "spatstat"))
 }
 \arguments{
 \item{res}{A \code{spesim_result} list returned by \code{\link[=spesim_run]{spesim_run()}} or
@@ -14,13 +14,21 @@ spesim_audit(res, species = "all", nn_k = 1)
 structure. Default \code{"all"} audits all species present.}
 
 \item{nn_k}{Integer; the neighbour order used for NN distances. Default 1.}
+
+\item{diagnostics}{Character vector controlling which diagnostics to compute.
+Default \code{c("nn", "spatstat")} will try to compute both nearest-neighbour
+and spatstat-based diagnostics; if spatstat is not installed, those
+diagnostics are skipped with a message. Use \code{"nn"} only for a lightweight
+audit.}
 }
 \value{
 A list of class \code{spesim_audit} with components:
 \itemize{
 \item \code{spatial}: data.frame of NN diagnostics per species
+\item \code{spatial_spatstat}: data.frame of edge-corrected diagnostics (if requested)
 \item \code{filtering}: data.frame of environment-abundance checks (may be empty)
 \item \code{sampling}: a list describing quadrat placement rejection/exclusion metrics
+\item \code{regime}: green/amber/red classification (see \code{\link[=spesim_regime]{spesim_regime()}})
 }
 }
 \description{

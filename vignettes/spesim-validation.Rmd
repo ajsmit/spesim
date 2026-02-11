@@ -69,6 +69,18 @@ spesim aims to stay lightweight, but if you have **spatstat** installed you can
 use it to validate clustering/inhibition patterns (e.g., Ripley’s K, pair
 correlation \(g(r)\)).
 
+### A) The built-in audit (recommended)
+
+If `spatstat.geom` and `spatstat.explore` are available, `spesim_audit()` can
+compute **edge-corrected** summaries inside the true irregular window:
+
+```{r, eval=FALSE}
+a <- spesim_audit(res, diagnostics = c("nn", "spatstat"))
+print(a)
+```
+
+### B) Manual workflow (power users)
+
 ```{r, eval=FALSE}
 if (requireNamespace("spatstat.geom", quietly = TRUE) &&
     requireNamespace("spatstat.explore", quietly = TRUE)) {
@@ -79,21 +91,15 @@ if (requireNamespace("spatstat.geom", quietly = TRUE) &&
   # Example: diagnose the dominant species pattern
   dom <- res$species_dist[res$species_dist$species == "A", ]
 
-  # Convert to spatstat ppp (note: uses the bbox window as a first approximation)
+  # Convert to spatstat ppp in the true irregular window
+  win <- as.owin(sf::st_as_sf(sf::st_union(res$domain)))
   xy <- sf::st_coordinates(dom)
-  win <- as.owin(sf::st_bbox(res$domain))
   X <- ppp(xy[,1], xy[,2], window = win)
 
-  plot(Kest(X), main = "Ripley's K: dominant species (approx bbox window)")
-  plot(pcf(X), main = "Pair correlation g(r): dominant species")
+  plot(Kest(X, correction = "border"), main = "Ripley's K (border): dominant species")
+  plot(pcf(X, correction = "Ripley"), main = "Pair correlation g(r): dominant species")
 }
 ```
-
-Notes:
-
-- For exact diagnostics in an **irregular polygon**, you can convert the domain
-  to an `owin` (requires additional steps). The bbox-based check is a quick first
-  pass.
 
 ## 5) Reproducibility note (vegan)
 

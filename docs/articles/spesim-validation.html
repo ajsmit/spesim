@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -130,7 +130,21 @@ dissimilarity should generally increase with distance.</li>
 <strong>spatstat</strong> installed you can use it to validate
 clustering/inhibition patterns (e.g., Ripley’s K, pair correlation
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>g</mi><mo stretchy="false" form="prefix">(</mo><mi>r</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">g(r)</annotation></semantics></math>).</p>
+<div class="section level3">
+<h3 id="a-the-built-in-audit-recommended">A) The built-in audit (recommended)<a class="anchor" aria-label="anchor" href="#a-the-built-in-audit-recommended"></a>
+</h3>
+<p>If <code>spatstat.geom</code> and <code>spatstat.explore</code> are
+available, <code><a href="../reference/spesim_audit.html">spesim_audit()</a></code> can compute
+<strong>edge-corrected</strong> summaries inside the true irregular
+window:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">a</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spesim_audit.html">spesim_audit</a></span><span class="op">(</span><span class="va">res</span>, diagnostics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"nn"</span>, <span class="st">"spatstat"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">a</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="b-manual-workflow-power-users">B) Manual workflow (power users)<a class="anchor" aria-label="anchor" href="#b-manual-workflow-power-users"></a>
+</h3>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"spatstat.geom"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">&amp;&amp;</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"spatstat.explore"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span></span>
@@ -140,20 +154,15 @@ clustering/inhibition patterns (e.g., Ripley’s K, pair correlation
 <span>  <span class="co"># Example: diagnose the dominant species pattern</span></span>
 <span>  <span class="va">dom</span> <span class="op">&lt;-</span> <span class="va">res</span><span class="op">$</span><span class="va">species_dist</span><span class="op">[</span><span class="va">res</span><span class="op">$</span><span class="va">species_dist</span><span class="op">$</span><span class="va">species</span> <span class="op">==</span> <span class="st">"A"</span>, <span class="op">]</span></span>
 <span></span>
-<span>  <span class="co"># Convert to spatstat ppp (note: uses the bbox window as a first approximation)</span></span>
+<span>  <span class="co"># Convert to spatstat ppp in the true irregular window</span></span>
+<span>  <span class="va">win</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spatstat.geom/man/as.owin.html" class="external-link">as.owin</a></span><span class="op">(</span><span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_combine.html" class="external-link">st_union</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">domain</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">xy</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_coordinates.html" class="external-link">st_coordinates</a></span><span class="op">(</span><span class="va">dom</span><span class="op">)</span></span>
-<span>  <span class="va">win</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spatstat.geom/man/as.owin.html" class="external-link">as.owin</a></span><span class="op">(</span><span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_bbox.html" class="external-link">st_bbox</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">domain</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">X</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/spatstat.geom/man/ppp.html" class="external-link">ppp</a></span><span class="op">(</span><span class="va">xy</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span>, <span class="va">xy</span><span class="op">[</span>,<span class="fl">2</span><span class="op">]</span>, window <span class="op">=</span> <span class="va">win</span><span class="op">)</span></span>
 <span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/spatstat.explore/man/Kest.html" class="external-link">Kest</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span>, main <span class="op">=</span> <span class="st">"Ripley's K: dominant species (approx bbox window)"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/spatstat.explore/man/pcf.html" class="external-link">pcf</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span>, main <span class="op">=</span> <span class="st">"Pair correlation g(r): dominant species"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/spatstat.explore/man/Kest.html" class="external-link">Kest</a></span><span class="op">(</span><span class="va">X</span>, correction <span class="op">=</span> <span class="st">"border"</span><span class="op">)</span>, main <span class="op">=</span> <span class="st">"Ripley's K (border): dominant species"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/spatstat.explore/man/pcf.html" class="external-link">pcf</a></span><span class="op">(</span><span class="va">X</span>, correction <span class="op">=</span> <span class="st">"Ripley"</span><span class="op">)</span>, main <span class="op">=</span> <span class="st">"Pair correlation g(r): dominant species"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p>Notes:</p>
-<ul>
-<li>For exact diagnostics in an <strong>irregular polygon</strong>, you
-can convert the domain to an <code>owin</code> (requires additional
-steps). The bbox-based check is a quick first pass.</li>
-</ul>
+</div>
 </div>
 <div class="section level2">
 <h2 id="reproducibility-note-vegan">5) Reproducibility note (vegan)<a class="anchor" aria-label="anchor" href="#reproducibility-note-vegan"></a>
@@ -165,7 +174,7 @@ permutations.</p>
 <li>If you want deterministic repeats, set a seed immediately
 beforehand:</li>
 </ul>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">P</span><span class="op">$</span><span class="va">SEED</span><span class="op">)</span></span>
 <span><span class="co"># then regenerate SAR/rarefaction plots</span></span></code></pre></div>
 </div>

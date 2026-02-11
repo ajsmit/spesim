@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -146,8 +146,8 @@ Version reviewed: <strong>0.3.3</strong> (per NEWS/site)</p>
 <p>Implementation idea: - spatial: use NN ratio bands (e.g., &lt;0.85 clustered, 0.85–1.15 CSR-ish, &gt;1.15 inhibited) and require minimum n. - filtering: require rho &gt; 0.2 and slope &lt; 0 with minimum occupied sites. - sampling: boundary exclusion &gt; 50% triggers amber/red.</p>
 </div>
 <div class="section level3">
-<h3 id="r2-add-an-edge-corrected-option-when-spatstat-is-available">R2. Add an <strong>edge-corrected option</strong> when spatstat is available<a class="anchor" aria-label="anchor" href="#r2-add-an-edge-corrected-option-when-spatstat-is-available"></a></h3>
-<p>Provide optional spatstat-based checks that can be turned on via an argument: - <code>spesim_audit(res, diagnostics = c("nn", "spatstat"))</code> - If spatstat is installed: - convert domain to <code>owin</code> (proper polygon window), - compute K/L and pcf summaries for at least the dominant species and possibly pooled species.</p>
+<h3 id="r2-add-an-edge-corrected-option-when-spatstat-is-available-white_check_mark-implemented-in-v035-dev">R2. Add an <strong>edge-corrected option</strong> when spatstat is available ✅ (implemented in v0.3.5-dev)<a class="anchor" aria-label="anchor" href="#r2-add-an-edge-corrected-option-when-spatstat-is-available-white_check_mark-implemented-in-v035-dev"></a></h3>
+<p>Provide optional spatstat-based checks that can be turned on via an argument: - <code>spesim_audit(res, diagnostics = c("nn", "spatstat"))</code> - If spatstat is installed: - convert domain to <code>owin</code> (proper polygon window), - compute K/L and pcf summaries for selected species.</p>
 </div>
 <div class="section level3">
 <h3 id="r3-standardise-and-document-the-placement_audit-schema">R3. Standardise and document the <code>placement_audit</code> schema<a class="anchor" aria-label="anchor" href="#r3-standardise-and-document-the-placement_audit-schema"></a></h3>

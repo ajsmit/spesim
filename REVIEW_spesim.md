@@ -133,13 +133,12 @@ Implementation idea:
 - filtering: require rho > 0.2 and slope < 0 with minimum occupied sites.
 - sampling: boundary exclusion > 50% triggers amber/red.
 
-### R2. Add an **edge-corrected option** when spatstat is available
+### R2. Add an **edge-corrected option** when spatstat is available ✅ (implemented in v0.3.5-dev)
 Provide optional spatstat-based checks that can be turned on via an argument:
 - `spesim_audit(res, diagnostics = c("nn", "spatstat"))`
 - If spatstat is installed:
   - convert domain to `owin` (proper polygon window),
-  - compute K/L and pcf summaries for at least the dominant species and possibly
-    pooled species.
+  - compute K/L and pcf summaries for selected species.
 
 ### R3. Standardise and document the `placement_audit` schema
 Right now `placement_audit` is scheme-dependent (reasonable), but you’ll get
