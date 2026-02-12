@@ -142,6 +142,97 @@ run_spatial_simulation <- function(init_file = NULL,
     P <- load_config(init_file)
   } else {
     if (is.null(P)) stop("Provide either `init_file` or an in-memory parameter list `P`.")
+
+    # In programmatic workflows, users often tweak the raw GRADIENT_* and
+    # QUADRAT_SIZE_OPTION fields after calling load_config(). Those tweaks must
+    # be re-materialised into the derived fields P$GRADIENT and P$QUADRAT_SIZE.
+    #
+    # Without this, it is easy to think you have configured strong gradients,
+    # when in fact the simulator is still using the stale P$GRADIENT table.
+    .materialize_programmatic_P <- function(P) {
+      # Point-process strings
+      P$SPATIAL_PROCESS_A <- tolower(as.character(P$SPATIAL_PROCESS_A %||% "poisson"))
+      P$SPATIAL_PROCESS_OTHERS <- tolower(as.character(P$SPATIAL_PROCESS_OTHERS %||% "poisson"))
+      if (!P$SPATIAL_PROCESS_A %in% c("poisson", "thomas")) {
+        stop("SPATIAL_PROCESS_A must be 'poisson' or 'thomas'.")
+      }
+      if (!P$SPATIAL_PROCESS_OTHERS %in% c("poisson", "strauss", "geyer", "thomas")) {
+        stop("SPATIAL_PROCESS_OTHERS must be 'poisson', 'thomas', 'strauss', or 'geyer'.")
+      }
+
+      # Gradients: rebuild P$GRADIENT from the canonical GRADIENT_* fields
+      gs <- as.character(P$GRADIENT_SPECIES %||% character(0))
+      ga <- as.character(P$GRADIENT_ASSIGNMENTS %||% character(0))
+      if (length(gs) != length(ga)) {
+        stop("GRADIENT_SPECIES and GRADIENT_ASSIGNMENTS must have the same length.")
+      }
+      if (length(gs) && !all(ga %in% c("temperature", "elevation", "rainfall"))) {
+        stop("Unknown gradient(s): ", paste(setdiff(ga, c("temperature", "elevation", "rainfall")), collapse = ", "))
+      }
+
+      opt_raw <- .parse_named_pairs_numeric(P$GRADIENT_OPTIMA %||% 0.5)
+      tol_raw <- .parse_named_pairs_numeric(P$GRADIENT_TOLERANCE %||% 0.1)
+
+      .resolve_param_vector <- function(values, key_species, key_gradients) {
+        uq_grad <- unique(key_gradients)
+        valnames <- names(values)
+
+        if (length(values) == 1L && is.numeric(values)) {
+          return(rep(as.numeric(values), length(key_species)))
+        }
+        if (!is.null(valnames) && all(key_species %in% valnames)) {
+          return(as.numeric(values[key_species]))
+        }
+        if (!is.null(valnames) && all(uq_grad %in% valnames)) {
+          return(as.numeric(values[key_gradients]))
+        }
+        if (length(values) == length(key_species)) {
+          return(as.numeric(values))
+        }
+        if (length(values) == length(uq_grad)) {
+          map <- stats::setNames(as.numeric(values), uq_grad)
+          return(as.numeric(map[key_gradients]))
+        }
+        stop(
+          "Cannot resolve gradient parameters; supply scalar, length |species|, ",
+          "named by species, named by gradients, or length |unique(gradients)|."
+        )
+      }
+
+      if (length(gs)) {
+        opt <- .resolve_param_vector(opt_raw, gs, ga)
+        tol <- .resolve_param_vector(tol_raw, gs, ga)
+        clamp01 <- function(x) pmax(0, pmin(1, x))
+        opt <- clamp01(opt)
+        if (any(!is.finite(tol) | tol <= 0)) {
+          stop("GRADIENT_TOLERANCE must be positive and finite.")
+        }
+        P$GRADIENT <- tibble::tibble(
+          species  = as.character(gs),
+          gradient = as.character(ga),
+          optimum  = as.numeric(opt),
+          tol      = as.numeric(tol)
+        )
+      } else {
+        P$GRADIENT <- NULL
+      }
+
+      # Quadrat size
+      QUADRAT_SIZES <- list(
+        small  = c(1, 1),
+        medium = c(1.5, 1.5),
+        large  = c(2, 2)
+      )
+      qs <- QUADRAT_SIZES[[as.character(P$QUADRAT_SIZE_OPTION %||% "medium")]]
+      if (is.null(qs)) stop("Invalid QUADRAT_SIZE_OPTION. Use small|medium|large.")
+      P$QUADRAT_SIZE <- qs
+
+      # Reproducibility (best-effort)
+      if (!is.null(P$SEED)) set.seed(as.integer(P$SEED))
+      P
+    }
+
+    P <- .materialize_programmatic_P(P)
   }
 
   # Output prefix (only matters if writing)

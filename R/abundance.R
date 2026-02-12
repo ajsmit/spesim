@@ -462,37 +462,86 @@ generate_heterogeneous_distribution <- function(domain, P) {
     ))
   }
 
-  # --- 5) Importance reweighting by environment (keeps counts) ---------
+  # --- 5) Environmental filtering (FIXED): resimulate + weighted selection -----
+  #
+  # The previous implementation attempted to "importance reweight" points per
+  # species, but sampled q items from q indices without replacement, which is a
+  # no-op (it always keeps all points). Here we instead generate an oversampled
+  # candidate set of points (using the same baseline point-process kind) and
+  # then draw q points *from that larger set* with probability proportional to
+  # environmental suitability.
   if (!is.null(P$GRADIENT) && NROW(P$GRADIENT) > 0) {
-    tmp <- sf::st_join(pts, env_sf, join = sf::st_nearest_feature)
-    resel_idx <- integer(0)
+    os <- as.numeric(P$ENV_FILTER_OVERSAMPLE %||% 6)
+    if (!is.finite(os) || os < 1) os <- 6
+    os <- as.integer(ceiling(os))
+
     sp_levels <- unique(as.character(pts$species))
+
     for (sp in sp_levels) {
-      ids <- which(tmp$species == sp)
-      q <- length(ids)
-      if (q == 0) {
-        next
+      if (!(sp %in% P$GRADIENT$species)) next
+
+      idx <- which(as.character(pts$species) == sp)
+      q <- length(idx)
+      if (q == 0) next
+
+      row <- P$GRADIENT[P$GRADIENT$species == sp, , drop = FALSE][1, ]
+      env_col <- switch(row$gradient,
+        temperature = "temperature",
+        elevation   = "elevation",
+        rainfall    = "rainfall"
+      )
+
+      # Use the baseline point-process kind that would have generated this group.
+      # (A can differ from the others.)
+      kind <- if (sp == "A") proc_A else proc_O
+      n_cand <- as.integer(max(q, q * os))
+
+      xy_cand <- switch(kind,
+        "poisson" = .sample_uniform_in_domain(n_cand, domain),
+        "thomas" = {
+          if (sp == "A") {
+            .simulate_thomas_points(n_cand, domain,
+              mu    = as.numeric(P$A_MEAN_OFFSPRING %||% 10),
+              sigma = as.numeric(P$A_CLUSTER_SCALE %||% 1),
+              kappa = as.numeric(P$A_PARENT_INTENSITY %||% NA_real_)
+            )
+          } else {
+            .simulate_thomas_points(n_cand, domain,
+              mu    = as.numeric(P$OTHERS_MU %||% 10),
+              sigma = as.numeric(P$OTHERS_SIGMA %||% 1),
+              kappa = as.numeric(P$OTHERS_BETA %||% NA_real_)
+            )
+          }
+        },
+        "strauss" = .simulate_strauss_points(n_cand, domain,
+          r = as.numeric(P$OTHERS_R %||% 1),
+          s = as.numeric(P$OTHERS_S %||% 0.7)
+        ),
+        "geyer" = .simulate_geyer_points(n_cand, domain,
+          r = as.numeric(P$OTHERS_R %||% 1),
+          gamma = as.numeric(P$OTHERS_GAMMA %||% 1.5),
+          s = as.numeric(P$OTHERS_S %||% 2)
+        ),
+        .sample_uniform_in_domain(n_cand, domain)
+      )
+
+      # Top up if a simulator returned fewer than requested.
+      if (NROW(xy_cand) < n_cand) {
+        xy_cand <- rbind(xy_cand, .sample_uniform_in_domain(n_cand - NROW(xy_cand), domain))
       }
 
-      probs <- rep(1, q)
-      if (sp %in% P$GRADIENT$species) {
-        row <- P$GRADIENT[P$GRADIENT$species == sp, , drop = FALSE][1, ]
-        env_col <- switch(
-          row$gradient,
-          temperature = "temperature",
-          elevation = "elevation",
-          rainfall = "rainfall"
-        )
-        vals <- tmp[[env_col]][ids]
-        probs <- exp(-((vals - row$optimum)^2) / (2 * row$tol^2))
-        if (!all(is.finite(probs)) || all(probs <= 0)) probs <- rep(1, q)
-      }
-      resel_idx <- c(
-        resel_idx,
-        sample(ids, size = q, prob = probs, replace = FALSE)
-      )
+      if (NROW(xy_cand) < q) next
+
+      cand_sf <- sf::st_sf(species = sp, geometry = .as_sfc_points(xy_cand, crs_dom))
+      cand_sf <- sf::st_join(cand_sf, env_sf, join = sf::st_nearest_feature)
+      vals <- cand_sf[[env_col]]
+
+      w <- exp(-((vals - row$optimum)^2) / (2 * row$tol^2))
+      if (!all(is.finite(w)) || all(w <= 0)) w <- rep(1, length(w))
+
+      sel <- sample.int(length(w), size = q, replace = FALSE, prob = w)
+      sf::st_geometry(pts)[idx] <- sf::st_geometry(cand_sf)[sel]
     }
-    pts <- pts[sort(resel_idx), , drop = FALSE]
   }
 
   # --- 6) Final env join and return -----------------------------------
