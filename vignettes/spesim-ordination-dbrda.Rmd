@@ -65,13 +65,14 @@ P$ENVIRONMENTAL_NOISE <- 0.02
 P$ADVANCED_ANALYSIS <- FALSE
 
 # --- strong filtering (narrow tolerances)
-P$GRADIENT_SPECIES <- LETTERS[1:10]
-P$GRADIENT_ASSIGNMENTS <- c(
-  rep("temperature", 4),
-  rep("elevation", 3),
-  rep("rainfall", 3)
+# A-J respond to temperature, K-L to elevation, M-P have no gradient response.
+P$GRADIENT_SPECIES <- LETTERS[1:12]
+P$GRADIENT_ASSIGNMENTS <- c(rep("temperature", 10), rep("elevation", 2))
+P$GRADIENT_OPTIMA <- c(
+  stats::setNames(seq(0.10, 0.90, length.out = 10), LETTERS[1:10]),
+  K = 0.30,
+  L = 0.75
 )
-P$GRADIENT_OPTIMA <- 0.5
 P$GRADIENT_TOLERANCE <- 0.06
 
 # --- local interactions
