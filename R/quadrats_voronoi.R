@@ -13,9 +13,10 @@
 #' * The function assumes a projected (planar) CRS for domain so that
 #'   distances/areas are in linear units. If your data are in longitude/latitude,
 #'   reproject (e.g., to UTM) before calling.
-#' * The number of initial seeds is n_quadrats * voronoi_seed_factor. Larger
-#'   values explore the domain more densely and typically find more suitable
-#'   cells, at the cost of extra computation.
+#' * The number of initial seeds is n_quadrats * voronoi_seed_factor.
+#'   **Important:** very large values make Voronoi cells very small, which can
+#'   actually make it *harder* to find cells big enough to contain a quadrat.
+#'   In practice, values around **1–3** are often more appropriate than 10+.
 #' * Suitability is decided by comparing each cell’s inscribed‑circle radius
 #'   to half the requested quadrat diagonal:
 #'   radius >= sqrt(width^2 + height^2) / 2.

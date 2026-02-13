@@ -9,7 +9,7 @@
 ^\.gitignore$
 
 # OS / editor cruft
-^\.DS_Store$
+\.DS_Store$
 Thumbs\.db
 
 # Private or large folders
@@ -36,7 +36,13 @@ Thumbs\.db
 # Build
 ^build$
 ^.*\.Rproj$
-^\.\.Rcheck$
+^.*\.Rcheck$
+
+# Local/dev-only files (not for source tarball)
+^README_devel\.md$
+^REVIEW_spesim\.md$
+^spesim\.code-workspace$
+^out($|/)
 
 # Compiled artefacts (should never be in the source tarball)
 ^src/.*\.(o|so|dll)$

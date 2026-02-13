@@ -241,6 +241,12 @@ run_spatial_simulation <- function(init_file = NULL,
   stamped_prefix <- paste0(output_prefix, "_", timestamp)
   output_dir <- dirname(stamped_prefix)
 
+  # Reproducibility: always seed before any randomness, even in programmatic mode
+  # (when `P` is supplied and `load_config()` is not called).
+  if (!is.null(P$SEED) && is.finite(P$SEED)) {
+    set.seed(as.integer(P$SEED))
+  }
+
   # Domain
   domain <- domain %||% create_sampling_domain()
 
@@ -319,8 +325,18 @@ run_spatial_simulation <- function(init_file = NULL,
       cat(paste(capture.output(dput(P[!names(P) %in% "QUADRAT_SIZE"])), collapse = "\n"), "\n\n")
 
       cat("========== RUNNING SIMULATION ==========\n")
+
+      # Reproducibility: use separate, deterministic RNG stages so that
+      # (i) domain generation, (ii) the spatial community, and (iii) quadrat
+      # placement are stable across runs and platforms.
+      if (!is.null(P$SEED) && is.finite(P$SEED)) {
+        set.seed(as.integer(P$SEED) + 1L)
+      }
       species_dist <- generate_heterogeneous_distribution(domain, P)
 
+      if (!is.null(P$SEED) && is.finite(P$SEED)) {
+        set.seed(as.integer(P$SEED) + 2L)
+      }
       quadrats <- switch(P$SAMPLING_SCHEME,
         "random"     = place_quadrats(domain, P$N_QUADRATS, P$QUADRAT_SIZE),
         "tiled"      = place_quadrats_tiled(domain, P$N_QUADRATS, P$QUADRAT_SIZE),

@@ -210,7 +210,7 @@ load_config <- function(init_file) {
     N_TRANSECTS = 1,
     N_QUADRATS_PER_TRANSECT = 8,
     TRANSECT_ANGLE = 90,
-    VORONOI_SEED_FACTOR = 10,
+    VORONOI_SEED_FACTOR = 2,
     POINT_SIZE = 0.2,
     POINT_ALPHA = 1.0,
     QUADRAT_ALPHA = 0.05,
