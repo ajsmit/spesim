@@ -31,11 +31,14 @@ We will:
 
 1. Simulate a community in an irregular domain with **strong environmental gradients**.
 2. Add **positive and negative interspecific interactions** (local neighbourhood effects).
-3. Sample the landscape with quadrats to obtain:
+3. Compare two **transect sampling designs**:
+   - one transect aligned **along** the temperature gradient
+   - one transect set **across** (perpendicular to) the temperature gradient
+4. For each design, obtain:
    - a **site × species** abundance table
    - a **site × environment** table (mean environment per quadrat)
-4. Fit a **distance-based RDA (db-RDA)** using **vegan**’s `capscale()`.
-5. Create db-RDA plots in the same style as Tangled Bank’s *BCB743 constrained ordination* material.
+5. Fit **distance-based RDA (db-RDA)** models using **vegan**’s `capscale()`.
+6. Arrange paired figures (`a`, `b`) and summarise key results in a **gt** table.
 
 ## 1) Libraries
 
@@ -44,6 +47,9 @@ library(spesim)
 library(dplyr)
 library(ggplot2)
 library(vegan)
+library(patchwork)
+
+has_gt <- requireNamespace("gt", quietly = TRUE)
 ```
 
 ## 2) Configure a simulation with strong gradients + interactions
@@ -59,10 +65,11 @@ P <- load_config(init_file)
 # --- keep the vignette fast-ish
 P$N_INDIVIDUALS <- 3000L
 P$N_SPECIES <- 16L
-P$N_QUADRATS <- 40L
+P$N_QUADRATS <- 10L
 P$SAMPLING_RESOLUTION <- 70L
 P$ENVIRONMENTAL_NOISE <- 0.02
 P$ADVANCED_ANALYSIS <- FALSE
+quadrat_size_scale <- 0.8  # reduce quadrat side lengths by 20%
 
 # --- strong filtering (narrow tolerances)
 # A-J respond to temperature, K-L to elevation, M-P have no gradient response.
@@ -100,161 +107,355 @@ P$INTERACTIONS_EDGELIST <- c(
 P$SEED <- 2026L
 ```
 
-Run the simulation:
+## 3) Two sampling designs and shared analysis helpers
+
+To isolate the effect of sampling design, we keep the same underlying simulated
+community and only change transect orientation.
 
 ```{r}
-res <- spesim_run(P, write_outputs = FALSE, seed = P$SEED, quiet = TRUE)
+# Build a single deterministic domain that both designs will share.
+set.seed(P$SEED)
+domain <- create_sampling_domain()
+
+# Temperature is generated from normalised coordinates:
+#   temp ~ 0.7*x_norm + 0.3*y_norm
+# where x_norm = (x - xmin)/(xmax-xmin), so the true gradient direction in
+# x–y space depends on the domain bounding box aspect ratio.
+bb <- sf::st_bbox(domain)
+xrange <- as.numeric(bb["xmax"] - bb["xmin"])
+yrange <- as.numeric(bb["ymax"] - bb["ymin"])
+
+# Bearing of increasing temperature (0 = North, 90 = East)
+temp_angle <- (atan2(0.7 / xrange, 0.3 / yrange) * 180 / pi) %% 360
+
+# Perpendicular (approx. along isotherms; minimal temperature change)
+across_angle <- (temp_angle + 90) %% 360
+
+design_angles <- tibble::tibble(
+  design = c("Along temperature gradient", "Across temperature gradient"),
+  transect_angle_deg = c(temp_angle, across_angle)
+)
+design_angles
 ```
 
-## 3) The two tables we need for constrained ordination
-
-### 3.1 Species table (responses)
-
-`res$abund_matrix` is a site × species abundance table.
-
 ```{r}
-A <- res$abund_matrix
-head(A)
-```
+safe_cor <- function(x, y) {
+  ok <- is.finite(x) & is.finite(y)
+  if (sum(ok) < 3) return(NA_real_)
+  if (stats::sd(x[ok]) == 0 || stats::sd(y[ok]) == 0) return(NA_real_)
+  stats::cor(x[ok], y[ok])
+}
 
-### 3.2 Environmental table (constraints)
+build_sampling_plot <- function(res, title, subtitle = NULL) {
+  ctr <- sf::st_coordinates(sf::st_centroid(res$quadrats))
+  tran <- data.frame(
+    quadrat_id = res$quadrats$quadrat_id,
+    x = ctr[, 1],
+    y = ctr[, 2]
+  ) |>
+    dplyr::arrange(quadrat_id)
 
-`calculate_quadrat_environment()` provides mean environment per quadrat.
+  ggplot() +
+    geom_raster(
+      data = res$env_gradients,
+      aes(x = x, y = y, fill = temperature_C),
+      alpha = 0.9,
+      interpolate = TRUE
+    ) +
+    viridis::scale_fill_viridis(name = "Temperature (deg C)", option = "mako") +
+    geom_sf(data = res$domain, fill = NA, colour = "grey20", linewidth = 0.4) +
+    geom_path(
+      data = tran,
+      aes(x = x, y = y),
+      linewidth = 0.45,
+      colour = "white",
+      alpha = 0.8
+    ) +
+    geom_sf(data = res$quadrats, fill = NA, colour = "black", linewidth = 0.45) +
+    coord_sf(expand = FALSE) +
+    theme_bw(base_size = 8) +
+    labs(title = title, subtitle = subtitle, x = NULL, y = NULL)
+}
 
-```{r}
-E <- calculate_quadrat_environment(res$env_gradients, res$quadrats, sf::st_crs(res$domain))
-head(E)
-```
+build_cap_plot <- function(sc_sites, sc_bp, title) {
+  p <- ggplot(sc_sites, aes(x = CAP1, y = CAP2)) +
+    geom_hline(yintercept = 0, linewidth = 0.2, colour = "grey70") +
+    geom_vline(xintercept = 0, linewidth = 0.2, colour = "grey70") +
+    geom_point(aes(colour = temp_bin), size = 1.6, alpha = 0.85) +
+    coord_equal() +
+    scale_colour_brewer(palette = "RdYlBu", direction = -1, name = "Temp quartile") +
+    labs(
+      x = "db-RDA axis 1 (CAP1)",
+      y = "db-RDA axis 2 (CAP2)",
+      title = title
+    )
 
-For constrained ordination we need the two tables aligned by site.
+  if (nrow(sc_bp) > 0) {
+    p <- p +
+      geom_segment(
+        data = sc_bp,
+        aes(x = 0, y = 0, xend = CAP1, yend = CAP2),
+        inherit.aes = FALSE,
+        arrow = arrow(length = unit(0.14, "cm")),
+        linewidth = 0.3,
+        colour = "black"
+      ) +
+      geom_text(
+        data = sc_bp,
+        aes(x = CAP1, y = CAP2, label = var),
+        inherit.aes = FALSE,
+        size = 2.5,
+        vjust = -0.6
+      )
+  }
 
-```{r}
-dat <- dplyr::left_join(E, A, by = "site")
-stopifnot(nrow(dat) == nrow(A))
+  p
+}
 
-# Response matrix (species): remove site column
-Y <- dat |> dplyr::select(-site, -temperature_C, -elevation_m, -rainfall_mm)
+analyse_design <- function(P_base, domain, label, angle_deg) {
+  P2 <- P_base
+  P2$SAMPLING_SCHEME <- "transect"
+  P2$N_TRANSECTS <- 1L
+  P2$N_QUADRATS_PER_TRANSECT <- P2$N_QUADRATS
+  P2$TRANSECT_ANGLE <- angle_deg
 
-# Constraint matrix (environment)
-X <- dat |> dplyr::select(site, temperature_C, elevation_m, rainfall_mm)
+  # Build deterministic species/environment first, then re-place
+  # reduced-size transect quadrats for this comparison.
+  res <- spesim_run(P2, domain = domain, write_outputs = FALSE, seed = P2$SEED, quiet = TRUE)
 
-# Standardise constraints (z-scores), as in Tangled Bank
-Xz <- vegan::decostand(dplyr::select(X, -site), method = "standardize")
-```
+  quadrat_size_reduced <- as.numeric(res$P$QUADRAT_SIZE) * quadrat_size_scale
+  quadrats <- place_quadrats_transect(
+    domain = res$domain,
+    n_transects = P2$N_TRANSECTS,
+    n_quadrats_per_transect = P2$N_QUADRATS_PER_TRANSECT,
+    quadrat_size = quadrat_size_reduced,
+    angle = angle_deg
+  )
+  if (nrow(quadrats) == 0) {
+    stop("Failed to place reduced-size quadrats.")
+  }
+  res$quadrats <- quadrats
 
-## 4) Fit db-RDA (vegan::capscale)
+  all_species <- LETTERS[1:P2$N_SPECIES]
+  A <- create_abundance_matrix(res$species_dist, res$quadrats, all_species)
+  E <- calculate_quadrat_environment(res$env_gradients, res$quadrats, sf::st_crs(res$domain))
+  dat <- dplyr::left_join(E, A, by = "site")
+  stopifnot(nrow(dat) == nrow(A))
 
-Distance-based RDA (db-RDA) is a constrained ordination that lets you choose a
-non-Euclidean dissimilarity index. Here we use Bray–Curtis dissimilarity on the
-abundance matrix.
+  Y <- dat |> dplyr::select(-site, -temperature_C, -elevation_m, -rainfall_mm)
+  X <- dat |> dplyr::select(site, temperature_C, elevation_m, rainfall_mm)
+  Xz <- vegan::decostand(dplyr::select(X, -site), method = "standardize")
 
-```{r}
-cap_full <- vegan::capscale(Y ~ temperature_C + elevation_m + rainfall_mm,
-                           data = Xz,
-                           distance = "bray",
-                           add = TRUE)
-cap_full
-```
-
-Permutation test for the overall constrained model:
-
-```{r}
-anova(cap_full)
-```
-
-Adjusted R² (variance explained by constraints):
-
-```{r}
-round(vegan::RsquareAdj(cap_full)$adj.r.squared, 3)
-```
-
-Check multicollinearity via variance inflation factors (VIF):
-
-```{r}
-vegan::vif.cca(cap_full)
-```
-
-## 5) Ordination plots (Tangled Bank style)
-
-We create a clean ggplot of the first two constrained axes:
-
-- **Sites** as points
-- **Environmental vectors** as arrows
-- Optional grouping by a simple “bioregion” proxy (temperature quartiles)
-
-### 5.1 Extract scores
-
-```{r}
-sc_sites <- as.data.frame(vegan::scores(cap_full, display = "sites", scaling = 2))
-sc_bp <- as.data.frame(vegan::scores(cap_full, display = "bp", scaling = 2))
-
-sc_sites$site <- dat$site
-sc_sites <- dplyr::left_join(sc_sites, X, by = c("site" = "site"))
-
-# Simple temperature-based grouping (for teaching): 4 bins
-sc_sites$temp_bin <- cut(sc_sites$temperature_C,
-                         breaks = quantile(sc_sites$temperature_C, probs = seq(0, 1, 0.25), na.rm = TRUE),
-                         include.lowest = TRUE)
-
-# Arrow scaling: make biplot vectors visible in the same coordinate system
-arrow_mul <- 1.3
-sc_bp$var <- rownames(sc_bp)
-sc_bp$CAP1 <- sc_bp$CAP1 * arrow_mul
-sc_bp$CAP2 <- sc_bp$CAP2 * arrow_mul
-```
-
-### 5.2 Plot sites + biplot arrows
-
-```{r}
-cap_plot <- ggplot(sc_sites, aes(x = CAP1, y = CAP2)) +
-  geom_hline(yintercept = 0, linewidth = 0.2, colour = "grey70") +
-  geom_vline(xintercept = 0, linewidth = 0.2, colour = "grey70") +
-  geom_point(aes(colour = temp_bin), size = 1.6, alpha = 0.85) +
-  coord_equal() +
-  labs(
-    x = "db-RDA axis 1 (CAP1)",
-    y = "db-RDA axis 2 (CAP2)",
-    colour = "Temperature bin",
-    title = "db-RDA on spesim quadrat data",
-    subtitle = "Sites (quadrats) constrained by mean environment; Bray–Curtis distances"
+  cap_model <- vegan::capscale(
+    Y ~ temperature_C + elevation_m + rainfall_mm,
+    data = Xz,
+    distance = "bray",
+    add = TRUE
   )
 
-cap_plot
+  set.seed(P2$SEED)
+  model_test <- vegan::anova.cca(cap_model, permutations = 199)
+  model_p <- as.numeric(model_test$`Pr(>F)`[1])
+  adj_r2 <- as.numeric(vegan::RsquareAdj(cap_model)$adj.r.squared)
+  vif_vals <- tryCatch(vegan::vif.cca(cap_model), error = function(e) NA_real_)
+  vif_vals <- as.numeric(vif_vals)
+  vif_vals <- vif_vals[is.finite(vif_vals)]
+  vif_max <- if (length(vif_vals)) max(vif_vals) else NA_real_
+
+  sc_sites <- as.data.frame(vegan::scores(cap_model, display = "sites", scaling = 2))
+  sc_bp <- as.data.frame(vegan::scores(cap_model, display = "bp", scaling = 2))
+  sc_sites$site <- dat$site
+  sc_sites <- dplyr::left_join(sc_sites, X, by = "site")
+  sc_sites$temp_bin <- factor(dplyr::ntile(sc_sites$temperature_C, 4), labels = paste0("Q", 1:4))
+
+  arrow_mul <- 1.3
+  sc_bp$var <- rownames(sc_bp)
+  if (nrow(sc_bp) > 0) {
+    sc_bp$CAP1 <- sc_bp$CAP1 * arrow_mul
+    sc_bp$CAP2 <- sc_bp$CAP2 * arrow_mul
+  }
+
+  cor_tbl <- sc_sites |>
+    dplyr::summarise(
+      cor_cap1_temp = safe_cor(CAP1, temperature_C),
+      cor_cap1_elev = safe_cor(CAP1, elevation_m),
+      cor_cap1_rain = safe_cor(CAP1, rainfall_mm)
+    ) |>
+    dplyr::mutate(design = label, .before = 1)
+
+  metrics <- cor_tbl |>
+    dplyr::mutate(
+      transect_angle_deg = angle_deg,
+      n_quadrats = nrow(res$quadrats),
+      temp_range_C = diff(range(sc_sites$temperature_C, na.rm = TRUE)),
+      adj_r2 = adj_r2,
+      model_p = model_p,
+      max_vif = vif_max,
+      .before = cor_cap1_temp
+    ) |>
+    dplyr::select(
+      design,
+      transect_angle_deg,
+      n_quadrats,
+      temp_range_C,
+      adj_r2,
+      model_p,
+      cor_cap1_temp,
+      cor_cap1_elev,
+      cor_cap1_rain,
+      max_vif
+    )
+
+  sampling_plot <- build_sampling_plot(
+    res,
+    title = label,
+    subtitle = sprintf("angle = %.1f deg", angle_deg)
+  )
+  cap_plot <- build_cap_plot(sc_sites, sc_bp, title = label)
+
+  list(
+    label = label,
+    angle = angle_deg,
+    res = res,
+    A = A,
+    E = E,
+    dat = dat,
+    cap = cap_model,
+    cor_tbl = cor_tbl,
+    metrics = metrics,
+    sampling_plot = sampling_plot,
+    cap_plot = cap_plot
+  )
+}
 ```
 
-Add environmental vectors:
+## 4) Run both designs
 
 ```{r}
-cap_plot +
-  geom_segment(
-    data = sc_bp,
-    aes(x = 0, y = 0, xend = CAP1, yend = CAP2),
-    inherit.aes = FALSE,
-    arrow = arrow(length = unit(0.15, "cm")),
-    linewidth = 0.3,
-    colour = "black"
-  ) +
-  geom_text(
-    data = sc_bp,
-    aes(x = CAP1, y = CAP2, label = var),
-    inherit.aes = FALSE,
-    size = 2.6,
-    vjust = -0.6
-  )
+# 'domain' was created above so that both designs share the same geometry.
+along <- analyse_design(
+  P_base = P,
+  domain = domain,
+  label = "Along temperature gradient",
+  angle_deg = temp_angle
+)
+across <- analyse_design(
+  P_base = P,
+  domain = domain,
+  label = "Across temperature gradient",
+  angle_deg = across_angle
+)
 ```
 
-### 5.3 Sanity check: which gradients align with CAP1?
+Quick check that only sampling differs (same simulated species cloud):
 
 ```{r}
-sc_sites |>
-  dplyr::summarise(
-    cor_cap1_temp = cor(CAP1, temperature_C),
-    cor_cap1_elev = cor(CAP1, elevation_m),
-    cor_cap1_rain = cor(CAP1, rainfall_mm)
-  )
+isTRUE(all.equal(
+  sf::st_coordinates(along$res$species_dist),
+  sf::st_coordinates(across$res$species_dist)
+))
 ```
 
-## 6) Why this is useful for teaching
+## 5) Figure 1: sampling designs (`a`, `b`)
+
+```{r fig-sampling, fig.width=7.2, fig.height=3.4, out.width="100%", fig.cap="Figure 1. Quadrat placement over the temperature surface: (a) along-gradient transect, (b) across-gradient transect."}
+fig_sampling <- patchwork::wrap_plots(
+  along$sampling_plot,
+  across$sampling_plot,
+  ncol = 2,
+  guides = "collect"
+) +
+  patchwork::plot_annotation(tag_levels = "a")
+
+fig_sampling
+```
+
+## 6) Full db-RDA workflow for each design
+
+### 6.1 Site × species and site × environment tables
+
+```{r}
+dplyr::bind_rows(
+  tibble::tibble(design = along$label, n_sites = nrow(along$A), n_species_cols = ncol(along$A) - 1L),
+  tibble::tibble(design = across$label, n_sites = nrow(across$A), n_species_cols = ncol(across$A) - 1L)
+)
+```
+
+### 6.2 db-RDA model summaries
+
+```{r}
+along$cap
+across$cap
+```
+
+## 7) Figure 2: db-RDA ordinations (`a`, `b`)
+
+```{r fig-ordination, fig.width=7.2, fig.height=3.4, out.width="100%", fig.cap="Figure 2. db-RDA ordination biplots for each sampling design."}
+fig_ordination <- patchwork::wrap_plots(
+  along$cap_plot,
+  across$cap_plot,
+  ncol = 2,
+  guides = "collect"
+) +
+  patchwork::plot_annotation(tag_levels = "a")
+
+fig_ordination
+```
+
+## 8) Figure 3: sanity check (CAP1 vs temperature; `a`, `b`)
+
+```{r fig-sanity, fig.width=7.2, fig.height=3.2, out.width="100%", fig.cap="Figure 3. CAP1 tracks the sampled temperature range differently under the two designs."}
+p_sanity_along <- ggplot(along$dat, aes(x = temperature_C, y = vegan::scores(along$cap, display = "sites", scaling = 2)[, "CAP1"])) +
+  geom_point(size = 1.2, alpha = 0.85) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 0.5, colour = "black") +
+  theme_bw(base_size = 8) +
+  labs(x = "Temperature (deg C)", y = "CAP1", title = along$label)
+
+p_sanity_across <- ggplot(across$dat, aes(x = temperature_C, y = vegan::scores(across$cap, display = "sites", scaling = 2)[, "CAP1"])) +
+  geom_point(size = 1.2, alpha = 0.85) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 0.5, colour = "black") +
+  theme_bw(base_size = 8) +
+  labs(x = "Temperature (deg C)", y = "CAP1", title = across$label)
+
+patchwork::wrap_plots(p_sanity_along, p_sanity_across, ncol = 2) +
+  patchwork::plot_annotation(tag_levels = "a")
+```
+
+## 9) Key results summary table (`gt`)
+
+```{r}
+summary_tbl <- dplyr::bind_rows(along$metrics, across$metrics)
+
+if (has_gt) {
+  summary_tbl |>
+    gt::gt() |>
+    gt::fmt_number(
+      columns = c(transect_angle_deg, temp_range_C, adj_r2, cor_cap1_temp, cor_cap1_elev, cor_cap1_rain, max_vif),
+      decimals = 3
+    ) |>
+    gt::fmt_number(columns = model_p, decimals = 4) |>
+    gt::cols_label(
+      design = "Sampling design",
+      transect_angle_deg = "Transect angle (deg)",
+      n_quadrats = "Quadrats",
+      temp_range_C = "Sampled temp range (deg C)",
+      adj_r2 = "Adj. R^2",
+      model_p = "Model p-value",
+      cor_cap1_temp = "cor(CAP1, temp)",
+      cor_cap1_elev = "cor(CAP1, elev)",
+      cor_cap1_rain = "cor(CAP1, rain)",
+      max_vif = "Max VIF"
+    ) |>
+    gt::tab_header(
+      title = "db-RDA comparison by sampling design",
+      subtitle = "Along-gradient vs across-gradient transects"
+    )
+} else {
+  knitr::kable(summary_tbl, digits = 3)
+}
+```
+
+## 10) Why this is useful for teaching
 
 Because spesim generates:
 - the **site × species** matrix (`abund_matrix`), and
@@ -262,11 +463,11 @@ Because spesim generates:
 
 you can repeatedly create controlled datasets where you *know the truth* (strong
 gradients and interactions were imposed) and then practise ordination workflows
-that aim to recover the dominant drivers.
+that aim to recover the dominant drivers under alternative sampling designs.
 
 ### Suggested exercises
 
 - Increase/decrease `GRADIENT_TOLERANCE` and see how the constrained R² changes.
 - Turn interactions off (`INTERACTION_RADIUS <- 0`) and compare db-RDA fits.
-- Compare sampling schemes (random vs transect vs Voronoi) and see how sampling
-  design alters ordination stability.
+- Compare single-transect, multi-transect, and non-transect designs to test
+  sensitivity of constrained ordination outcomes to sampling geometry.

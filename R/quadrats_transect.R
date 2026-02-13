@@ -89,7 +89,13 @@ place_quadrats_transect <- function(domain, n_transects, n_quadrats_per_transect
 
   math_angle_deg <- 90 - angle
   math_angle_rad <- math_angle_deg * pi / 180
-  rot_matrix <- matrix(c(cos(math_angle_rad), sin(math_angle_rad), -sin(math_angle_rad), cos(math_angle_rad)), 2, 2)
+  # Rotation matrix (2D). This formulation ensures the resulting transect
+  # bearing matches the documented compass convention:
+  #   angle = 0   → North (positive y)
+  #   angle = 90  → East  (positive x)
+  #   angle = 180 → South (negative y)
+  #   angle = 270 → West  (negative x)
+  rot_matrix <- matrix(c(cos(math_angle_rad), -sin(math_angle_rad), sin(math_angle_rad), cos(math_angle_rad)), 2, 2)
 
   horizontal_lines <- sf::st_sfc(lapply(y_coords, function(y) {
     sf::st_linestring(matrix(c(

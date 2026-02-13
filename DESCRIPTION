@@ -44,6 +44,7 @@ Suggests:
     devtools,
     knitr,
     rmarkdown,
+    gt,
     spatstat.random,
     spatstat.geom,
     spatstat.explore,
