@@ -20,7 +20,9 @@ spesim_run(
 parameter list \code{P} (typically from \code{\link[=load_config]{load_config()}}).}
 
 \item{domain}{Optional \code{sf} polygon study area (see \code{\link[=create_sampling_domain]{create_sampling_domain()}}).
-If \code{NULL}, a default domain is created.}
+If \code{NULL}, a default domain is created. By default (no \code{seed} supplied),
+the default domain is \emph{randomly generated per run}; if \code{seed} is supplied,
+the default domain is reproducible.}
 
 \item{interactions_file}{Optional path to an interactions config file.}
 
@@ -30,8 +32,9 @@ If \code{NULL}, a default domain is created.}
 \item{write_outputs}{Logical; write CSVs/figures/report to disk? Default \code{FALSE}
 for a smoother interactive experience.}
 
-\item{seed}{Optional integer. If supplied, overrides \code{P$SEED} (and is applied
-via \code{set.seed()} before simulation).}
+\item{seed}{Optional integer. If supplied, it (i) overrides \code{P$SEED} for the
+simulation, and (ii) is also used to generate a reproducible default
+domain when \code{domain = NULL}.}
 
 \item{quiet}{Logical; suppress most messages.}
 

@@ -77,7 +77,9 @@ generate_advanced_panel(res)
 
 ## 5) Rarefaction
 
-- **Method**: `vegan::rarecurve` by site (quadrat).
+- **Method**: `vegan::rarefy()` by site (quadrat) across increasing subsample
+  sizes (equivalent to the computation done by `vegan::rarecurve()`, but without
+  plotting side-effects).
 - **Interpretation**: Compare richness at equal sample sizes; plateauing curves
   suggest adequate sampling.
 
@@ -95,5 +97,6 @@ Integrate similar plots alongside or beneath the default panel as desired.
 # Reproducibility notes
 
 - All panel components are deterministic functions of `res`.
-- For SAR and rarefaction, random permutations are internal to `vegan`;
-  set `set.seed()` beforehand for reproducibility if you re-run them.
+- The SAR component uses random permutations internally (`vegan::specaccum(method = "random")`);
+  set `set.seed()` beforehand for reproducibility if you re-run it.
+- Rarefaction here is deterministic (via `vegan::rarefy()`).

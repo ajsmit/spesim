@@ -1,3 +1,18 @@
+# Internal helper: produce a different seed on each call.
+# Used to generate a varying default domain for spesim_run() when no seed is
+# supplied.
+.auto_domain_seed <- local({
+  nonce <- 0L
+  function() {
+    nonce <<- nonce + 1L
+    # Use time + a monotone counter so that consecutive calls within the same
+    # second still generate different domains.
+    t <- as.numeric(Sys.time())
+    base <- as.integer((t * 1e6) %% .Machine$integer.max)
+    as.integer((base + nonce) %% .Machine$integer.max)
+  }
+})
+
 #' Run a complete spesim simulation (recommended)
 #'
 #' @description
@@ -36,18 +51,6 @@
 #'
 #' @seealso [spesim_demo()], [load_config()], [run_spatial_simulation()]
 #' @export
-.auto_domain_seed <- local({
-  nonce <- 0L
-  function() {
-    nonce <<- nonce + 1L
-    # Use time + a monotone counter so that consecutive calls within the same
-    # second still generate different domains.
-    t <- as.numeric(Sys.time())
-    base <- as.integer((t * 1e6) %% .Machine$integer.max)
-    as.integer((base + nonce) %% .Machine$integer.max)
-  }
-})
-
 spesim_run <- function(config,
                        domain = NULL,
                        interactions_file = NULL,

@@ -213,7 +213,7 @@ calculate_rarefaction <- function(abund_matrix) {
   x <- as.matrix(abund_numeric, rownames.force = TRUE)
 
   if (!isTRUE(all.equal(x, round(x)))) {
-    stop("calculate_rarefaction() requires integer count data (site × species).")
+    stop("calculate_rarefaction() requires integer count data (site x species).")
   }
   x <- round(x)
 
@@ -222,8 +222,9 @@ calculate_rarefaction <- function(abund_matrix) {
   output_list <- vector("list", nrow(x))
   for (i in seq_len(nrow(x))) {
     if (tot[i] <= 0) {
+      # Return a 0-row slice with the correct column types.
       output_list[[i]] <- data.frame(
-        SiteID = as.factor(site_ids[i]),
+        SiteID = factor(character(0), levels = as.character(site_ids)),
         SampleSize = integer(0),
         RarefiedRichness = numeric(0)
       )

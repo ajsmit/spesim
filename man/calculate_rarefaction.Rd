@@ -20,12 +20,13 @@ A data frame with columns:
 }
 \description{
 Generate per-site rarefaction curves (expected richness vs. sample size)
-using \code{vegan::rarecurve}.
+using \code{vegan::rarefy} (i.e., the same computation as
+\code{vegan::rarecurve}, but without any plotting side-effects).
 }
 \details{
 The result is returned in long (tidy) format with one row per site x
 sample size point. The \code{SampleSize} values come from the \code{Subsample}
-attribute provided by \code{vegan::rarecurve}.
+attribute attached by \code{vegan::rarefy}.
 }
 \examples{
 \dontrun{
@@ -34,5 +35,5 @@ head(rr)
 }
 }
 \seealso{
-\code{\link{plot_rarefaction}}, \code{vegan::rarecurve}
+\code{\link{plot_rarefaction}}, \code{vegan::rarefy}
 }

@@ -11,8 +11,10 @@ test_that("spesim_run() default domain varies across runs when seed is NULL", {
   P$SAMPLING_RESOLUTION <- 20L
   P$ADVANCED_ANALYSIS <- FALSE
 
-  res1 <- spesim::spesim_run(P, write_outputs = FALSE, quiet = TRUE)
-  res2 <- spesim::spesim_run(P, write_outputs = FALSE, quiet = TRUE)
+  res1 <- suppressWarnings(spesim::spesim_run(P, write_outputs = FALSE, quiet = TRUE,
+    interactions_print = FALSE))
+  res2 <- suppressWarnings(spesim::spesim_run(P, write_outputs = FALSE, quiet = TRUE,
+    interactions_print = FALSE))
 
   c1 <- sf::st_coordinates(res1$domain)[, c("X", "Y"), drop = FALSE]
   c2 <- sf::st_coordinates(res2$domain)[, c("X", "Y"), drop = FALSE]
@@ -33,8 +35,10 @@ test_that("spesim_run() default domain is reproducible when seed is supplied", {
   P$SAMPLING_RESOLUTION <- 20L
   P$ADVANCED_ANALYSIS <- FALSE
 
-  res1 <- spesim::spesim_run(P, write_outputs = FALSE, quiet = TRUE, seed = 123)
-  res2 <- spesim::spesim_run(P, write_outputs = FALSE, quiet = TRUE, seed = 123)
+  res1 <- suppressWarnings(spesim::spesim_run(P, write_outputs = FALSE, quiet = TRUE, seed = 123,
+    interactions_print = FALSE))
+  res2 <- suppressWarnings(spesim::spesim_run(P, write_outputs = FALSE, quiet = TRUE, seed = 123,
+    interactions_print = FALSE))
 
   c1 <- sf::st_coordinates(res1$domain)[, c("X", "Y"), drop = FALSE]
   c2 <- sf::st_coordinates(res2$domain)[, c("X", "Y"), drop = FALSE]
