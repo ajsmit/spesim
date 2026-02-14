@@ -1,3 +1,14 @@
+# spesim 0.3.16
+
+## Default domain variability in spesim_run()
+
+- `spesim_run()` now generates a new random default domain for each run when `domain = NULL` and no `seed` is supplied.
+- When `seed` is supplied, the default domain is reproducible across runs.
+
+## Plotting side-effects
+
+- `calculate_rarefaction()` no longer triggers any base-graphics plotting side-effects (fixes duplicate rarefaction output when used inside `generate_advanced_panel()`).
+
 # spesim 0.3.15
 
 ## Ordination teaching vignette (db-RDA)

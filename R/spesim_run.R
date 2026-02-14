@@ -10,14 +10,17 @@
 #' @param config Either a path to an init file (character scalar), or an in-memory
 #'   parameter list `P` (typically from [load_config()]).
 #' @param domain Optional `sf` polygon study area (see [create_sampling_domain()]).
-#'   If `NULL`, a default domain is created.
+#'   If `NULL`, a default domain is created. By default (no `seed` supplied),
+#'   the default domain is *randomly generated per run*; if `seed` is supplied,
+#'   the default domain is reproducible.
 #' @param interactions_file Optional path to an interactions config file.
 #' @param output_prefix Base output prefix (timestamp is appended) when
 #'   `write_outputs = TRUE`.
 #' @param write_outputs Logical; write CSVs/figures/report to disk? Default `FALSE`
 #'   for a smoother interactive experience.
-#' @param seed Optional integer. If supplied, overrides `P$SEED` (and is applied
-#'   via `set.seed()` before simulation).
+#' @param seed Optional integer. If supplied, it (i) overrides `P$SEED` for the
+#'   simulation, and (ii) is also used to generate a reproducible default
+#'   domain when `domain = NULL`.
 #' @param quiet Logical; suppress most messages.
 #' @param ... Passed through to [run_spatial_simulation()].
 #'
@@ -33,6 +36,18 @@
 #'
 #' @seealso [spesim_demo()], [load_config()], [run_spatial_simulation()]
 #' @export
+.auto_domain_seed <- local({
+  nonce <- 0L
+  function() {
+    nonce <<- nonce + 1L
+    # Use time + a monotone counter so that consecutive calls within the same
+    # second still generate different domains.
+    t <- as.numeric(Sys.time())
+    base <- as.integer((t * 1e6) %% .Machine$integer.max)
+    as.integer((base + nonce) %% .Machine$integer.max)
+  }
+})
+
 spesim_run <- function(config,
                        domain = NULL,
                        interactions_file = NULL,
@@ -41,11 +56,47 @@ spesim_run <- function(config,
                        seed = NULL,
                        quiet = FALSE,
                        ...) {
+  # Resolve seed (spesim_run seed controls BOTH the default domain and the
+  # simulation RNG for reproducibility).
+  if (!is.null(seed)) {
+    if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) {
+      stop("`seed` must be a single finite integer-like value.")
+    }
+    seed <- as.integer(seed)
+  }
+
+  # If no domain is supplied, create one.
+  #
+  # Behaviour:
+  # - seed provided  -> domain is reproducible across runs
+  # - seed NULL      -> domain varies across calls (even though the simulator
+  #                     itself may reseed internally via P$SEED)
+  if (is.null(domain)) {
+    if (!is.null(seed)) {
+      set.seed(seed)
+    } else {
+      set.seed(.auto_domain_seed())
+    }
+    domain <- create_sampling_domain()
+  }
+
+  # Resolve config source. If a file path is given, we intentionally load it
+  # here (programmatic mode) so we can override P$SEED when seed is provided,
+  # and so we can always pass an explicit domain into run_spatial_simulation().
+  init_file <- NULL
   if (is.character(config) && length(config) == 1L) {
     init_file <- config
-    P <- NULL
+    P <- load_config(init_file)
+
+    # If init refers to a relative interactions file, resolve it relative to the
+    # init file (mimics run_spatial_simulation(file_mode) behaviour).
+    if (!is.null(P$INTERACTIONS_FILE) && nzchar(P$INTERACTIONS_FILE)) {
+      is_abs <- grepl("^(/|[A-Za-z]:[\\/])", P$INTERACTIONS_FILE)
+      if (!is_abs) {
+        P$INTERACTIONS_FILE <- file.path(dirname(init_file), P$INTERACTIONS_FILE)
+      }
+    }
   } else if (is.list(config)) {
-    init_file <- NULL
     P <- config
   } else {
     stop("`config` must be either a path to an init file, or an in-memory parameter list P.")
@@ -55,18 +106,13 @@ spesim_run <- function(config,
     message("spesim: running simulation")
   }
 
+  # Override simulation seed if requested.
   if (!is.null(seed)) {
-    if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) {
-      stop("`seed` must be a single finite integer-like value.")
-    }
-    seed <- as.integer(seed)
-    # If P exists, override; otherwise load_config will set from file.
-    if (!is.null(P)) P$SEED <- seed
-    set.seed(seed)
+    P$SEED <- seed
   }
 
   res <- run_spatial_simulation(
-    init_file = init_file,
+    init_file = NULL,
     interactions_file = interactions_file,
     output_prefix = output_prefix,
     domain = domain,
