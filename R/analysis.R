@@ -204,6 +204,25 @@ calculate_distance_decay <- function(abund_matrix, site_coords) {
 calculate_rarefaction <- function(abund_matrix) {
   abund_numeric <- abund_matrix[, -which(names(abund_matrix) == "site"), drop = FALSE]
   site_ids <- abund_matrix$site
+
+  # vegan::rarecurve() plots by default as a side-effect.
+  # Use tidy=TRUE (when available) to compute curves without drawing,
+  # which avoids a standalone base plot when called inside
+  # generate_advanced_panel().
+  rownames(abund_numeric) <- as.character(site_ids)
+
+  if ("tidy" %in% names(formals(vegan::rarecurve))) {
+    df <- vegan::rarecurve(abund_numeric, step = 1, tidy = TRUE)
+    # vegan returns: Site, Sample, Species
+    return(data.frame(
+      SiteID = df$Site,
+      SampleSize = df$Sample,
+      RarefiedRichness = df$Species
+    ))
+  }
+
+  # Fallback for older vegan versions (will plot unless graphics device is
+  # diverted by the caller).
   rarefaction_list <- vegan::rarecurve(abund_numeric, step = 1)
   output_list <- vector("list", length(rarefaction_list))
   for (i in seq_along(rarefaction_list)) {
