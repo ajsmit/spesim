@@ -176,12 +176,13 @@ calculate_distance_decay <- function(abund_matrix, site_coords) {
 #'
 #' @description
 #' Generate per-site rarefaction curves (expected richness vs. sample size)
-#' using \code{vegan::rarecurve}.
+#' using \code{vegan::rarefy} (i.e., the same computation as
+#' \code{vegan::rarecurve}, but without any plotting side-effects).
 #'
 #' @details
 #' The result is returned in long (tidy) format with one row per site x
 #' sample size point. The `SampleSize` values come from the `Subsample`
-#' attribute provided by \code{vegan::rarecurve}.
+#' attribute attached by \code{vegan::rarefy}.
 #'
 #' @param abund_matrix A site x species abundance data frame where the first
 #'   column is `site` and remaining columns are species counts.
@@ -193,7 +194,7 @@ calculate_distance_decay <- function(abund_matrix, site_coords) {
 #'   \item{`RarefiedRichness`}{Expected species richness at that sample size.}
 #' }
 #'
-#' @seealso \code{\link{plot_rarefaction}}, \code{vegan::rarecurve}
+#' @seealso \code{\link{plot_rarefaction}}, \code{vegan::rarefy}
 #'
 #' @examples
 #' \dontrun{
@@ -205,35 +206,43 @@ calculate_rarefaction <- function(abund_matrix) {
   abund_numeric <- abund_matrix[, -which(names(abund_matrix) == "site"), drop = FALSE]
   site_ids <- abund_matrix$site
 
-  # vegan::rarecurve() plots by default as a side-effect.
-  # Use tidy=TRUE (when available) to compute curves without drawing,
-  # which avoids a standalone base plot when called inside
-  # generate_advanced_panel().
-  rownames(abund_numeric) <- as.character(site_ids)
+  # NOTE: We intentionally do NOT call vegan::rarecurve() here.
+  # rarecurve() opens/uses a graphics device even when you only want the data,
+  # which causes unwanted standalone plots when used inside other plotting
+  # workflows (e.g., generate_advanced_panel()).
+  x <- as.matrix(abund_numeric, rownames.force = TRUE)
 
-  if ("tidy" %in% names(formals(vegan::rarecurve))) {
-    df <- vegan::rarecurve(abund_numeric, step = 1, tidy = TRUE)
-    # vegan returns: Site, Sample, Species
-    return(data.frame(
-      SiteID = df$Site,
-      SampleSize = df$Sample,
-      RarefiedRichness = df$Species
-    ))
+  if (!isTRUE(all.equal(x, round(x)))) {
+    stop("calculate_rarefaction() requires integer count data (site × species).")
   }
+  x <- round(x)
 
-  # Fallback for older vegan versions (will plot unless graphics device is
-  # diverted by the caller).
-  rarefaction_list <- vegan::rarecurve(abund_numeric, step = 1)
-  output_list <- vector("list", length(rarefaction_list))
-  for (i in seq_along(rarefaction_list)) {
-    richness_values <- rarefaction_list[[i]]
+  tot <- rowSums(x)
+
+  output_list <- vector("list", nrow(x))
+  for (i in seq_len(nrow(x))) {
+    if (tot[i] <= 0) {
+      output_list[[i]] <- data.frame(
+        SiteID = as.factor(site_ids[i]),
+        SampleSize = integer(0),
+        RarefiedRichness = numeric(0)
+      )
+      next
+    }
+
+    n <- seq(1, tot[i], by = 1)
+    if (n[length(n)] != tot[i]) n <- c(n, tot[i])
+
+    richness_values <- drop(suppressWarnings(vegan::rarefy(x[i, ], n)))
     sample_sizes <- attr(richness_values, "Subsample")
+
     output_list[[i]] <- data.frame(
       SiteID = as.factor(site_ids[i]),
       SampleSize = sample_sizes,
-      RarefiedRichness = richness_values
+      RarefiedRichness = as.numeric(richness_values)
     )
   }
+
   do.call(rbind, output_list)
 }
 
