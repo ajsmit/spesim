@@ -1,3 +1,9 @@
+# spesim 0.3.17
+
+## Default domain shape diversity
+
+- `create_sampling_domain()` now supports multiple shape families (concave/irregular, convex hulls, ellipses/circles, and boxy rectangles/squares), and the default uses a mixed generator to better mimic real-world landscape patch shapes.
+
 # spesim 0.3.16
 
 ## Default domain variability in spesim_run()
