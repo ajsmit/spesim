@@ -1,3 +1,9 @@
+# spesim 0.3.19
+
+## Startup message
+
+- `library(spesim)` now prints the package version in the startup message.
+
 # spesim 0.3.18
 
 ## Concave domain complexity control
