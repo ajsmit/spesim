@@ -2,48 +2,86 @@
 % Please edit documentation in R/domain.R
 \name{create_sampling_domain}
 \alias{create_sampling_domain}
-\title{Create an irregular sampling domain polygon}
+\title{Create a random sampling domain polygon}
 \usage{
-create_sampling_domain()
+create_sampling_domain(
+  shape = c("mixed", "concave", "convex", "ellipse", "rectangle"),
+  n_vertices = 80L,
+  size = 10,
+  aspect = NULL,
+  rotation = NULL,
+  probs = c(concave = 0.35, convex = 0.25, ellipse = 0.2, rectangle = 0.2),
+  attempts = 20L
+)
+}
+\arguments{
+\item{shape}{Character. Which family of shapes to generate.
+\itemize{
+\item \code{"mixed"} (default): randomly chooses among concave, convex, ellipse, and
+rectangle-like shapes.
+\item \code{"concave"}: irregular, often concave, optionally anisotropic.
+\item \code{"convex"}: irregular but convex (convex hull of random points).
+\item \code{"ellipse"}: oval/circular (superellipse with exponent 2).
+\item \code{"rectangle"}: boxy rectangle/square (superellipse with large exponent).
+}}
+
+\item{n_vertices}{Integer >= 12. Number of vertices used to trace the outline
+(more vertices => smoother shapes).}
+
+\item{size}{Positive numeric. Controls the overall scale (roughly the
+semi-axis length for regular shapes, and base radius for irregular shapes).}
+
+\item{aspect}{Optional numeric. Controls anisotropy as a \emph{y/x} scale factor.
+\itemize{
+\item If \code{NULL} (default), an aspect ratio is drawn at random.
+\item If a single number, it is used directly.
+\item If length-2, a random value is drawn uniformly from that range.
+}}
+
+\item{rotation}{Optional numeric (radians). If \code{NULL}, a random rotation is
+used.}
+
+\item{probs}{Numeric named vector of probabilities used when
+\code{shape = "mixed"}. Names must be a subset of \code{c("concave","convex","ellipse","rectangle")}.}
+
+\item{attempts}{Integer. If a generated polygon is invalid (e.g.
+self-intersecting), retry up to this many times before falling back to a
+safe convex shape.}
 }
 \value{
 An \code{sf} object with one row and a \code{POLYGON} geometry.
 }
 \description{
-Generates a single, closed, irregular polygon intended to represent a
-realistic, non-rectangular study area for spatial simulation. The polygon
-outline is derived from a parameterized radius-angle curve with added
-sinusoidal perturbations and random noise to produce an "organic" shape.
+Generates a single polygon intended to represent a realistic study area for
+spatial simulation.
+
+The original domain generator in \strong{spesim} produced an "organic" outline
+derived from a radius–angle curve; while random, this tended to yield
+variations on the same motif. This function now supports multiple \emph{shape
+families} so that default domains can look genuinely different between runs:
+\itemize{
+\item \strong{Concave / irregular} (star-like, anisotropic, with indented bays)
+\item \strong{Convex / irregular} (random convex hulls)
+\item \strong{Regular convex} (circles/ellipses and boxy rectangles/squares)
+}
 
 \strong{Units:} The default domain uses an arbitrary planar coordinate system
 (i.e., it is \emph{unitless}). If you need real-world units (m, km) or a known CRS,
 supply your own \code{sf} polygon domain to the simulation/plotting functions.
-
-The output is returned as an \code{sf} object containing one polygon in its
-geometry column. This can be used directly in plotting or as the spatial
-domain within which individuals, quadrats, or transects are placed.
-}
-\details{
-The shape is generated in polar coordinates \eqn{(r, \theta)} using:
-\itemize{
-\item a base radius of 10 units,
-\item sinusoidal radial modulations with periods of 3 and 5 cycles per
-revolution,
-\item independent uniform noise on both radius and Cartesian coordinates
-to break symmetry,
-\item vertical compression by a factor of 0.8 to induce aspect variation.
-}
-The 20 vertices are connected in sequence and closed by repeating the first
-point. The result is wrapped in \code{sf::st_polygon()} and returned as a
-single-row \code{sf} object.
 }
 \examples{
 \dontrun{
-domain <- create_sampling_domain()
-plot(domain$geometry)
+# default: a genuinely varied random domain
+dom1 <- create_sampling_domain()
+dom2 <- create_sampling_domain()
+
+# force a family
+dom_c <- create_sampling_domain(shape = "concave")
+dom_e <- create_sampling_domain(shape = "ellipse", aspect = 1) # circle
+dom_r <- create_sampling_domain(shape = "rectangle", aspect = c(0.6, 1.8))
 }
 
 }
 \seealso{
-\code{\link[sf]{st_polygon}}, \code{\link[sf]{st_sf}}
+\code{\link[sf:st]{sf::st_polygon()}}, \code{\link[sf:sf]{sf::st_sf()}}
 }
