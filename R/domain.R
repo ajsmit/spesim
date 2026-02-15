@@ -37,6 +37,10 @@
 #'   used.
 #' @param probs Numeric named vector of probabilities used when
 #'   `shape = "mixed"`. Names must be a subset of `c("concave","convex","ellipse","rectangle")`.
+#' @param concave_lobes Optional integer in `[2, 5]`. Only used when
+#'   `shape = "concave"` (or when `shape = "mixed"` selects a concave domain).
+#'   Lower values yield simpler, less-lobed concave polygons; higher values
+#'   yield more star-like outlines.
 #' @param attempts Integer. If a generated polygon is invalid (e.g.
 #'   self-intersecting), retry up to this many times before falling back to a
 #'   safe convex shape.
@@ -50,7 +54,7 @@
 #' dom2 <- create_sampling_domain()
 #'
 #' # force a family
-#' dom_c <- create_sampling_domain(shape = "concave")
+#' dom_c <- create_sampling_domain(shape = "concave", concave_lobes = 3)
 #' dom_e <- create_sampling_domain(shape = "ellipse", aspect = 1) # circle
 #' dom_r <- create_sampling_domain(shape = "rectangle", aspect = c(0.6, 1.8))
 #' }
@@ -63,6 +67,7 @@ create_sampling_domain <- function(shape = c("mixed", "concave", "convex", "elli
                                   aspect = NULL,
                                   rotation = NULL,
                                   probs = c(concave = 0.35, convex = 0.25, ellipse = 0.20, rectangle = 0.20),
+                                  concave_lobes = NULL,
                                   attempts = 20L) {
   shape <- match.arg(shape)
 
@@ -73,6 +78,16 @@ create_sampling_domain <- function(shape = c("mixed", "concave", "convex", "elli
   if (!is.numeric(size) || length(size) != 1L || !is.finite(size) || size <= 0) {
     stop("`size` must be a single positive number.")
   }
+  if (!is.null(concave_lobes)) {
+    if (!is.numeric(concave_lobes) || length(concave_lobes) != 1L || !is.finite(concave_lobes)) {
+      stop("`concave_lobes` must be NULL or a single finite integer-like value.")
+    }
+    concave_lobes <- as.integer(concave_lobes)
+    if (concave_lobes < 2L || concave_lobes > 5L) {
+      stop("`concave_lobes` must be in the range 2 to 5.")
+    }
+  }
+
   attempts <- as.integer(attempts)
   if (!is.finite(attempts) || attempts < 1L) {
     stop("`attempts` must be an integer >= 1.")
@@ -142,35 +157,51 @@ create_sampling_domain <- function(shape = c("mixed", "concave", "convex", "elli
     .close_ring(xy)
   }
 
-  .make_concave <- function(n, base_r, asp, rot) {
+  .make_concave <- function(n, base_r, asp, rot, lobes = NULL) {
     theta <- seq(0, 2 * pi, length.out = n + 1L)
     theta <- theta[-length(theta)]
 
-    # Random Fourier-like radial curve with occasional deep inlets.
-    k <- sample(4:8, 1)
-    freqs <- sample(2:14, k, replace = FALSE)
-    phases <- runif(k, 0, 2 * pi)
-
-    # amplitudes scaled to base radius; keep moderate to reduce self-intersection
-    amps <- runif(k, 0.10, 0.35) * base_r
-
-    r <- rep(base_r * runif(1, 0.9, 1.2), n)
-    for (i in seq_len(k)) {
-      r <- r + amps[i] * sin(freqs[i] * theta + phases[i])
+    # Control the *large-scale* outline complexity by specifying the number of
+    # lobes. This yields clearly different, yet not overly busy, concave shapes.
+    if (is.null(lobes)) {
+      lobes <- sample(2:5, 1)
+    } else {
+      lobes <- as.integer(lobes)
+      if (!is.finite(lobes) || lobes < 2L || lobes > 5L) {
+        stop("`concave_lobes` must be in the range 2 to 5.")
+      }
     }
 
-    # Add short-scale roughness
-    r <- r + rnorm(n, sd = 0.06 * base_r)
+    r0 <- base_r * runif(1, 0.90, 1.15)
+    r <- rep(r0, n)
 
-    # Introduce a few "bays" (local reductions) to encourage concavity
-    nbays <- sample(1:4, 1)
-    bay_centres <- sample(seq_len(n), nbays)
-    for (bc in bay_centres) {
-      width <- sample(3:9, 1)
-      idx <- ((bc - width):(bc + width) - 1L) %% n + 1L
-      depth <- runif(1, 0.35, 0.70)
-      taper <- exp(-((seq_along(idx) - (length(idx) + 1) / 2)^2) / (0.35 * length(idx))^2)
-      r[idx] <- r[idx] * (1 - depth * (taper / max(taper)))
+    # Primary lobe component (dominant, low frequency)
+    phi1 <- runif(1, 0, 2 * pi)
+    phi2 <- runif(1, 0, 2 * pi)
+    a1 <- runif(1, 0.20, 0.38) * base_r
+    a2 <- runif(1, 0.05, 0.16) * base_r
+    r <- r + a1 * sin(lobes * theta + phi1) + a2 * cos(lobes * theta + phi2)
+
+    # Optional harmonic to add realism without creating many small lobes
+    if (runif(1) < 0.7) {
+      a3 <- runif(1, 0.03, 0.10) * base_r
+      r <- r + a3 * sin((2L * lobes) * theta + runif(1, 0, 2 * pi))
+    }
+
+    # Add mild roughness
+    r <- r + rnorm(n, sd = 0.03 * base_r)
+
+    # Add a few indented bays to encourage concavity
+    nbays <- sample(0:2, 1)
+    if (nbays > 0) {
+      bay_centres <- sample(seq_len(n), nbays)
+      for (bc in bay_centres) {
+        width <- sample(5:12, 1)
+        idx <- ((bc - width):(bc + width) - 1L) %% n + 1L
+        depth <- runif(1, 0.25, 0.55)
+        taper <- exp(-((seq_along(idx) - (length(idx) + 1) / 2)^2) / (0.40 * length(idx))^2)
+        r[idx] <- r[idx] * (1 - depth * (taper / max(taper)))
+      }
     }
 
     r <- pmax(r, 0.15 * base_r)
@@ -179,8 +210,8 @@ create_sampling_domain <- function(shape = c("mixed", "concave", "convex", "elli
     y <- r * sin(theta) * asp
 
     # light Cartesian jitter to break any remaining symmetry
-    x <- x + rnorm(n, sd = 0.03 * base_r)
-    y <- y + rnorm(n, sd = 0.03 * base_r)
+    x <- x + rnorm(n, sd = 0.02 * base_r)
+    y <- y + rnorm(n, sd = 0.02 * base_r)
 
     xy <- cbind(x, y)
     xy <- .rotate(xy, rot)
@@ -216,7 +247,7 @@ create_sampling_domain <- function(shape = c("mixed", "concave", "convex", "elli
   # Try multiple times to ensure a valid polygon for concave shapes.
   for (i in seq_len(attempts)) {
     if (shape == "concave") {
-      coords <- .make_concave(n_vertices, base_r = size, asp = asp, rot = rot)
+      coords <- .make_concave(n_vertices, base_r = size, asp = asp, rot = rot, lobes = concave_lobes)
       dom <- .as_sf_polygon(coords)
     } else if (shape == "ellipse") {
       a <- size * runif(1, 0.85, 1.20)

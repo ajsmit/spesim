@@ -11,6 +11,7 @@ create_sampling_domain(
   aspect = NULL,
   rotation = NULL,
   probs = c(concave = 0.35, convex = 0.25, ellipse = 0.2, rectangle = 0.2),
+  concave_lobes = NULL,
   attempts = 20L
 )
 }
@@ -44,6 +45,11 @@ used.}
 \item{probs}{Numeric named vector of probabilities used when
 \code{shape = "mixed"}. Names must be a subset of \code{c("concave","convex","ellipse","rectangle")}.}
 
+\item{concave_lobes}{Optional integer in \verb{[2, 5]}. Only used when
+\code{shape = "concave"} (or when \code{shape = "mixed"} selects a concave domain).
+Lower values yield simpler, less-lobed concave polygons; higher values
+yield more star-like outlines.}
+
 \item{attempts}{Integer. If a generated polygon is invalid (e.g.
 self-intersecting), retry up to this many times before falling back to a
 safe convex shape.}
@@ -76,7 +82,7 @@ dom1 <- create_sampling_domain()
 dom2 <- create_sampling_domain()
 
 # force a family
-dom_c <- create_sampling_domain(shape = "concave")
+dom_c <- create_sampling_domain(shape = "concave", concave_lobes = 3)
 dom_e <- create_sampling_domain(shape = "ellipse", aspect = 1) # circle
 dom_r <- create_sampling_domain(shape = "rectangle", aspect = c(0.6, 1.8))
 }

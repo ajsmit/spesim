@@ -5,7 +5,11 @@ test_that("create_sampling_domain() supports multiple shape families and returns
 
   for (sh in shapes) {
     set.seed(123)
-    dom <- spesim::create_sampling_domain(shape = sh, n_vertices = 60, size = 10, aspect = 1.3)
+    if (sh == "concave") {
+      dom <- spesim::create_sampling_domain(shape = sh, n_vertices = 60, size = 10, aspect = 1.3, concave_lobes = 3)
+    } else {
+      dom <- spesim::create_sampling_domain(shape = sh, n_vertices = 60, size = 10, aspect = 1.3)
+    }
 
     expect_s3_class(dom, "sf")
     expect_equal(nrow(dom), 1L)

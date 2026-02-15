@@ -1,3 +1,9 @@
+# spesim 0.3.18
+
+## Concave domain complexity control
+
+- `create_sampling_domain(shape = "concave")` gains `concave_lobes` (2–5) to control large-scale outline complexity; lower values yield simpler concave polygons.
+
 # spesim 0.3.17
 
 ## Default domain shape diversity
