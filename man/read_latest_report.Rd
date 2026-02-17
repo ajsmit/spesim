@@ -16,7 +16,7 @@ A single character scalar containing the report contents.
 }
 \description{
 Convenience helper to locate and read the latest \code{*_report.txt} written
-by \code{run_spatial_simulation(write_outputs = TRUE)} under a given
+by \code{spesim_run(write_outputs = TRUE)} under a given
 \code{output_dir}. Useful for users who want the report text without calling
 \code{generate_full_report()} directly.
 }

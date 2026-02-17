@@ -1,7 +1,7 @@
 spesim: Spatial Ecological Simulation in R
 ================
 AJ Smit and contributors
-2026-02-11
+2026-02-17
 
 # spesim <img src="man/figures/logo.png" alt="spesim logo" align="right" width="120" />
 
@@ -108,7 +108,7 @@ P$N_QUADRATS <- 20
 P$QUADRAT_SIZE_OPTION <- "medium"
 
 # Run (skip writing to disk to keep examples snappy)
-res <- run_spatial_simulation(P = P, write_outputs = FALSE)
+res <- spesim_run(P, write_outputs = FALSE, seed = P$SEED)
 
 # One-map view: individuals + quadrats (no gradient fill)
 p <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P)
@@ -127,8 +127,7 @@ p4 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P,
 
 ### Quick start: init file on disk
 
-Prefer declaring everything in a text file? Point
-`run_spatial_simulation()` to it:
+Prefer declaring everything in a text file? Point `spesim_run()` to it:
 
 ``` r
 library(spesim)
@@ -140,10 +139,9 @@ init <- "inst/examples/spesim_init_complete.txt"   # or a path you created
 #          or via a separate interactions file set here:
 # interactions <- "inst/examples/interactions_init.txt"
 
-res <- run_spatial_simulation(
-  init_file = init,
-  interactions_file = NULL,  # use inline settings if present
-  output_prefix = "out/demo", 
+res <- spesim_run(
+  init,
+  output_prefix = "out/demo",
   write_outputs = TRUE       # write CSVs, figures, report
 )
 
@@ -158,7 +156,7 @@ str(res$abund_matrix)
 
 1.  **Set parameters**: either with an **init file** (see vignette) or
     in-memory (`load_config()` → edit fields).
-2.  **Run the simulator**: `run_spatial_simulation()`.
+2.  **Run the simulator**: `spesim_run()`.
 3.  **Use the outputs**:
     - `res$abund_matrix` (site × species),
     - `res$site_coords` (quadrat centroids),
@@ -173,7 +171,8 @@ str(res$abund_matrix)
 
 | Function | Purpose |
 |----|----|
-| `run_spatial_simulation()` | End‑to‑end orchestrator; returns a results list and (optionally) writes CSVs/figures/report. |
+| `spesim_run()` | End‑to‑end orchestrator (recommended); returns a `spesim_result` and (optionally) writes CSVs/figures/report. |
+| `run_spatial_simulation()` | Legacy wrapper around `spesim_run()` (deprecated; kept for backwards compatibility). |
 | `generate_heterogeneous_distribution()` | Place individuals using abundances, gradients, dominant clustering, and interactions. |
 | `create_abundance_matrix()` | Build site × species table by intersecting individuals with quadrats. |
 | `calculate_quadrat_environment()` | Mean environmental conditions per quadrat from the grid. |

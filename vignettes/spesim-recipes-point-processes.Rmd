@@ -46,7 +46,7 @@ P1$SPATIAL_PROCESS_A <- "poisson"
 P1$SPATIAL_PROCESS_OTHERS <- "poisson"
 
 set.seed(P$SEED)
-res_pois <- run_spatial_simulation(P = P1, write_outputs = FALSE, interactions_print = FALSE)
+res_pois <- spesim_run(P1, write_outputs = FALSE, seed = P1$SEED, interactions_print = FALSE)
 plot_spatial_sampling(res_pois$domain, res_pois$species_dist, res_pois$quadrats, res_pois$P)
 ```
 
@@ -60,7 +60,7 @@ P2$A_MEAN_OFFSPRING <- 10
 P2$A_CLUSTER_SCALE <- 1.0
 P2$SPATIAL_PROCESS_OTHERS <- "poisson"
 
-res_th <- run_spatial_simulation(P = P2, write_outputs = FALSE, interactions_print = FALSE)
+res_th <- spesim_run(P2, write_outputs = FALSE, seed = P2$SEED, interactions_print = FALSE)
 plot_spatial_sampling(res_th$domain, res_th$species_dist, res_th$quadrats, res_th$P)
 ```
 
@@ -72,7 +72,7 @@ P3$SPATIAL_PROCESS_OTHERS <- "strauss"
 P3$OTHERS_R <- 1.0
 P3$OTHERS_S <- 0.5
 
-res_st <- run_spatial_simulation(P = P3, write_outputs = FALSE, interactions_print = FALSE)
+res_st <- spesim_run(P3, write_outputs = FALSE, seed = P3$SEED, interactions_print = FALSE)
 plot_spatial_sampling(res_st$domain, res_st$species_dist, res_st$quadrats, res_st$P)
 ```
 

@@ -34,7 +34,7 @@ P$N_INDIVIDUALS <- 1200
 P$ADVANCED_ANALYSIS <- FALSE
 
 set.seed(P$SEED)
-res0 <- run_spatial_simulation(P = P, write_outputs = FALSE)
+res0 <- spesim_run(P, write_outputs = FALSE, seed = P$SEED)
 plot_spatial_sampling(res0$domain, res0$species_dist, res0$quadrats, res0$P)
 ```
 
@@ -52,7 +52,7 @@ P2 <- P
 P2$GRADIENT_OPTIMA <- c(temperature = 0.80, elevation = 0.50, rainfall = 0.50)
 P2$GRADIENT_TOLERANCE <- c(temperature = 0.07, elevation = 0.12, rainfall = 0.12)
 
-res1 <- run_spatial_simulation(P = P2, write_outputs = FALSE)
+res1 <- spesim_run(P2, write_outputs = FALSE, seed = P2$SEED)
 
 p1 <- plot_spatial_sampling(res1$domain, res1$species_dist, res1$quadrats, res1$P)
 

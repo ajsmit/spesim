@@ -69,7 +69,7 @@ x <- spesim_method_test(P = P, make_plots = TRUE)
 
 ```{r, eval=FALSE}
 P$ADVANCED_ANALYSIS <- TRUE
-res <- run_spatial_simulation(P)
+res <- spesim_run(P, write_outputs = TRUE, seed = P$SEED)
 cat(generate_full_report(res, include_audit = TRUE), sep = "\n")
 ```
 

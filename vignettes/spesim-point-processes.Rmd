@@ -71,7 +71,7 @@ P$CLUSTER_SPREAD_DOMINANT <- 2.5
 # Neutral for others; add interactions if desired
 P$INTERACTION_RADIUS <- 0
 
-res <- run_spatial_simulation(P = P, write_outputs = FALSE)
+res <- spesim_run(P, write_outputs = FALSE, seed = P$SEED)
 ```
 
 # Diagnostics to check realism

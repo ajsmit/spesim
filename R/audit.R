@@ -21,8 +21,8 @@
 #' functions, edge corrections in irregular domains), use `spatstat` tooling on
 #' the exported point patterns.
 #'
-#' @param res A `spesim_result` list returned by [spesim_run()] or
-#'   [run_spatial_simulation()].
+#' @param res A `spesim_result` list returned by [spesim_run()] (preferred) or
+#'   [run_spatial_simulation()] (legacy).
 #' @param species Character vector of species labels to audit for spatial
 #'   structure. Default `"all"` audits all species present.
 #' @param nn_k Integer; the neighbour order used for NN distances. Default 1.

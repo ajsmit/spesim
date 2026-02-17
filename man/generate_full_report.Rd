@@ -41,7 +41,7 @@ or include it in the simulation report sink.
 }
 \description{
 \strong{Most users do not need to call this directly.} When you run
-\code{run_spatial_simulation(write_outputs = TRUE)}, a report is written to
+\code{spesim_run(write_outputs = TRUE)}, a report is written to
 disk automatically under your timestamped \code{OUTPUT_PREFIX}. This function
 returns the same report as a single character string for advanced workflows
 (e.g., embedding the text in another system, tests, or custom pipelines).
@@ -105,7 +105,7 @@ defaults where possible; irrecoverable inconsistencies raise errors.
 }
 
 \seealso{
-\code{\link{run_spatial_simulation}}, \code{\link{read_latest_report}},
+\code{\link{spesim_run}}, \code{\link{read_latest_report}},
 \code{\link{create_abundance_matrix}}, \code{\link{calculate_quadrat_environment}}
 }
 \keyword{internal}

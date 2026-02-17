@@ -16,28 +16,46 @@
 #' Run a complete spesim simulation (recommended)
 #'
 #' @description
-#' High-level, teaching-friendly wrapper around [run_spatial_simulation()].
-#' It supports both file-driven and programmatic workflows, adds optional
-#' progress messaging, and returns an S3 result object with stable components.
+#' `spesim_run()` is the **main public entry point** for the package.
 #'
-#' Use this as the main entry point in workshops and teaching material.
+#' It supports both:
+#' - **File-driven workflows**: pass a path to an init file (KEY = value)
+#' - **Programmatic workflows**: pass an in-memory parameter list `P`
 #'
-#' @param config Either a path to an init file (character scalar), or an in-memory
-#'   parameter list `P` (typically from [load_config()]).
+#' Internally, `spesim_run()` orchestrates a full run by:
+#' 1) resolving configuration (and optional seed override),
+#' 2) creating (or accepting) a sampling domain,
+#' 3) resolving interspecific interactions (file pointer / inline rules),
+#' 4) calling the pure simulation engine, and
+#' 5) optionally writing an output bundle (CSVs, figures, report).
+#'
+#' Compared to [run_spatial_simulation()], this function returns a stable S3
+#' object (`spesim_result`) and keeps filesystem I/O optional.
+#'
+#' @param config Either a path to an init file (character scalar), or an
+#'   in-memory parameter list `P` (typically from [load_config()]).
 #' @param domain Optional `sf` polygon study area (see [create_sampling_domain()]).
-#'   If `NULL`, a default domain is created. By default (no `seed` supplied),
-#'   the default domain is *randomly generated per run*; if `seed` is supplied,
-#'   the default domain is reproducible.
+#'   If `NULL`, a default domain is created.
 #' @param interactions_file Optional path to an interactions config file.
+#'   If `NULL`, the function will look for `INTERACTIONS_FILE` or
+#'   `INTERACTIONS_EDGELIST` in `config`/`P`.
 #' @param output_prefix Base output prefix (timestamp is appended) when
 #'   `write_outputs = TRUE`.
-#' @param write_outputs Logical; write CSVs/figures/report to disk? Default `FALSE`
-#'   for a smoother interactive experience.
+#' @param write_outputs Logical; write CSVs/figures/report to disk? Default
+#'   `FALSE` for a smoother interactive experience.
 #' @param seed Optional integer. If supplied, it (i) overrides `P$SEED` for the
-#'   simulation, and (ii) is also used to generate a reproducible default
-#'   domain when `domain = NULL`.
+#'   simulation, and (ii) is also used to generate a reproducible default domain
+#'   when `domain = NULL`.
 #' @param quiet Logical; suppress most messages.
-#' @param ... Passed through to [run_spatial_simulation()].
+#' @param interactions_validate Logical; validate resolved interactions.
+#' @param interactions_strict Logical; if validation finds problems, stop (`TRUE`)
+#'   or warn (`FALSE`).
+#' @param interactions_print Logical; pretty-print a compact interactions summary.
+#' @param interactions_top_n Integer; cap the number of non-1.0 entries shown.
+#' @param report_include_audit Logical; include the conceptual audit section in
+#'   the written report (when `write_outputs = TRUE`).
+#' @param report_audit_top_n Integer; rows to show in the audit section.
+#' @param ... Reserved for future extensions. Currently unused.
 #'
 #' @return An object of class `spesim_result` (a named list) with components:
 #' 
@@ -47,9 +65,12 @@
 #' - `quadrats`: sampling quadrats (`sf` polygons; class `spesim_quadrats`)
 #' - `env_gradients`: environmental grid
 #' - `abund_matrix`: site × species abundances
+#' - `site_env`: per-quadrat mean environment
 #' - `site_coords`: quadrat centroids
+#' - `files` (optional): written file paths (when `write_outputs = TRUE`)
 #'
-#' @seealso [spesim_demo()], [load_config()], [run_spatial_simulation()]
+#' @seealso [load_config()], [create_sampling_domain()],
+#'   [generate_full_report()], [read_latest_report()]
 #' @export
 spesim_run <- function(config,
                        domain = NULL,
@@ -58,9 +79,21 @@ spesim_run <- function(config,
                        write_outputs = FALSE,
                        seed = NULL,
                        quiet = FALSE,
+                       interactions_validate = TRUE,
+                       interactions_strict = TRUE,
+                       interactions_print = TRUE,
+                       interactions_top_n = 20,
+                       report_include_audit = TRUE,
+                       report_audit_top_n = 6,
                        ...) {
-  # Resolve seed (spesim_run seed controls BOTH the default domain and the
-  # simulation RNG for reproducibility).
+  `%||%` <- function(a, b) if (!is.null(a)) a else b
+
+  dots <- list(...)
+  if (length(dots)) {
+    stop("Unused argument(s): ", paste(names(dots), collapse = ", "))
+  }
+
+  # Validate seed
   if (!is.null(seed)) {
     if (!is.numeric(seed) || length(seed) != 1L || !is.finite(seed)) {
       stop("`seed` must be a single finite integer-like value.")
@@ -68,31 +101,14 @@ spesim_run <- function(config,
     seed <- as.integer(seed)
   }
 
-  # If no domain is supplied, create one.
-  #
-  # Behaviour:
-  # - seed provided  -> domain is reproducible across runs
-  # - seed NULL      -> domain varies across calls (even though the simulator
-  #                     itself may reseed internally via P$SEED)
-  if (is.null(domain)) {
-    if (!is.null(seed)) {
-      set.seed(seed)
-    } else {
-      set.seed(.auto_domain_seed())
-    }
-    domain <- create_sampling_domain()
-  }
-
-  # Resolve config source. If a file path is given, we intentionally load it
-  # here (programmatic mode) so we can override P$SEED when seed is provided,
-  # and so we can always pass an explicit domain into run_spatial_simulation().
+  # Resolve config source
   init_file <- NULL
   if (is.character(config) && length(config) == 1L) {
     init_file <- config
     P <- load_config(init_file)
 
     # If init refers to a relative interactions file, resolve it relative to the
-    # init file (mimics run_spatial_simulation(file_mode) behaviour).
+    # init file.
     if (!is.null(P$INTERACTIONS_FILE) && nzchar(P$INTERACTIONS_FILE)) {
       is_abs <- grepl("^(/|[A-Za-z]:[\\/])", P$INTERACTIONS_FILE)
       if (!is_abs) {
@@ -105,77 +121,52 @@ spesim_run <- function(config,
     stop("`config` must be either a path to an init file, or an in-memory parameter list P.")
   }
 
-  if (!quiet) {
-    message("spesim: running simulation")
-  }
-
-  # Override simulation seed if requested.
+  # Seed override: controls both simulation reproducibility and default domain.
   if (!is.null(seed)) {
     P$SEED <- seed
   }
 
-  res <- run_spatial_simulation(
-    init_file = NULL,
+  # Materialise derived fields for programmatic workflows (idempotent)
+  P <- spesim_materialize_P(P)
+
+  # Domain creation policy
+  if (is.null(domain)) {
+    if (!is.null(seed)) {
+      set.seed(seed)
+    } else {
+      set.seed(.auto_domain_seed())
+    }
+    domain <- create_sampling_domain()
+  }
+
+  if (!quiet) message("spesim: running simulation")
+
+  # Interactions
+  ir <- spesim_resolve_interactions(
+    P,
     interactions_file = interactions_file,
-    output_prefix = output_prefix,
-    domain = domain,
-    P = P,
-    write_outputs = write_outputs,
-    ...
+    interactions_validate = interactions_validate,
+    interactions_strict = interactions_strict,
+    interactions_print = interactions_print,
+    interactions_top_n = interactions_top_n
   )
+  P <- ir$P
 
-  if (is.null(res)) {
-    stop("Simulation failed; see messages above.")
+  # Engine
+  res <- spesim_engine(P, domain)
+  res <- new_spesim_result(res)
+
+  # Optional output bundle
+  if (isTRUE(write_outputs)) {
+    paths <- spesim_write_outputs(
+      res,
+      output_prefix = output_prefix,
+      include_audit = report_include_audit,
+      audit_top_n = report_audit_top_n,
+      quiet = quiet
+    )
+    res$files <- paths
   }
 
-  # tag quadrats for downstream methods
-  if (!is.null(res$quadrats)) {
-    class(res$quadrats) <- unique(c("spesim_quadrats", class(res$quadrats)))
-  }
-
-  class(res) <- unique(c("spesim_result", class(res)))
   res
-}
-
-
-#' @export
-print.spesim_result <- function(x, ...) {
-  cat("<spesim_result>\n")
-  if (!is.null(x$P)) {
-    P <- x$P
-    cat(sprintf("  species: %s\n", P$N_SPECIES %||% "?"))
-    cat(sprintf("  individuals: %s\n", P$N_INDIVIDUALS %||% "?"))
-    cat(sprintf("  sampling scheme: %s\n", P$SAMPLING_SCHEME %||% "?"))
-    cat(sprintf("  n_quadrats: %s\n", P$N_QUADRATS %||% "?"))
-    if (!is.null(P$SEED)) cat(sprintf("  seed: %s\n", P$SEED))
-  }
-  if (!is.null(x$species_dist)) cat(sprintf("  points: %s\n", nrow(x$species_dist)))
-  if (!is.null(x$quadrats)) cat(sprintf("  quadrats: %s\n", nrow(x$quadrats)))
-  invisible(x)
-}
-
-
-#' @export
-summary.spesim_result <- function(object, ...) {
-  x <- object
-  out <- list(
-    n_species = x$P$N_SPECIES %||% NA_integer_,
-    n_individuals = x$P$N_INDIVIDUALS %||% NA_integer_,
-    sampling_scheme = x$P$SAMPLING_SCHEME %||% NA_character_,
-    n_quadrats = nrow(x$quadrats %||% data.frame()),
-    seed = x$P$SEED %||% NA_integer_
-  )
-  class(out) <- "summary_spesim_result"
-  out
-}
-
-#' @export
-print.summary_spesim_result <- function(x, ...) {
-  cat("spesim result summary\n")
-  cat(sprintf("  species         : %s\n", x$n_species))
-  cat(sprintf("  individuals     : %s\n", x$n_individuals))
-  cat(sprintf("  sampling scheme : %s\n", x$sampling_scheme))
-  cat(sprintf("  quadrats        : %s\n", x$n_quadrats))
-  cat(sprintf("  seed            : %s\n", x$seed))
-  invisible(x)
 }

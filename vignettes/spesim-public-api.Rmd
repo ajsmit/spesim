@@ -38,7 +38,8 @@ The short version:
 These are the primary entry points most users should start with:
 
 - [load_config()] — read init files into a parameter list
-- [run_spatial_simulation()] — end-to-end simulation runner
+- [spesim_run()] — end-to-end simulation runner (recommended)
+- [run_spatial_simulation()] — legacy wrapper (deprecated)
 - [spesim_demo()] — one-liner demo/teaching wrapper
 
 ### B) Sampling design (quadrats)

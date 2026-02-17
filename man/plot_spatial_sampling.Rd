@@ -74,6 +74,6 @@ p + ggplot2::theme(legend.position = "right")
 }
 }
 \seealso{
-\code{\link{run_spatial_simulation}()}, \code{\link{create_sampling_domain}()},
+\code{\link{spesim_run}()}, \code{\link{create_sampling_domain}()},
 \code{\link{create_environmental_gradients}()}
 }

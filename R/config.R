@@ -174,7 +174,7 @@
 #' @return A named list \code{P} with fully-resolved parameters used by the
 #' simulator (including a tidy \code{P$GRADIENT} tibble and \code{P$QUADRAT_SIZE}).
 #'
-#' @seealso \code{\link{run_spatial_simulation}}
+#' @seealso \code{\link{spesim_run}}, \code{\link{run_spatial_simulation}}
 #' @examples
 #' \dontrun{
 #' P <- load_config("inst/examples/spesim_init_complete.txt")

@@ -15,17 +15,18 @@
 #' @param P Optional parameter list as returned by [load_config()]. If supplied,
 #'   it takes precedence over `init_file`.
 #' @param seed Optional integer seed. If provided, overrides any seed in `P`.
-#' @param write_outputs Logical. Passed to [run_spatial_simulation()]. Default
-#'   `FALSE` (fast; no files written).
-#' @param output_prefix Optional output prefix passed to
-#'   [run_spatial_simulation()]. Only used when `write_outputs = TRUE`.
+#'   If `NULL`, the demo uses `P$SEED` when available (so results are reproducible).
+#' @param write_outputs Logical. Passed to [spesim_run()]. Default `FALSE` (fast;
+#'   no files written).
+#' @param output_prefix Optional output prefix passed to [spesim_run()]. Only
+#'   used when `write_outputs = TRUE`.
 #' @param make_plots Logical. If `TRUE`, returns a list of ggplot/patchwork
 #'   objects in `out$plots`.
-#' @param ... Additional arguments passed to [run_spatial_simulation()].
+#' @param ... Additional arguments passed to [spesim_run()].
 #'
 #' @return A list with elements:
 #' 
-#' * `res`: the results list returned by [run_spatial_simulation()].
+#' * `res`: the `spesim_result` returned by [spesim_run()].
 #' * `plots` (optional): named list of plots (when `make_plots = TRUE`).
 #' * `tables` (optional): named list of intermediate analysis tables (when
 #'   `level != "basic"`).
@@ -65,9 +66,12 @@ spesim_demo <- function(
     P <- load_config(init_file)
   }
 
-  if (!is.null(seed)) {
-    P$SEED <- as.integer(seed)
-    set.seed(P$SEED)
+  seed_eff <- if (!is.null(seed)) {
+    as.integer(seed)
+  } else if (!is.null(P$SEED) && is.finite(P$SEED)) {
+    as.integer(P$SEED)
+  } else {
+    NULL
   }
 
   # Keep demo fast unless explicitly advanced
@@ -75,8 +79,9 @@ spesim_demo <- function(
     P$ADVANCED_ANALYSIS <- FALSE
   }
 
-  res <- run_spatial_simulation(
-    P = P,
+  res <- spesim_run(
+    config = P,
+    seed = seed_eff,
     write_outputs = write_outputs,
     output_prefix = output_prefix,
     ...

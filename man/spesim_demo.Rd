@@ -25,23 +25,24 @@ example \code{examples/spesim_init_basic.txt}.}
 \item{P}{Optional parameter list as returned by \code{\link[=load_config]{load_config()}}. If supplied,
 it takes precedence over \code{init_file}.}
 
-\item{seed}{Optional integer seed. If provided, overrides any seed in \code{P}.}
+\item{seed}{Optional integer seed. If provided, overrides any seed in \code{P}.
+If \code{NULL}, the demo uses \code{P$SEED} when available (so results are reproducible).}
 
-\item{write_outputs}{Logical. Passed to \code{\link[=run_spatial_simulation]{run_spatial_simulation()}}. Default
-\code{FALSE} (fast; no files written).}
+\item{write_outputs}{Logical. Passed to \code{\link[=spesim_run]{spesim_run()}}. Default \code{FALSE} (fast;
+no files written).}
 
-\item{output_prefix}{Optional output prefix passed to
-\code{\link[=run_spatial_simulation]{run_spatial_simulation()}}. Only used when \code{write_outputs = TRUE}.}
+\item{output_prefix}{Optional output prefix passed to \code{\link[=spesim_run]{spesim_run()}}. Only
+used when \code{write_outputs = TRUE}.}
 
 \item{make_plots}{Logical. If \code{TRUE}, returns a list of ggplot/patchwork
 objects in \code{out$plots}.}
 
-\item{...}{Additional arguments passed to \code{\link[=run_spatial_simulation]{run_spatial_simulation()}}.}
+\item{...}{Additional arguments passed to \code{\link[=spesim_run]{spesim_run()}}.}
 }
 \value{
 A list with elements:
 \itemize{
-\item \code{res}: the results list returned by \code{\link[=run_spatial_simulation]{run_spatial_simulation()}}.
+\item \code{res}: the \code{spesim_result} returned by \code{\link[=spesim_run]{spesim_run()}}.
 \item \code{plots} (optional): named list of plots (when \code{make_plots = TRUE}).
 \item \code{tables} (optional): named list of intermediate analysis tables (when
 \code{level != "basic"}).

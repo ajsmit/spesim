@@ -88,7 +88,7 @@ Interpretation:
 
 ```r
 P <- load_config(system.file("examples/spesim_init_complete.txt", package = "spesim"))
-res <- run_spatial_simulation(P = P, write_outputs = FALSE)
+res <- spesim_run(P, write_outputs = FALSE, seed = P$SEED)
 ```
 
 ## B) Programmatic
@@ -101,7 +101,7 @@ P$GRADIENT <- tibble::tibble(
   optimum  = c(0.6, 0.7, 0.4),
   tol      = c(0.12, 0.10, 0.15)
 )
-res <- run_spatial_simulation(P = P, write_outputs = FALSE)
+res <- spesim_run(P, write_outputs = FALSE, seed = P$SEED)
 ```
 
 # Overlaying in the map panel
@@ -130,7 +130,7 @@ For method testing, it’s useful to visualise whether gradient-responsive speci
 show higher quadrat abundances near their configured optimum.
 
 ```r
-# using a results object from spesim_run() or run_spatial_simulation()
+# using a results object from spesim_run() (preferred) or run_spatial_simulation() (legacy)
 plot_filtering_response(res)
 ```
 

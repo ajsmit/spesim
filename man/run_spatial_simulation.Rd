@@ -2,7 +2,7 @@
 % Please edit documentation in R/run.R
 \name{run_spatial_simulation}
 \alias{run_spatial_simulation}
-\title{Run the full spatial sampling simulation}
+\title{Run the full spatial sampling simulation (legacy wrapper)}
 \usage{
 run_spatial_simulation(
   init_file = NULL,
@@ -19,123 +19,36 @@ run_spatial_simulation(
 }
 \arguments{
 \item{init_file}{Character path to a text configuration (KEY = value). If
-supplied, this takes precedence over \code{P}/\code{domain} inputs (file-driven mode).
-See \code{\link[=load_config]{load_config()}} for supported keys.}
+supplied, the config is read via \code{\link[=load_config]{load_config()}}.}
 
 \item{interactions_file}{Optional character path for a separate interactions
-config. If \code{NULL}, the function will look inside the init file (or \code{P}) for
-either \code{INTERACTIONS_FILE} (pointer) or \code{INTERACTIONS_EDGELIST} (inline rules).
-Falls back to neutral interactions (all 1s; radius 0) if nothing is provided.}
+config. If \code{NULL}, interactions are resolved from \code{P}.}
 
 \item{output_prefix}{Base path for outputs (timestamp appended). If \code{NULL},
-derives from \code{P$OUTPUT_PREFIX} or defaults to \code{"simulation_output"}.
-Ignored when \code{write_outputs = FALSE}.}
+derives from \code{P$OUTPUT_PREFIX}.}
 
-\item{domain}{Optional \code{sf} polygon (study area). If \code{NULL}, a default domain
-is created by \code{\link[=create_sampling_domain]{create_sampling_domain()}}. Ignored in file-driven mode
-when \code{init_file} is provided (a domain is still created unless you supply
-your own).}
+\item{domain}{Optional \code{sf} polygon (study area). If \code{NULL}, a domain is
+created.}
 
-\item{P}{Optional fully materialized parameter list (often from
-\code{\link[=load_config]{load_config()}}). If \code{init_file} is \strong{not} given, \code{P} is used as-is.}
+\item{P}{Optional parameter list. Used when \code{init_file} is not supplied.}
 
 \item{write_outputs}{Logical; write CSVs/figures/report to disk? Default \code{TRUE}.}
 
-\item{interactions_validate}{Logical; validate the resolved interaction matrix
-with \code{\link[=validate_interactions]{validate_interactions()}} (default \code{TRUE}).}
-
-\item{interactions_strict}{Logical; if validation finds problems, stop with
-an error (\code{TRUE}) or just warn (\code{FALSE}). Default \code{TRUE}.}
-
-\item{interactions_print}{Logical; pretty-print a compact summary of the
-interaction matrix with \code{\link[=print_interactions]{print_interactions()}} (default \code{TRUE}).}
-
-\item{interactions_top_n}{Integer; cap the number of non-1.0 entries shown by
-the pretty-printer. Default \code{20}.}
+\item{interactions_validate, interactions_strict, interactions_print, interactions_top_n}{Passed to \code{\link[=spesim_run]{spesim_run()}}.}
 }
 \value{
-A named list with components:
-\itemize{
-\item \code{P} -- resolved parameters
-\item \code{domain} -- \code{sf} polygon(s) of the study area
-\item \code{species_dist} -- \code{sf} points with \code{species} and attached env columns
-\item \code{quadrats} -- \code{sf} polygons of sampled quadrats
-\item \code{env_gradients} -- data.frame grid of environmental fields
-\item \code{abund_matrix} -- site \eqn{\times} species table (first column \code{site})
-\item \code{site_coords} -- data.frame with \verb{site, x, y} (quadrat centroids)
-}
-When \code{write_outputs = TRUE}, files are written to disk under \code{output_prefix}.
+A \code{spesim_result}.
 }
 \description{
-End-to-end runner that can be called in two ways:
+\code{run_spatial_simulation()} is the historical end-to-end runner for \strong{spesim}.
 
-\strong{A. File-driven (legacy / CLI-friendly)}
-Provide \code{init_file} (and optionally \code{interactions_file}). The function reads
-configuration via \code{\link[=load_config]{load_config()}}, simulates the community, places quadrats,
-builds tables and figures, writes them to disk under \code{output_prefix}
-(timestamped), and returns a results list.
-\strong{Interactions} can be supplied (i) via \code{interactions_file}, (ii) by putting
-\code{INTERACTIONS_FILE = path/to/file} in the init file, or (iii) by embedding
-inline rules with \code{INTERACTIONS_EDGELIST = c("A,B-D,0.8", "C,A,1.2", "E,*,0.95")}
-directly in the init file.
+As of \strong{spesim 0.4.0}, the recommended entry point is \code{\link[=spesim_run]{spesim_run()}}, which
+consolidates file-driven and programmatic workflows and returns a stable S3
+object (\code{spesim_result}).
 
-\strong{B. Programmatic (as used in the README)}
-Provide an in-memory parameter list \code{P} (typically from \code{\link[=load_config]{load_config()}})
-and an \code{sf} polygon \code{domain} (or let the function create one). Interactions
-are resolved from arguments or fields inside \code{P}: you may pass an external
-\code{interactions_file}, set \code{P$INTERACTIONS_FILE} (pointer), or set
-\code{P$INTERACTIONS_EDGELIST} (inline rules). By default \code{write_outputs = TRUE},
-so the same files are written; set \code{write_outputs = FALSE} to skip writing and
-just get the results list back.
-
-Internally it:
-\enumerate{
-\item resolves parameters (\code{P}) and optional interspecific interactions,
-\item simulates a heterogeneous community (point process + environment),
-\item places sampling quadrats using the requested scheme,
-\item compiles site \eqn{\times} species tables and per-site environment,
-\item (optionally) writes a 2\eqn{\times}2 map panel and an advanced multi-plot panel,
-\item (optionally) appends a human-readable text report, and
-\item returns a named results list.
-}
-}
-\section{Files written (when \code{write_outputs = TRUE})}{
-
-\itemize{
-\item \verb{*_abundances.csv} -- site \eqn{\times} species matrix
-\item \verb{*_environments.csv} -- mean environment per quadrat
-\item \verb{*_quadrat_centroids.csv} -- centroids table
-\item \verb{*_fig_panel.png} -- 2\eqn{\times}2 spatial panel
-\item \verb{*_fig_advanced_panel.png} -- advanced diagnostics (if enabled)
-\item \verb{*_report.txt} -- textual analysis report
-}
-}
-
-\examples{
-\dontrun{
-## A) File-driven
-run_spatial_simulation(
-  init_file = "inst/examples/spesim_init_complete.txt",
-  interactions_file = NULL,
-  output_prefix = "out/run"
-)
-
-## B) Programmatic (as in README)
-dom <- create_sampling_domain()
-init <- system.file("examples", "spesim_init_complete.txt", package = "spesim")
-P <- load_config(init)
-res <- run_spatial_simulation(
-  domain = dom, P = P,
-  interactions_file = NULL,
-  write_outputs = FALSE
-)
-str(res$abund_matrix)
-}
+This function is retained for backwards compatibility and delegates to
+\code{\link[=spesim_run]{spesim_run()}}. It will emit a deprecation warning.
 }
 \seealso{
-\code{\link[=load_config]{load_config()}}, \code{\link[=load_interactions]{load_interactions()}}, \code{\link[=load_interactions_inline]{load_interactions_inline()}},
-\code{\link[=validate_interactions]{validate_interactions()}}, \code{\link[=print_interactions]{print_interactions()}},
-\code{\link[=generate_heterogeneous_distribution]{generate_heterogeneous_distribution()}}, \code{\link[=create_abundance_matrix]{create_abundance_matrix()}},
-\code{\link[=calculate_quadrat_environment]{calculate_quadrat_environment()}}, \code{\link[=plot_spatial_sampling]{plot_spatial_sampling()}},
-\code{\link[=generate_advanced_panel]{generate_advanced_panel()}}, \code{\link[=generate_full_report]{generate_full_report()}}
+\code{\link[=spesim_run]{spesim_run()}}
 }

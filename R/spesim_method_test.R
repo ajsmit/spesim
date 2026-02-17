@@ -16,18 +16,19 @@
 #' @param P Optional parameter list as returned by [load_config()]. If supplied,
 #'   it takes precedence over `init_file`.
 #' @param seed Optional integer seed. If provided, overrides any seed in `P`.
-#' @param write_outputs Logical. Passed to [run_spatial_simulation()]. Default
-#'   `FALSE` (fast; no files written).
-#' @param output_prefix Optional output prefix passed to
-#'   [run_spatial_simulation()]. Only used when `write_outputs = TRUE`.
+#'   If `NULL`, the helper uses `P$SEED` when available (so results are reproducible).
+#' @param write_outputs Logical. Passed to [spesim_run()]. Default `FALSE` (fast;
+#'   no files written).
+#' @param output_prefix Optional output prefix passed to [spesim_run()]. Only
+#'   used when `write_outputs = TRUE`.
 #' @param diagnostics Diagnostics to compute in [spesim_audit()]. Default `"nn"`
 #'   for deterministic, dependency-minimal behaviour.
 #' @param make_tables Logical; if `TRUE`, include standard analysis tables.
 #' @param make_plots Logical; if `TRUE`, include standard plots.
-#' @param ... Additional arguments passed to [run_spatial_simulation()].
+#' @param ... Additional arguments passed to [spesim_run()].
 #'
 #' @return A list with elements:
-#' * `res`: results list returned by [run_spatial_simulation()].
+#' * `res`: `spesim_result` returned by [spesim_run()].
 #' * `audit`: audit list returned by [spesim_audit()].
 #' * `tables` (optional): named list of analysis tables (when `make_tables = TRUE`).
 #' * `plots` (optional): named list of plots (when `make_plots = TRUE`).
@@ -58,15 +59,20 @@ spesim_method_test <- function(
     P <- load_config(init_file)
   }
 
-  if (!is.null(seed)) {
-    P$SEED <- as.integer(seed)
-    set.seed(P$SEED)
+  seed_eff <- if (!is.null(seed)) {
+    as.integer(seed)
+  } else if (!is.null(P$SEED) && is.finite(P$SEED)) {
+    as.integer(P$SEED)
+  } else {
+    NULL
   }
 
-  res <- run_spatial_simulation(
-    P = P,
+  res <- spesim_run(
+    config = P,
+    seed = seed_eff,
     write_outputs = write_outputs,
     output_prefix = output_prefix,
+    quiet = TRUE,
     ...
   )
 
@@ -91,7 +97,6 @@ spesim_method_test <- function(
       spatial = plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P)
     )
 
-    # Only add the classic plots if we computed their tables
     if (!is.null(out$tables)) {
       plots$rank_abundance <- plot_rank_abundance(out$tables$rank_abundance)
       plots$occupancy_abundance <- plot_occupancy_abundance(out$tables$occupancy_abundance)
@@ -100,7 +105,6 @@ spesim_method_test <- function(
       plots$rarefaction <- plot_rarefaction(out$tables$rarefaction)
     }
 
-    # If gradient species exist, add the filtering sanity plot too
     if (!is.null(res$P$GRADIENT) && nrow(res$P$GRADIENT) > 0) {
       plots$filtering_response <- plot_filtering_response(res)
     }

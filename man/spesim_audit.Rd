@@ -7,8 +7,8 @@
 spesim_audit(res, species = "all", nn_k = 1, diagnostics = c("nn", "spatstat"))
 }
 \arguments{
-\item{res}{A \code{spesim_result} list returned by \code{\link[=spesim_run]{spesim_run()}} or
-\code{\link[=run_spatial_simulation]{run_spatial_simulation()}}.}
+\item{res}{A \code{spesim_result} list returned by \code{\link[=spesim_run]{spesim_run()}} (preferred) or
+\code{\link[=run_spatial_simulation]{run_spatial_simulation()}} (legacy).}
 
 \item{species}{Character vector of species labels to audit for spatial
 structure. Default \code{"all"} audits all species present.}

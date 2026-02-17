@@ -1,3 +1,11 @@
+# spesim 0.4.0
+
+## Runner refactor + stable results
+
+- `spesim_run()` is now the recommended, consolidated entry point and returns a stable S3 results object (`spesim_result`).
+- `run_spatial_simulation()` is retained as a **deprecated** wrapper around `spesim_run()` for backwards compatibility.
+- Vignettes and README updated to reflect the new workflow.
+
 # spesim 0.3.19
 
 ## Startup message

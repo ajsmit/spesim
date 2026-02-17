@@ -48,7 +48,7 @@
 #' the provided \code{sf} objects; ensure consistent CRS across inputs. When \code{show_gradient = TRUE},
 #' the raster is drawn first with partial transparency so the domain outline and points remain visible.
 #'
-#' @seealso \code{\link{run_spatial_simulation}()}, \code{\link{create_sampling_domain}()},
+#' @seealso \code{\link{spesim_run}()}, \code{\link{create_sampling_domain}()},
 #'   \code{\link{create_environmental_gradients}()}
 #'
 #' @examples

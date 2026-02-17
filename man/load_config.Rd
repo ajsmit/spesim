@@ -45,5 +45,5 @@ P <- load_config("inst/examples/spesim_init_complete.txt")
 }
 }
 \seealso{
-\code{\link{run_spatial_simulation}}
+\code{\link{spesim_run}}, \code{\link{run_spatial_simulation}}
 }

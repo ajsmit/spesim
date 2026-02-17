@@ -42,7 +42,7 @@ Below is a compact workflow diagram showing the main pipeline.
                 v
 ┌──────────────────────────────┐
 │ 2) Run simulation            │
-│   run_spatial_simulation()   │
+│   spesim_run()               │
 │   - creates domain (or use)  │
 │   - simulates individuals    │
 │   - places quadrats          │
@@ -91,7 +91,7 @@ P <- load_config(init)
 
 # Keep it fast (in-memory only)
 P$ADVANCED_ANALYSIS <- FALSE
-res <- run_spatial_simulation(P = P, write_outputs = FALSE)
+res <- spesim_run(P, write_outputs = FALSE, seed = P$SEED)
 
 names(res)
 ```
@@ -161,7 +161,7 @@ cat(generate_full_report(res))
 
 ```{r, eval=FALSE}
 # This will write timestamped outputs under out/demo_YYYYMMDD... etc.
-res2 <- run_spatial_simulation(P = P, write_outputs = TRUE, output_prefix = "out/demo")
+res2 <- spesim_run(P, write_outputs = TRUE, output_prefix = "out/demo", seed = P$SEED)
 ```
 
 ## What features live where?

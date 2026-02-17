@@ -71,10 +71,10 @@ utils::globalVariables(c(
 .onAttach <- function(libname, pkgname) {
   ver <- tryCatch(as.character(utils::packageVersion(pkgname)), error = function(e) NA_character_)
   if (is.na(ver)) {
-    packageStartupMessage("spesim loaded - try run_spatial_simulation() to generate a simulation.")
+    packageStartupMessage("spesim loaded - try spesim_run() to generate a simulation.")
   } else {
     packageStartupMessage(sprintf(
-      "spesim %s loaded - try run_spatial_simulation() to generate a simulation.",
+      "spesim %s loaded - try spesim_run() to generate a simulation.",
       ver
     ))
   }

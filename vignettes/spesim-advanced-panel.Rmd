@@ -38,7 +38,7 @@ point-process diagnostics; see the “Extensions” section.)
 library(spesim)
 P <- load_config(system.file("examples/spesim_init_complete.txt", package = "spesim"))
 P$ADVANCED_ANALYSIS <- TRUE
-res <- run_spatial_simulation(P = P, write_outputs = FALSE)
+res <- spesim_run(P, write_outputs = FALSE, seed = P$SEED)
 generate_advanced_panel(res)
 ```
 

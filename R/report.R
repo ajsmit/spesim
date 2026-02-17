@@ -2,7 +2,7 @@
 #'
 #' @description
 #' **Most users do not need to call this directly.** When you run
-#' \code{run_spatial_simulation(write_outputs = TRUE)}, a report is written to
+#' \code{spesim_run(write_outputs = TRUE)}, a report is written to
 #' disk automatically under your timestamped \code{OUTPUT_PREFIX}. This function
 #' returns the same report as a single character string for advanced workflows
 #' (e.g., embedding the text in another system, tests, or custom pipelines).
@@ -87,7 +87,7 @@
 #' defaults where possible; irrecoverable inconsistencies raise errors.
 #'
 #' @seealso
-#' \code{\link{run_spatial_simulation}}, \code{\link{read_latest_report}},
+#' \code{\link{spesim_run}}, \code{\link{read_latest_report}},
 #' \code{\link{create_abundance_matrix}}, \code{\link{calculate_quadrat_environment}}
 #'
 #' @param include_audit Logical; if TRUE (default), include a short "Conceptual audit"
@@ -413,7 +413,7 @@ generate_full_report <- function(res, include_audit = TRUE, audit_top_n = 6) {
 #'
 #' @description
 #' Convenience helper to locate and read the latest \code{*_report.txt} written
-#' by \code{run_spatial_simulation(write_outputs = TRUE)} under a given
+#' by \code{spesim_run(write_outputs = TRUE)} under a given
 #' \code{output_dir}. Useful for users who want the report text without calling
 #' \code{generate_full_report()} directly.
 #'

@@ -12,33 +12,53 @@ spesim_run(
   write_outputs = FALSE,
   seed = NULL,
   quiet = FALSE,
+  interactions_validate = TRUE,
+  interactions_strict = TRUE,
+  interactions_print = TRUE,
+  interactions_top_n = 20,
+  report_include_audit = TRUE,
+  report_audit_top_n = 6,
   ...
 )
 }
 \arguments{
-\item{config}{Either a path to an init file (character scalar), or an in-memory
-parameter list \code{P} (typically from \code{\link[=load_config]{load_config()}}).}
+\item{config}{Either a path to an init file (character scalar), or an
+in-memory parameter list \code{P} (typically from \code{\link[=load_config]{load_config()}}).}
 
 \item{domain}{Optional \code{sf} polygon study area (see \code{\link[=create_sampling_domain]{create_sampling_domain()}}).
-If \code{NULL}, a default domain is created. By default (no \code{seed} supplied),
-the default domain is \emph{randomly generated per run}; if \code{seed} is supplied,
-the default domain is reproducible.}
+If \code{NULL}, a default domain is created.}
 
-\item{interactions_file}{Optional path to an interactions config file.}
+\item{interactions_file}{Optional path to an interactions config file.
+If \code{NULL}, the function will look for \code{INTERACTIONS_FILE} or
+\code{INTERACTIONS_EDGELIST} in \code{config}/\code{P}.}
 
 \item{output_prefix}{Base output prefix (timestamp is appended) when
 \code{write_outputs = TRUE}.}
 
-\item{write_outputs}{Logical; write CSVs/figures/report to disk? Default \code{FALSE}
-for a smoother interactive experience.}
+\item{write_outputs}{Logical; write CSVs/figures/report to disk? Default
+\code{FALSE} for a smoother interactive experience.}
 
 \item{seed}{Optional integer. If supplied, it (i) overrides \code{P$SEED} for the
-simulation, and (ii) is also used to generate a reproducible default
-domain when \code{domain = NULL}.}
+simulation, and (ii) is also used to generate a reproducible default domain
+when \code{domain = NULL}.}
 
 \item{quiet}{Logical; suppress most messages.}
 
-\item{...}{Passed through to \code{\link[=run_spatial_simulation]{run_spatial_simulation()}}.}
+\item{interactions_validate}{Logical; validate resolved interactions.}
+
+\item{interactions_strict}{Logical; if validation finds problems, stop (\code{TRUE})
+or warn (\code{FALSE}).}
+
+\item{interactions_print}{Logical; pretty-print a compact interactions summary.}
+
+\item{interactions_top_n}{Integer; cap the number of non-1.0 entries shown.}
+
+\item{report_include_audit}{Logical; include the conceptual audit section in
+the written report (when \code{write_outputs = TRUE}).}
+
+\item{report_audit_top_n}{Integer; rows to show in the audit section.}
+
+\item{...}{Reserved for future extensions. Currently unused.}
 }
 \value{
 An object of class \code{spesim_result} (a named list) with components:
@@ -49,16 +69,33 @@ An object of class \code{spesim_result} (a named list) with components:
 \item \code{quadrats}: sampling quadrats (\code{sf} polygons; class \code{spesim_quadrats})
 \item \code{env_gradients}: environmental grid
 \item \code{abund_matrix}: site × species abundances
+\item \code{site_env}: per-quadrat mean environment
 \item \code{site_coords}: quadrat centroids
+\item \code{files} (optional): written file paths (when \code{write_outputs = TRUE})
 }
 }
 \description{
-High-level, teaching-friendly wrapper around \code{\link[=run_spatial_simulation]{run_spatial_simulation()}}.
-It supports both file-driven and programmatic workflows, adds optional
-progress messaging, and returns an S3 result object with stable components.
+\code{spesim_run()} is the \strong{main public entry point} for the package.
 
-Use this as the main entry point in workshops and teaching material.
+It supports both:
+\itemize{
+\item \strong{File-driven workflows}: pass a path to an init file (KEY = value)
+\item \strong{Programmatic workflows}: pass an in-memory parameter list \code{P}
+}
+
+Internally, \code{spesim_run()} orchestrates a full run by:
+\enumerate{
+\item resolving configuration (and optional seed override),
+\item creating (or accepting) a sampling domain,
+\item resolving interspecific interactions (file pointer / inline rules),
+\item calling the pure simulation engine, and
+\item optionally writing an output bundle (CSVs, figures, report).
+}
+
+Compared to \code{\link[=run_spatial_simulation]{run_spatial_simulation()}}, this function returns a stable S3
+object (\code{spesim_result}) and keeps filesystem I/O optional.
 }
 \seealso{
-\code{\link[=spesim_demo]{spesim_demo()}}, \code{\link[=load_config]{load_config()}}, \code{\link[=run_spatial_simulation]{run_spatial_simulation()}}
+\code{\link[=load_config]{load_config()}}, \code{\link[=create_sampling_domain]{create_sampling_domain()}},
+\code{\link[=generate_full_report]{generate_full_report()}}, \code{\link[=read_latest_report]{read_latest_report()}}
 }

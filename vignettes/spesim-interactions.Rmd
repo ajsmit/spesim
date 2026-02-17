@@ -33,7 +33,7 @@ You can provide interactions in **two** convenient ways:
 - **B) Inline rules** directly in the init file via
   `INTERACTIONS_EDGELIST` (no extra files).
 
-`run_spatial_simulation()` will automatically resolve interactions when
+`spesim_run()` will automatically resolve interactions when
 either key is present in the init file. Under the hood it calls the
 package loaders (e.g. `load_interactions()`, `load_interactions_inline()`)
 and then validates/prints the resolved matrix.
@@ -154,7 +154,7 @@ INTERACTIONS_EDGELIST = c(
 
 ### Quick validation & preview
 
-By default, `run_spatial_simulation()` validates and pretty‑prints the
+By default, `spesim_run()` validates and pretty‑prints the
 resolved interaction matrix:
 
 - `interactions_validate = TRUE` — checks shape, names, and finiteness.
@@ -199,9 +199,10 @@ Then run:
 ```r
 library(spesim)
 
-res <- run_spatial_simulation(
-  init_file = "inst/examples/my_init.txt",
-  output_prefix = "out/run"
+res <- spesim_run(
+  "inst/examples/my_init.txt",
+  output_prefix = "out/run",
+  write_outputs = TRUE
 )
 ```
 

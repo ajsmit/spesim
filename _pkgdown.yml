@@ -86,6 +86,10 @@ reference:
   contents:
   - generate_fisher_log_series
 
+- title: "Classes"
+  contents:
+  - spesim_result
+
 articles:
 - title: "Articles"
   navbar: ~

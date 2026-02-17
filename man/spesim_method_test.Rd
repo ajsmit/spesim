@@ -23,13 +23,14 @@ example \code{examples/spesim_init_basic.txt}.}
 \item{P}{Optional parameter list as returned by \code{\link[=load_config]{load_config()}}. If supplied,
 it takes precedence over \code{init_file}.}
 
-\item{seed}{Optional integer seed. If provided, overrides any seed in \code{P}.}
+\item{seed}{Optional integer seed. If provided, overrides any seed in \code{P}.
+If \code{NULL}, the helper uses \code{P$SEED} when available (so results are reproducible).}
 
-\item{write_outputs}{Logical. Passed to \code{\link[=run_spatial_simulation]{run_spatial_simulation()}}. Default
-\code{FALSE} (fast; no files written).}
+\item{write_outputs}{Logical. Passed to \code{\link[=spesim_run]{spesim_run()}}. Default \code{FALSE} (fast;
+no files written).}
 
-\item{output_prefix}{Optional output prefix passed to
-\code{\link[=run_spatial_simulation]{run_spatial_simulation()}}. Only used when \code{write_outputs = TRUE}.}
+\item{output_prefix}{Optional output prefix passed to \code{\link[=spesim_run]{spesim_run()}}. Only
+used when \code{write_outputs = TRUE}.}
 
 \item{diagnostics}{Diagnostics to compute in \code{\link[=spesim_audit]{spesim_audit()}}. Default \code{"nn"}
 for deterministic, dependency-minimal behaviour.}
@@ -38,12 +39,12 @@ for deterministic, dependency-minimal behaviour.}
 
 \item{make_plots}{Logical; if \code{TRUE}, include standard plots.}
 
-\item{...}{Additional arguments passed to \code{\link[=run_spatial_simulation]{run_spatial_simulation()}}.}
+\item{...}{Additional arguments passed to \code{\link[=spesim_run]{spesim_run()}}.}
 }
 \value{
 A list with elements:
 \itemize{
-\item \code{res}: results list returned by \code{\link[=run_spatial_simulation]{run_spatial_simulation()}}.
+\item \code{res}: \code{spesim_result} returned by \code{\link[=spesim_run]{spesim_run()}}.
 \item \code{audit}: audit list returned by \code{\link[=spesim_audit]{spesim_audit()}}.
 \item \code{tables} (optional): named list of analysis tables (when \code{make_tables = TRUE}).
 \item \code{plots} (optional): named list of plots (when \code{make_plots = TRUE}).

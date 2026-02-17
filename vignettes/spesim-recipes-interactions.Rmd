@@ -44,7 +44,7 @@ P$INTERACTION_RADIUS <- 0
 P$INTERACTIONS_EDGELIST <- NULL
 
 set.seed(P$SEED)
-res0 <- run_spatial_simulation(P = P, write_outputs = FALSE, interactions_print = FALSE)
+res0 <- spesim_run(P, write_outputs = FALSE, seed = P$SEED, interactions_print = FALSE)
 plot_spatial_sampling(res0$domain, res0$species_dist, res0$quadrats, res0$P)
 ```
 
@@ -60,7 +60,7 @@ P2$INTERACTIONS_EDGELIST <- c(
   "C,A,1.3"
 )
 
-res1 <- run_spatial_simulation(P = P2, write_outputs = FALSE, interactions_print = TRUE)
+res1 <- spesim_run(P2, write_outputs = FALSE, seed = P2$SEED, interactions_print = TRUE)
 
 # Visualise the outcome
 plot_spatial_sampling(res1$domain, res1$species_dist, res1$quadrats, res1$P)
