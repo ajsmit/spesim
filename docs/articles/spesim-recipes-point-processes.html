@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -89,7 +89,7 @@ the dominant species (A) and for the remaining species.</p>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ajsmit/spesim" class="external-link">spesim</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; spesim loaded - try run_spatial_simulation() to generate a simulation.</span></span>
+<span><span class="co">#&gt; spesim 0.4.0 loaded - try spesim_run() to generate a simulation.</span></span>
 <span></span>
 <span><span class="va">P</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/load_config.html">load_config</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"examples/spesim_init_complete.txt"</span>, package <span class="op">=</span> <span class="st">"spesim"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========</span></span>
@@ -110,41 +110,11 @@ the dominant species (A) and for the remaining species.</p>
 <span><span class="va">P1</span><span class="op">$</span><span class="va">SPATIAL_PROCESS_OTHERS</span> <span class="op">&lt;-</span> <span class="st">"poisson"</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="va">P</span><span class="op">$</span><span class="va">SEED</span><span class="op">)</span></span>
-<span><span class="va">res_pois</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_spatial_simulation.html">run_spatial_simulation</a></span><span class="op">(</span>P <span class="op">=</span> <span class="va">P1</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span>, interactions_print <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">res_pois</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spesim_run.html">spesim_run</a></span><span class="op">(</span><span class="va">P1</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span>, seed <span class="op">=</span> <span class="va">P1</span><span class="op">$</span><span class="va">SEED</span>, interactions_print <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; spesim: running simulation</span></span>
 <span><span class="co">#&gt; Warning in load_interactions(src_file, P$N_SPECIES): interactions_file not</span></span>
 <span><span class="co">#&gt; found; interactions disabled.</span></span>
 <span><span class="co">#&gt; Note: no non-1 interactions for species: A, B, C, D, E, F, G, H, I, J.</span></span>
-<span><span class="co">#&gt; ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========</span></span>
-<span><span class="co">#&gt; ========== SIMULATION PARAMETERS ==========</span></span>
-<span><span class="co">#&gt; list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1200, </span></span>
-<span><span class="co">#&gt;     N_SPECIES = 10, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, </span></span>
-<span><span class="co">#&gt;     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D"), </span></span>
-<span><span class="co">#&gt;     GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", </span></span>
-<span><span class="co">#&gt;     "rainfall"), GRADIENT_OPTIMA = 0.5, GRADIENT_TOLERANCE = 0.12, </span></span>
-<span><span class="co">#&gt;     SAMPLING_RESOLUTION = 50L, ENVIRONMENTAL_NOISE = 0.05, MAX_CLUSTERS_DOMINANT = 5L, </span></span>
-<span><span class="co">#&gt;     CLUSTER_SPREAD_DOMINANT = 3, INTERACTION_RADIUS = 0, INTERACTION_MATRIX = structure(c(1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1), dim = c(10L, 10L), dimnames = list(c("A", "B", </span></span>
-<span><span class="co">#&gt;     "C", "D", "E", "F", "G", "H", "I", "J"), c("A", "B", "C", </span></span>
-<span><span class="co">#&gt;     "D", "E", "F", "G", "H", "I", "J"))), INTERACTIONS_FILE = "interactions_init.txt", </span></span>
-<span><span class="co">#&gt;     SAMPLING_SCHEME = "tiled", N_QUADRATS = 25L, QUADRAT_SIZE_OPTION = "small", </span></span>
-<span><span class="co">#&gt;     N_TRANSECTS = 1L, N_QUADRATS_PER_TRANSECT = 8L, TRANSECT_ANGLE = 90L, </span></span>
-<span><span class="co">#&gt;     VORONOI_SEED_FACTOR = 10L, POINT_SIZE = 0.2, POINT_ALPHA = 1, </span></span>
-<span><span class="co">#&gt;     QUADRAT_ALPHA = 0.05, BACKGROUND_COLOUR = "#ffffff", FOREGROUND_COLOUR = "#22223b", </span></span>
-<span><span class="co">#&gt;     QUADRAT_COLOUR = "black", ADVANCED_ANALYSIS = FALSE, SPATIAL_PROCESS_A = "poisson", </span></span>
-<span><span class="co">#&gt;     A_PARENT_INTENSITY = NA_real_, A_MEAN_OFFSPRING = 12L, A_CLUSTER_SCALE = 1.2, </span></span>
-<span><span class="co">#&gt;     SPATIAL_PROCESS_OTHERS = "poisson", OTHERS_BETA = NA_real_, </span></span>
-<span><span class="co">#&gt;     OTHERS_GAMMA = NA_real_, OTHERS_R = 1, OTHERS_S = 0.6, GRADIENT = structure(list(</span></span>
-<span><span class="co">#&gt;         species = c("A", "B", "C", "D"), gradient = c("temperature", </span></span>
-<span><span class="co">#&gt;         "temperature", "elevation", "rainfall"), optimum = c(0.5, </span></span>
-<span><span class="co">#&gt;         0.5, 0.5, 0.5), tol = c(0.12, 0.12, 0.12, 0.12)), class = c("tbl_df", </span></span>
-<span><span class="co">#&gt;     "tbl", "data.frame"), row.names = c(NA, -4L))) </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ========== RUNNING SIMULATION ==========</span></span>
 <span><span class="co">#&gt; Warning: attribute variables are assumed to be spatially constant throughout</span></span>
 <span><span class="co">#&gt; all geometries</span></span>
 <span><span class="fu"><a href="../reference/plot_spatial_sampling.html">plot_spatial_sampling</a></span><span class="op">(</span><span class="va">res_pois</span><span class="op">$</span><span class="va">domain</span>, <span class="va">res_pois</span><span class="op">$</span><span class="va">species_dist</span>, <span class="va">res_pois</span><span class="op">$</span><span class="va">quadrats</span>, <span class="va">res_pois</span><span class="op">$</span><span class="va">P</span><span class="op">)</span></span></code></pre></div>
@@ -161,41 +131,11 @@ the dominant species (A) and for the remaining species.</p>
 <span><span class="va">P2</span><span class="op">$</span><span class="va">A_CLUSTER_SCALE</span> <span class="op">&lt;-</span> <span class="fl">1.0</span></span>
 <span><span class="va">P2</span><span class="op">$</span><span class="va">SPATIAL_PROCESS_OTHERS</span> <span class="op">&lt;-</span> <span class="st">"poisson"</span></span>
 <span></span>
-<span><span class="va">res_th</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_spatial_simulation.html">run_spatial_simulation</a></span><span class="op">(</span>P <span class="op">=</span> <span class="va">P2</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span>, interactions_print <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">res_th</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spesim_run.html">spesim_run</a></span><span class="op">(</span><span class="va">P2</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span>, seed <span class="op">=</span> <span class="va">P2</span><span class="op">$</span><span class="va">SEED</span>, interactions_print <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; spesim: running simulation</span></span>
 <span><span class="co">#&gt; Warning in load_interactions(src_file, P$N_SPECIES): interactions_file not</span></span>
 <span><span class="co">#&gt; found; interactions disabled.</span></span>
 <span><span class="co">#&gt; Note: no non-1 interactions for species: A, B, C, D, E, F, G, H, I, J.</span></span>
-<span><span class="co">#&gt; ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========</span></span>
-<span><span class="co">#&gt; ========== SIMULATION PARAMETERS ==========</span></span>
-<span><span class="co">#&gt; list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1200, </span></span>
-<span><span class="co">#&gt;     N_SPECIES = 10, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, </span></span>
-<span><span class="co">#&gt;     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D"), </span></span>
-<span><span class="co">#&gt;     GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", </span></span>
-<span><span class="co">#&gt;     "rainfall"), GRADIENT_OPTIMA = 0.5, GRADIENT_TOLERANCE = 0.12, </span></span>
-<span><span class="co">#&gt;     SAMPLING_RESOLUTION = 50L, ENVIRONMENTAL_NOISE = 0.05, MAX_CLUSTERS_DOMINANT = 5L, </span></span>
-<span><span class="co">#&gt;     CLUSTER_SPREAD_DOMINANT = 3, INTERACTION_RADIUS = 0, INTERACTION_MATRIX = structure(c(1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1), dim = c(10L, 10L), dimnames = list(c("A", "B", </span></span>
-<span><span class="co">#&gt;     "C", "D", "E", "F", "G", "H", "I", "J"), c("A", "B", "C", </span></span>
-<span><span class="co">#&gt;     "D", "E", "F", "G", "H", "I", "J"))), INTERACTIONS_FILE = "interactions_init.txt", </span></span>
-<span><span class="co">#&gt;     SAMPLING_SCHEME = "tiled", N_QUADRATS = 25L, QUADRAT_SIZE_OPTION = "small", </span></span>
-<span><span class="co">#&gt;     N_TRANSECTS = 1L, N_QUADRATS_PER_TRANSECT = 8L, TRANSECT_ANGLE = 90L, </span></span>
-<span><span class="co">#&gt;     VORONOI_SEED_FACTOR = 10L, POINT_SIZE = 0.2, POINT_ALPHA = 1, </span></span>
-<span><span class="co">#&gt;     QUADRAT_ALPHA = 0.05, BACKGROUND_COLOUR = "#ffffff", FOREGROUND_COLOUR = "#22223b", </span></span>
-<span><span class="co">#&gt;     QUADRAT_COLOUR = "black", ADVANCED_ANALYSIS = FALSE, SPATIAL_PROCESS_A = "thomas", </span></span>
-<span><span class="co">#&gt;     A_PARENT_INTENSITY = NA, A_MEAN_OFFSPRING = 10, A_CLUSTER_SCALE = 1, </span></span>
-<span><span class="co">#&gt;     SPATIAL_PROCESS_OTHERS = "poisson", OTHERS_BETA = NA_real_, </span></span>
-<span><span class="co">#&gt;     OTHERS_GAMMA = NA_real_, OTHERS_R = 1, OTHERS_S = 0.6, GRADIENT = structure(list(</span></span>
-<span><span class="co">#&gt;         species = c("A", "B", "C", "D"), gradient = c("temperature", </span></span>
-<span><span class="co">#&gt;         "temperature", "elevation", "rainfall"), optimum = c(0.5, </span></span>
-<span><span class="co">#&gt;         0.5, 0.5, 0.5), tol = c(0.12, 0.12, 0.12, 0.12)), class = c("tbl_df", </span></span>
-<span><span class="co">#&gt;     "tbl", "data.frame"), row.names = c(NA, -4L))) </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ========== RUNNING SIMULATION ==========</span></span>
 <span><span class="co">#&gt; Warning: attribute variables are assumed to be spatially constant throughout</span></span>
 <span><span class="co">#&gt; all geometries</span></span>
 <span><span class="fu"><a href="../reference/plot_spatial_sampling.html">plot_spatial_sampling</a></span><span class="op">(</span><span class="va">res_th</span><span class="op">$</span><span class="va">domain</span>, <span class="va">res_th</span><span class="op">$</span><span class="va">species_dist</span>, <span class="va">res_th</span><span class="op">$</span><span class="va">quadrats</span>, <span class="va">res_th</span><span class="op">$</span><span class="va">P</span><span class="op">)</span></span></code></pre></div>
@@ -210,41 +150,11 @@ the dominant species (A) and for the remaining species.</p>
 <span><span class="va">P3</span><span class="op">$</span><span class="va">OTHERS_R</span> <span class="op">&lt;-</span> <span class="fl">1.0</span></span>
 <span><span class="va">P3</span><span class="op">$</span><span class="va">OTHERS_S</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
 <span></span>
-<span><span class="va">res_st</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_spatial_simulation.html">run_spatial_simulation</a></span><span class="op">(</span>P <span class="op">=</span> <span class="va">P3</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span>, interactions_print <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">res_st</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spesim_run.html">spesim_run</a></span><span class="op">(</span><span class="va">P3</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span>, seed <span class="op">=</span> <span class="va">P3</span><span class="op">$</span><span class="va">SEED</span>, interactions_print <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; spesim: running simulation</span></span>
 <span><span class="co">#&gt; Warning in load_interactions(src_file, P$N_SPECIES): interactions_file not</span></span>
 <span><span class="co">#&gt; found; interactions disabled.</span></span>
 <span><span class="co">#&gt; Note: no non-1 interactions for species: A, B, C, D, E, F, G, H, I, J.</span></span>
-<span><span class="co">#&gt; ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========</span></span>
-<span><span class="co">#&gt; ========== SIMULATION PARAMETERS ==========</span></span>
-<span><span class="co">#&gt; list(SEED = 77L, OUTPUT_PREFIX = "out/run", N_INDIVIDUALS = 1200, </span></span>
-<span><span class="co">#&gt;     N_SPECIES = 10, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, </span></span>
-<span><span class="co">#&gt;     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D"), </span></span>
-<span><span class="co">#&gt;     GRADIENT_ASSIGNMENTS = c("temperature", "temperature", "elevation", </span></span>
-<span><span class="co">#&gt;     "rainfall"), GRADIENT_OPTIMA = 0.5, GRADIENT_TOLERANCE = 0.12, </span></span>
-<span><span class="co">#&gt;     SAMPLING_RESOLUTION = 50L, ENVIRONMENTAL_NOISE = 0.05, MAX_CLUSTERS_DOMINANT = 5L, </span></span>
-<span><span class="co">#&gt;     CLUSTER_SPREAD_DOMINANT = 3, INTERACTION_RADIUS = 0, INTERACTION_MATRIX = structure(c(1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, </span></span>
-<span><span class="co">#&gt;     1, 1, 1, 1), dim = c(10L, 10L), dimnames = list(c("A", "B", </span></span>
-<span><span class="co">#&gt;     "C", "D", "E", "F", "G", "H", "I", "J"), c("A", "B", "C", </span></span>
-<span><span class="co">#&gt;     "D", "E", "F", "G", "H", "I", "J"))), INTERACTIONS_FILE = "interactions_init.txt", </span></span>
-<span><span class="co">#&gt;     SAMPLING_SCHEME = "tiled", N_QUADRATS = 25L, QUADRAT_SIZE_OPTION = "small", </span></span>
-<span><span class="co">#&gt;     N_TRANSECTS = 1L, N_QUADRATS_PER_TRANSECT = 8L, TRANSECT_ANGLE = 90L, </span></span>
-<span><span class="co">#&gt;     VORONOI_SEED_FACTOR = 10L, POINT_SIZE = 0.2, POINT_ALPHA = 1, </span></span>
-<span><span class="co">#&gt;     QUADRAT_ALPHA = 0.05, BACKGROUND_COLOUR = "#ffffff", FOREGROUND_COLOUR = "#22223b", </span></span>
-<span><span class="co">#&gt;     QUADRAT_COLOUR = "black", ADVANCED_ANALYSIS = FALSE, SPATIAL_PROCESS_A = "thomas", </span></span>
-<span><span class="co">#&gt;     A_PARENT_INTENSITY = NA, A_MEAN_OFFSPRING = 10, A_CLUSTER_SCALE = 1, </span></span>
-<span><span class="co">#&gt;     SPATIAL_PROCESS_OTHERS = "strauss", OTHERS_BETA = NA_real_, </span></span>
-<span><span class="co">#&gt;     OTHERS_GAMMA = NA_real_, OTHERS_R = 1, OTHERS_S = 0.5, GRADIENT = structure(list(</span></span>
-<span><span class="co">#&gt;         species = c("A", "B", "C", "D"), gradient = c("temperature", </span></span>
-<span><span class="co">#&gt;         "temperature", "elevation", "rainfall"), optimum = c(0.5, </span></span>
-<span><span class="co">#&gt;         0.5, 0.5, 0.5), tol = c(0.12, 0.12, 0.12, 0.12)), class = c("tbl_df", </span></span>
-<span><span class="co">#&gt;     "tbl", "data.frame"), row.names = c(NA, -4L))) </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ========== RUNNING SIMULATION ==========</span></span>
 <span><span class="co">#&gt; Warning: attribute variables are assumed to be spatially constant throughout</span></span>
 <span><span class="co">#&gt; all geometries</span></span>
 <span><span class="fu"><a href="../reference/plot_spatial_sampling.html">plot_spatial_sampling</a></span><span class="op">(</span><span class="va">res_st</span><span class="op">$</span><span class="va">domain</span>, <span class="va">res_st</span><span class="op">$</span><span class="va">species_dist</span>, <span class="va">res_st</span><span class="op">$</span><span class="va">quadrats</span>, <span class="va">res_st</span><span class="op">$</span><span class="va">P</span><span class="op">)</span></span></code></pre></div>
@@ -282,28 +192,44 @@ rates).</li>
 <p>Below we compare the advanced panel between Poisson, Thomas (A
 clustered), and Thomas + Strauss (others inhibited).</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p_pois</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_advanced_panel.html">generate_advanced_panel</a></span><span class="op">(</span><span class="va">res_pois</span><span class="op">)</span> <span class="op">+</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Poisson (CSR)"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spesim-recipes-point-processes_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
+<code class="sourceCode R"><span><span class="va">p_pois</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_advanced_panel.html">generate_advanced_panel</a></span><span class="op">(</span><span class="va">res_pois</span><span class="op">)</span> <span class="op">+</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Poisson (CSR)"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in vegan::vegdist(abund_numeric, method = "bray", binary = TRUE): you have empty rows: their dissimilarities may be</span></span>
+<span><span class="co">#&gt;                  meaningless in method "bray"</span></span>
+<span><span class="va">p_th</span>   <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_advanced_panel.html">generate_advanced_panel</a></span><span class="op">(</span><span class="va">res_th</span><span class="op">)</span>   <span class="op">+</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Thomas clustering for A"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in vegan::vegdist(abund_numeric, method = "bray", binary = TRUE): you have empty rows: their dissimilarities may be</span></span>
+<span><span class="co">#&gt;                  meaningless in method "bray"</span></span>
+<span><span class="co">#&gt; Warning in vegan::vegdist(abund_numeric, method = "bray", binary = TRUE):</span></span>
+<span><span class="co">#&gt; missing values in results</span></span>
+<span><span class="va">p_st</span>   <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_advanced_panel.html">generate_advanced_panel</a></span><span class="op">(</span><span class="va">res_st</span><span class="op">)</span>   <span class="op">+</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Thomas (A) + Strauss inhibition (others)"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning in vegan::vegdist(abund_numeric, method = "bray", binary = TRUE): you have empty rows: their dissimilarities may be</span></span>
+<span><span class="co">#&gt;                  meaningless in method "bray"</span></span>
+<span><span class="co">#&gt; Warning in vegan::vegdist(abund_numeric, method = "bray", binary = TRUE): missing values in results</span></span></code></pre></div>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p_th</span>   <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_advanced_panel.html">generate_advanced_panel</a></span><span class="op">(</span><span class="va">res_th</span><span class="op">)</span>   <span class="op">+</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Thomas clustering for A"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spesim-recipes-point-processes_files/figure-html/unnamed-chunk-5-2.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p_st</span>   <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_advanced_panel.html">generate_advanced_panel</a></span><span class="op">(</span><span class="va">res_st</span><span class="op">)</span>   <span class="op">+</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Thomas (A) + Strauss inhibition (others)"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="spesim-recipes-point-processes_files/figure-html/unnamed-chunk-5-3.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_pois</span></span>
 <span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span>
 <span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span></code></pre></div>
 <p><img src="spesim-recipes-point-processes_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="" width="768" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_th</span></span>
 <span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span>
-<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span></code></pre></div>
+<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span>
+<span><span class="co">#&gt; Warning: Removed 3 rows containing non-finite outside the scale range</span></span>
+<span><span class="co">#&gt; (`stat_smooth()`).</span></span>
+<span><span class="co">#&gt; Warning: Removed 3 rows containing missing values or values outside the scale range</span></span>
+<span><span class="co">#&gt; (`geom_point()`).</span></span></code></pre></div>
 <p><img src="spesim-recipes-point-processes_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" alt="" width="768" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_st</span></span>
 <span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span>
-<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span></code></pre></div>
+<span><span class="co">#&gt; `geom_smooth()` using formula = 'y ~ x'</span></span>
+<span><span class="co">#&gt; Warning: Removed 6 rows containing non-finite outside the scale range</span></span>
+<span><span class="co">#&gt; (`stat_smooth()`).</span></span>
+<span><span class="co">#&gt; Warning: Removed 6 rows containing missing values or values outside the scale range</span></span>
+<span><span class="co">#&gt; (`geom_point()`).</span></span>
+<span><span class="co">#&gt; Warning: Removed 15 rows containing missing values or values outside the scale range</span></span>
+<span><span class="co">#&gt; (`geom_line()`).</span></span>
+<span><span class="co">#&gt; Removed 15 rows containing missing values or values outside the scale range</span></span>
+<span><span class="co">#&gt; (`geom_line()`).</span></span></code></pre></div>
 <p><img src="spesim-recipes-point-processes_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="" width="768" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">

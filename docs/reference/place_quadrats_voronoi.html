@@ -19,7 +19,7 @@ locations even in irregular polygons."><meta property="og:image" content="https:
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -143,9 +143,10 @@ underlying Voronoi tessellation used to select candidate cells.</p></dd>
 <ul><li><p>The function assumes a projected (planar) CRS for domain so that
 distances/areas are in linear units. If your data are in longitude/latitude,
 reproject (e.g., to UTM) before calling.</p></li>
-<li><p>The number of initial seeds is n_quadrats * voronoi_seed_factor. Larger
-values explore the domain more densely and typically find more suitable
-cells, at the cost of extra computation.</p></li>
+<li><p>The number of initial seeds is n_quadrats * voronoi_seed_factor.
+<strong>Important:</strong> very large values make Voronoi cells very small, which can
+actually make it <em>harder</em> to find cells big enough to contain a quadrat.
+In practice, values around <strong>1–3</strong> are often more appropriate than 10+.</p></li>
 <li><p>Suitability is decided by comparing each cell’s inscribed‑circle radius
 to half the requested quadrat diagonal:
 radius &gt;= sqrt(width^2 + height^2) / 2.</p></li>

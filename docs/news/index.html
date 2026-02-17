@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,6 +49,55 @@
       <small>Source: <a href="https://github.com/ajsmit/spesim/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.0" id="spesim-040">spesim 0.4.0<a class="anchor" aria-label="anchor" href="#spesim-040"></a></h2>
+<div class="section level3">
+<h3 id="runner-refactor--stable-results-0-4-0">Runner refactor + stable results<a class="anchor" aria-label="anchor" href="#runner-refactor--stable-results-0-4-0"></a></h3>
+<ul><li>
+<code><a href="../reference/spesim_run.html">spesim_run()</a></code> is now the recommended, consolidated entry point and returns a stable S3 results object (<code>spesim_result</code>).</li>
+<li>
+<code><a href="../reference/run_spatial_simulation.html">run_spatial_simulation()</a></code> is retained as a <strong>deprecated</strong> wrapper around <code><a href="../reference/spesim_run.html">spesim_run()</a></code> for backwards compatibility.</li>
+<li>Vignettes and README updated to reflect the new workflow.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.19" id="spesim-0319">spesim 0.3.19<a class="anchor" aria-label="anchor" href="#spesim-0319"></a></h2>
+<div class="section level3">
+<h3 id="startup-message-0-3-19">Startup message<a class="anchor" aria-label="anchor" href="#startup-message-0-3-19"></a></h3>
+<ul><li>
+<code><a href="https://github.com/ajsmit/spesim" class="external-link">library(spesim)</a></code> now prints the package version in the startup message.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.18" id="spesim-0318">spesim 0.3.18<a class="anchor" aria-label="anchor" href="#spesim-0318"></a></h2>
+<div class="section level3">
+<h3 id="concave-domain-complexity-control-0-3-18">Concave domain complexity control<a class="anchor" aria-label="anchor" href="#concave-domain-complexity-control-0-3-18"></a></h3>
+<ul><li>
+<code>create_sampling_domain(shape = "concave")</code> gains <code>concave_lobes</code> (2–5) to control large-scale outline complexity; lower values yield simpler concave polygons.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.17" id="spesim-0317">spesim 0.3.17<a class="anchor" aria-label="anchor" href="#spesim-0317"></a></h2>
+<div class="section level3">
+<h3 id="default-domain-shape-diversity-0-3-17">Default domain shape diversity<a class="anchor" aria-label="anchor" href="#default-domain-shape-diversity-0-3-17"></a></h3>
+<ul><li>
+<code><a href="../reference/create_sampling_domain.html">create_sampling_domain()</a></code> now supports multiple shape families (concave/irregular, convex hulls, ellipses/circles, and boxy rectangles/squares), and the default uses a mixed generator to better mimic real-world landscape patch shapes.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.16" id="spesim-0316">spesim 0.3.16<a class="anchor" aria-label="anchor" href="#spesim-0316"></a></h2>
+<div class="section level3">
+<h3 id="default-domain-variability-in-spesim_run-0-3-16">Default domain variability in spesim_run()<a class="anchor" aria-label="anchor" href="#default-domain-variability-in-spesim_run-0-3-16"></a></h3>
+<ul><li>
+<code><a href="../reference/spesim_run.html">spesim_run()</a></code> now generates a new random default domain for each run when <code>domain = NULL</code> and no <code>seed</code> is supplied.</li>
+<li>When <code>seed</code> is supplied, the default domain is reproducible across runs.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="plotting-side-effects-0-3-16">Plotting side-effects<a class="anchor" aria-label="anchor" href="#plotting-side-effects-0-3-16"></a></h3>
+<ul><li>
+<code><a href="../reference/calculate_rarefaction.html">calculate_rarefaction()</a></code> no longer triggers any base-graphics plotting side-effects (fixes duplicate rarefaction output when used inside <code><a href="../reference/generate_advanced_panel.html">generate_advanced_panel()</a></code>).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.15" id="spesim-0315">spesim 0.3.15<a class="anchor" aria-label="anchor" href="#spesim-0315"></a></h2>
 <div class="section level3">

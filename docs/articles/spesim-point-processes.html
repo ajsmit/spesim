@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -77,7 +77,7 @@
                         <h4 data-toc-skip class="author">spesim
 team</h4>
             
-            <h4 data-toc-skip class="date">2026-02-11</h4>
+            <h4 data-toc-skip class="date">2026-02-17</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/ajsmit/spesim/blob/HEAD/vignettes/spesim-point-processes.Rmd" class="external-link"><code>vignettes/spesim-point-processes.Rmd</code></a></small>
       <div class="d-none name"><code>spesim-point-processes.Rmd</code></div>
@@ -173,7 +173,7 @@ package.</p>
 <span><span class="co"># Neutral for others; add interactions if desired</span></span>
 <span><span class="va">P</span><span class="op">$</span><span class="va">INTERACTION_RADIUS</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
 <span></span>
-<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_spatial_simulation.html">run_spatial_simulation</a></span><span class="op">(</span>P <span class="op">=</span> <span class="va">P</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spesim_run.html">spesim_run</a></span><span class="op">(</span><span class="va">P</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span>, seed <span class="op">=</span> <span class="va">P</span><span class="op">$</span><span class="va">SEED</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="diagnostics-to-check-realism">Diagnostics to check realism<a class="anchor" aria-label="anchor" href="#diagnostics-to-check-realism"></a>

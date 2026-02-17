@@ -19,7 +19,7 @@ advanced" teaching progression.'><meta property="og:image" content="https://ajsm
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,17 +102,18 @@ it takes precedence over <code>init_file</code>.</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
-<dd><p>Optional integer seed. If provided, overrides any seed in <code>P</code>.</p></dd>
+<dd><p>Optional integer seed. If provided, overrides any seed in <code>P</code>.
+If <code>NULL</code>, the helper uses <code>P$SEED</code> when available (so results are reproducible).</p></dd>
 
 
 <dt id="arg-write-outputs">write_outputs<a class="anchor" aria-label="anchor" href="#arg-write-outputs"></a></dt>
-<dd><p>Logical. Passed to <code><a href="run_spatial_simulation.html">run_spatial_simulation()</a></code>. Default
-<code>FALSE</code> (fast; no files written).</p></dd>
+<dd><p>Logical. Passed to <code><a href="spesim_run.html">spesim_run()</a></code>. Default <code>FALSE</code> (fast;
+no files written).</p></dd>
 
 
 <dt id="arg-output-prefix">output_prefix<a class="anchor" aria-label="anchor" href="#arg-output-prefix"></a></dt>
-<dd><p>Optional output prefix passed to
-<code><a href="run_spatial_simulation.html">run_spatial_simulation()</a></code>. Only used when <code>write_outputs = TRUE</code>.</p></dd>
+<dd><p>Optional output prefix passed to <code><a href="spesim_run.html">spesim_run()</a></code>. Only
+used when <code>write_outputs = TRUE</code>.</p></dd>
 
 
 <dt id="arg-diagnostics">diagnostics<a class="anchor" aria-label="anchor" href="#arg-diagnostics"></a></dt>
@@ -129,12 +130,12 @@ for deterministic, dependency-minimal behaviour.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments passed to <code><a href="run_spatial_simulation.html">run_spatial_simulation()</a></code>.</p></dd>
+<dd><p>Additional arguments passed to <code><a href="spesim_run.html">spesim_run()</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list with elements:</p><ul><li><p><code>res</code>: results list returned by <code><a href="run_spatial_simulation.html">run_spatial_simulation()</a></code>.</p></li>
+    <p>A list with elements:</p><ul><li><p><code>res</code>: <code>spesim_result</code> returned by <code><a href="spesim_run.html">spesim_run()</a></code>.</p></li>
 <li><p><code>audit</code>: audit list returned by <code><a href="spesim_audit.html">spesim_audit()</a></code>.</p></li>
 <li><p><code>tables</code> (optional): named list of analysis tables (when <code>make_tables = TRUE</code>).</p></li>
 <li><p><code>plots</code> (optional): named list of plots (when <code>make_plots = TRUE</code>).</p></li>

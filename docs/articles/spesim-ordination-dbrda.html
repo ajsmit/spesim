@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">spesim</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -91,17 +91,25 @@ ordination.</p>
 environmental gradients</strong>.</li>
 <li>Add <strong>positive and negative interspecific
 interactions</strong> (local neighbourhood effects).</li>
-<li>Sample the landscape with quadrats to obtain:
+<li>Compare two <strong>transect sampling designs</strong>:
+<ul>
+<li>one transect aligned <strong>along</strong> the temperature
+gradient</li>
+<li>one transect set <strong>across</strong> (perpendicular to) the
+temperature gradient</li>
+</ul>
+</li>
+<li>For each design, obtain:
 <ul>
 <li>a <strong>site × species</strong> abundance table</li>
 <li>a <strong>site × environment</strong> table (mean environment per
 quadrat)</li>
 </ul>
 </li>
-<li>Fit a <strong>distance-based RDA (db-RDA)</strong> using
+<li>Fit <strong>distance-based RDA (db-RDA)</strong> models using
 <strong>vegan</strong>’s <code><a href="https://vegandevs.github.io/vegan/reference/dbrda.html" class="external-link">capscale()</a></code>.</li>
-<li>Create db-RDA plots in the same style as Tangled Bank’s <em>BCB743
-constrained ordination</em> material.</li>
+<li>Arrange paired figures (<code>a</code>, <code>b</code>) and
+summarise key results in a <strong>gt</strong> table.</li>
 </ol>
 <div class="section level2">
 <h2 id="libraries">1) Libraries<a class="anchor" aria-label="anchor" href="#libraries"></a>
@@ -110,7 +118,10 @@ constrained ordination</em> material.</li>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ajsmit/spesim" class="external-link">spesim</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://vegandevs.github.io/vegan/" class="external-link">vegan</a></span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://vegandevs.github.io/vegan/" class="external-link">vegan</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">has_gt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"gt"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="configure-a-simulation-with-strong-gradients-interactions">2) Configure a simulation with strong gradients + interactions<a class="anchor" aria-label="anchor" href="#configure-a-simulation-with-strong-gradients-interactions"></a>
@@ -125,19 +136,21 @@ constrained ordination</em> material.</li>
 <span><span class="co"># --- keep the vignette fast-ish</span></span>
 <span><span class="va">P</span><span class="op">$</span><span class="va">N_INDIVIDUALS</span> <span class="op">&lt;-</span> <span class="fl">3000L</span></span>
 <span><span class="va">P</span><span class="op">$</span><span class="va">N_SPECIES</span> <span class="op">&lt;-</span> <span class="fl">16L</span></span>
-<span><span class="va">P</span><span class="op">$</span><span class="va">N_QUADRATS</span> <span class="op">&lt;-</span> <span class="fl">40L</span></span>
+<span><span class="va">P</span><span class="op">$</span><span class="va">N_QUADRATS</span> <span class="op">&lt;-</span> <span class="fl">10L</span></span>
 <span><span class="va">P</span><span class="op">$</span><span class="va">SAMPLING_RESOLUTION</span> <span class="op">&lt;-</span> <span class="fl">70L</span></span>
 <span><span class="va">P</span><span class="op">$</span><span class="va">ENVIRONMENTAL_NOISE</span> <span class="op">&lt;-</span> <span class="fl">0.02</span></span>
 <span><span class="va">P</span><span class="op">$</span><span class="va">ADVANCED_ANALYSIS</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span></span>
+<span><span class="va">quadrat_size_scale</span> <span class="op">&lt;-</span> <span class="fl">0.8</span>  <span class="co"># reduce quadrat side lengths by 20%</span></span>
 <span></span>
 <span><span class="co"># --- strong filtering (narrow tolerances)</span></span>
-<span><span class="va">P</span><span class="op">$</span><span class="va">GRADIENT_SPECIES</span> <span class="op">&lt;-</span> <span class="va">LETTERS</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span></span>
-<span><span class="va">P</span><span class="op">$</span><span class="va">GRADIENT_ASSIGNMENTS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"temperature"</span>, <span class="fl">4</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"elevation"</span>, <span class="fl">3</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"rainfall"</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co"># A-J respond to temperature, K-L to elevation, M-P have no gradient response.</span></span>
+<span><span class="va">P</span><span class="op">$</span><span class="va">GRADIENT_SPECIES</span> <span class="op">&lt;-</span> <span class="va">LETTERS</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">]</span></span>
+<span><span class="va">P</span><span class="op">$</span><span class="va">GRADIENT_ASSIGNMENTS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"temperature"</span>, <span class="fl">10</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"elevation"</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">P</span><span class="op">$</span><span class="va">GRADIENT_OPTIMA</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.10</span>, <span class="fl">0.90</span>, length.out <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>, <span class="va">LETTERS</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">]</span><span class="op">)</span>,</span>
+<span>  K <span class="op">=</span> <span class="fl">0.30</span>,</span>
+<span>  L <span class="op">=</span> <span class="fl">0.75</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">P</span><span class="op">$</span><span class="va">GRADIENT_OPTIMA</span> <span class="op">&lt;-</span> <span class="fl">0.5</span></span>
 <span><span class="va">P</span><span class="op">$</span><span class="va">GRADIENT_TOLERANCE</span> <span class="op">&lt;-</span> <span class="fl">0.06</span></span>
 <span></span>
 <span><span class="co"># --- local interactions</span></span>
@@ -163,9 +176,242 @@ constrained ordination</em> material.</li>
 <span></span>
 <span><span class="co"># Reproducibility</span></span>
 <span><span class="va">P</span><span class="op">$</span><span class="va">SEED</span> <span class="op">&lt;-</span> <span class="fl">2026L</span></span></code></pre></div>
-<p>Run the simulation:</p>
+</div>
+<div class="section level2">
+<h2 id="two-sampling-designs-and-shared-analysis-helpers">3) Two sampling designs and shared analysis helpers<a class="anchor" aria-label="anchor" href="#two-sampling-designs-and-shared-analysis-helpers"></a>
+</h2>
+<p>To isolate the effect of sampling design, we keep the same underlying
+simulated community and only change transect orientation.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spesim_run.html">spesim_run</a></span><span class="op">(</span><span class="va">P</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span>, seed <span class="op">=</span> <span class="va">P</span><span class="op">$</span><span class="va">SEED</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Build a single deterministic domain that both designs will share.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="va">P</span><span class="op">$</span><span class="va">SEED</span><span class="op">)</span></span>
+<span><span class="va">domain</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_sampling_domain.html">create_sampling_domain</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Temperature is generated from normalised coordinates:</span></span>
+<span><span class="co">#   temp ~ 0.7*x_norm + 0.3*y_norm</span></span>
+<span><span class="co"># where x_norm = (x - xmin)/(xmax-xmin), so the true gradient direction in</span></span>
+<span><span class="co"># x–y space depends on the domain bounding box aspect ratio.</span></span>
+<span><span class="va">bb</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_bbox.html" class="external-link">st_bbox</a></span><span class="op">(</span><span class="va">domain</span><span class="op">)</span></span>
+<span><span class="va">xrange</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">bb</span><span class="op">[</span><span class="st">"xmax"</span><span class="op">]</span> <span class="op">-</span> <span class="va">bb</span><span class="op">[</span><span class="st">"xmin"</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">yrange</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">bb</span><span class="op">[</span><span class="st">"ymax"</span><span class="op">]</span> <span class="op">-</span> <span class="va">bb</span><span class="op">[</span><span class="st">"ymin"</span><span class="op">]</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Bearing of increasing temperature (0 = North, 90 = East)</span></span>
+<span><span class="va">temp_angle</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">atan2</a></span><span class="op">(</span><span class="fl">0.7</span> <span class="op">/</span> <span class="va">xrange</span>, <span class="fl">0.3</span> <span class="op">/</span> <span class="va">yrange</span><span class="op">)</span> <span class="op">*</span> <span class="fl">180</span> <span class="op">/</span> <span class="va">pi</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/Arithmetic.html" class="external-link">%%</a></span> <span class="fl">360</span></span>
+<span></span>
+<span><span class="co"># Perpendicular (approx. along isotherms; minimal temperature change)</span></span>
+<span><span class="va">across_angle</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">temp_angle</span> <span class="op">+</span> <span class="fl">90</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/Arithmetic.html" class="external-link">%%</a></span> <span class="fl">360</span></span>
+<span></span>
+<span><span class="va">design_angles</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  design <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Along temperature gradient"</span>, <span class="st">"Across temperature gradient"</span><span class="op">)</span>,</span>
+<span>  transect_angle_deg <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">temp_angle</span>, <span class="va">across_angle</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">design_angles</span></span></code></pre></div>
+<pre><code>R&gt;  [38;5;246m# A tibble: 2 × 2 [39m
+R&gt;   design                      transect_angle_deg
+R&gt;    [3m [38;5;246m&lt;chr&gt; [39m [23m                                     [3m [38;5;246m&lt;dbl&gt; [39m [23m
+R&gt;  [38;5;250m1 [39m Along temperature gradient                74.6
+R&gt;  [38;5;250m2 [39m Across temperature gradient              165.</code></pre>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">safe_cor</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">ok</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.finite</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">&amp;</span> <span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.finite</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">ok</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">3</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="cn">NA_real_</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="va">ok</span><span class="op">]</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span> <span class="op">||</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="va">ok</span><span class="op">]</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="cn">NA_real_</span><span class="op">)</span></span>
+<span>  <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="va">ok</span><span class="op">]</span>, <span class="va">y</span><span class="op">[</span><span class="va">ok</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">build_sampling_plot</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">res</span>, <span class="va">title</span>, <span class="va">subtitle</span> <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">ctr</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_coordinates.html" class="external-link">st_coordinates</a></span><span class="op">(</span><span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_unary.html" class="external-link">st_centroid</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">quadrats</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">tran</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    quadrat_id <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">quadrats</span><span class="op">$</span><span class="va">quadrat_id</span>,</span>
+<span>    x <span class="op">=</span> <span class="va">ctr</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span>,</span>
+<span>    y <span class="op">=</span> <span class="va">ctr</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">quadrat_id</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_tile.html" class="external-link">geom_raster</a></span><span class="op">(</span></span>
+<span>      data <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">env_gradients</span>,</span>
+<span>      <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">x</span>, y <span class="op">=</span> <span class="va">y</span>, fill <span class="op">=</span> <span class="va">temperature_C</span><span class="op">)</span>,</span>
+<span>      alpha <span class="op">=</span> <span class="fl">0.9</span>,</span>
+<span>      interpolate <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>    <span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu">viridis</span><span class="fu">::</span><span class="fu"><a href="https://sjmgarnier.github.io/viridis/reference/scale_viridis.html" class="external-link">scale_fill_viridis</a></span><span class="op">(</span>name <span class="op">=</span> <span class="st">"Temperature (deg C)"</span>, option <span class="op">=</span> <span class="st">"mako"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">domain</span>, fill <span class="op">=</span> <span class="cn">NA</span>, colour <span class="op">=</span> <span class="st">"grey20"</span>, linewidth <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_path</a></span><span class="op">(</span></span>
+<span>      data <span class="op">=</span> <span class="va">tran</span>,</span>
+<span>      <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">x</span>, y <span class="op">=</span> <span class="va">y</span><span class="op">)</span>,</span>
+<span>      linewidth <span class="op">=</span> <span class="fl">0.45</span>,</span>
+<span>      colour <span class="op">=</span> <span class="st">"white"</span>,</span>
+<span>      alpha <span class="op">=</span> <span class="fl">0.8</span></span>
+<span>    <span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">quadrats</span>, fill <span class="op">=</span> <span class="cn">NA</span>, colour <span class="op">=</span> <span class="st">"black"</span>, linewidth <span class="op">=</span> <span class="fl">0.45</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">coord_sf</a></span><span class="op">(</span>expand <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="va">title</span>, subtitle <span class="op">=</span> <span class="va">subtitle</span>, x <span class="op">=</span> <span class="cn">NULL</span>, y <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">build_cap_plot</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">sc_sites</span>, <span class="va">sc_bp</span>, <span class="va">title</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">sc_sites</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">CAP1</span>, y <span class="op">=</span> <span class="va">CAP2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">0</span>, linewidth <span class="op">=</span> <span class="fl">0.2</span>, colour <span class="op">=</span> <span class="st">"grey70"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="fl">0</span>, linewidth <span class="op">=</span> <span class="fl">0.2</span>, colour <span class="op">=</span> <span class="st">"grey70"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="va">temp_bin</span><span class="op">)</span>, size <span class="op">=</span> <span class="fl">1.6</span>, alpha <span class="op">=</span> <span class="fl">0.85</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_brewer.html" class="external-link">scale_colour_brewer</a></span><span class="op">(</span>palette <span class="op">=</span> <span class="st">"RdYlBu"</span>, direction <span class="op">=</span> <span class="op">-</span><span class="fl">1</span>, name <span class="op">=</span> <span class="st">"Temp quartile"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
+<span>      x <span class="op">=</span> <span class="st">"db-RDA axis 1 (CAP1)"</span>,</span>
+<span>      y <span class="op">=</span> <span class="st">"db-RDA axis 2 (CAP2)"</span>,</span>
+<span>      title <span class="op">=</span> <span class="va">title</span></span>
+<span>    <span class="op">)</span></span>
+<span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sc_bp</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">p</span> <span class="op">&lt;-</span> <span class="va">p</span> <span class="op">+</span></span>
+<span>      <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_segment.html" class="external-link">geom_segment</a></span><span class="op">(</span></span>
+<span>        data <span class="op">=</span> <span class="va">sc_bp</span>,</span>
+<span>        <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">0</span>, y <span class="op">=</span> <span class="fl">0</span>, xend <span class="op">=</span> <span class="va">CAP1</span>, yend <span class="op">=</span> <span class="va">CAP2</span><span class="op">)</span>,</span>
+<span>        inherit.aes <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>        arrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/arrow.html" class="external-link">arrow</a></span><span class="op">(</span>length <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/unit.html" class="external-link">unit</a></span><span class="op">(</span><span class="fl">0.14</span>, <span class="st">"cm"</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>        linewidth <span class="op">=</span> <span class="fl">0.3</span>,</span>
+<span>        colour <span class="op">=</span> <span class="st">"black"</span></span>
+<span>      <span class="op">)</span> <span class="op">+</span></span>
+<span>      <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_text.html" class="external-link">geom_text</a></span><span class="op">(</span></span>
+<span>        data <span class="op">=</span> <span class="va">sc_bp</span>,</span>
+<span>        <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">CAP1</span>, y <span class="op">=</span> <span class="va">CAP2</span>, label <span class="op">=</span> <span class="va">var</span><span class="op">)</span>,</span>
+<span>        inherit.aes <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>        size <span class="op">=</span> <span class="fl">2.5</span>,</span>
+<span>        vjust <span class="op">=</span> <span class="op">-</span><span class="fl">0.6</span></span>
+<span>      <span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span></span>
+<span>  <span class="va">p</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">analyse_design</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">P_base</span>, <span class="va">domain</span>, <span class="va">label</span>, <span class="va">angle_deg</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">P2</span> <span class="op">&lt;-</span> <span class="va">P_base</span></span>
+<span>  <span class="va">P2</span><span class="op">$</span><span class="va">SAMPLING_SCHEME</span> <span class="op">&lt;-</span> <span class="st">"transect"</span></span>
+<span>  <span class="va">P2</span><span class="op">$</span><span class="va">N_TRANSECTS</span> <span class="op">&lt;-</span> <span class="fl">1L</span></span>
+<span>  <span class="va">P2</span><span class="op">$</span><span class="va">N_QUADRATS_PER_TRANSECT</span> <span class="op">&lt;-</span> <span class="va">P2</span><span class="op">$</span><span class="va">N_QUADRATS</span></span>
+<span>  <span class="va">P2</span><span class="op">$</span><span class="va">TRANSECT_ANGLE</span> <span class="op">&lt;-</span> <span class="va">angle_deg</span></span>
+<span></span>
+<span>  <span class="co"># Build deterministic species/environment first, then re-place</span></span>
+<span>  <span class="co"># reduced-size transect quadrats for this comparison.</span></span>
+<span>  <span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spesim_run.html">spesim_run</a></span><span class="op">(</span><span class="va">P2</span>, domain <span class="op">=</span> <span class="va">domain</span>, write_outputs <span class="op">=</span> <span class="cn">FALSE</span>, seed <span class="op">=</span> <span class="va">P2</span><span class="op">$</span><span class="va">SEED</span>, quiet <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">quadrat_size_reduced</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">P</span><span class="op">$</span><span class="va">QUADRAT_SIZE</span><span class="op">)</span> <span class="op">*</span> <span class="va">quadrat_size_scale</span></span>
+<span>  <span class="va">quadrats</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/place_quadrats_transect.html">place_quadrats_transect</a></span><span class="op">(</span></span>
+<span>    domain <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">domain</span>,</span>
+<span>    n_transects <span class="op">=</span> <span class="va">P2</span><span class="op">$</span><span class="va">N_TRANSECTS</span>,</span>
+<span>    n_quadrats_per_transect <span class="op">=</span> <span class="va">P2</span><span class="op">$</span><span class="va">N_QUADRATS_PER_TRANSECT</span>,</span>
+<span>    quadrat_size <span class="op">=</span> <span class="va">quadrat_size_reduced</span>,</span>
+<span>    angle <span class="op">=</span> <span class="va">angle_deg</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">quadrats</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop</a></span><span class="op">(</span><span class="st">"Failed to place reduced-size quadrats."</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">res</span><span class="op">$</span><span class="va">quadrats</span> <span class="op">&lt;-</span> <span class="va">quadrats</span></span>
+<span></span>
+<span>  <span class="va">all_species</span> <span class="op">&lt;-</span> <span class="va">LETTERS</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">P2</span><span class="op">$</span><span class="va">N_SPECIES</span><span class="op">]</span></span>
+<span>  <span class="va">A</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_abundance_matrix.html">create_abundance_matrix</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">species_dist</span>, <span class="va">res</span><span class="op">$</span><span class="va">quadrats</span>, <span class="va">all_species</span><span class="op">)</span></span>
+<span>  <span class="va">E</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_quadrat_environment.html">calculate_quadrat_environment</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">env_gradients</span>, <span class="va">res</span><span class="op">$</span><span class="va">quadrats</span>, <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_crs.html" class="external-link">st_crs</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">domain</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">E</span>, <span class="va">A</span>, by <span class="op">=</span> <span class="st">"site"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">A</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">dat</span> <span class="op">|&gt;</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="op">-</span><span class="va">site</span>, <span class="op">-</span><span class="va">temperature_C</span>, <span class="op">-</span><span class="va">elevation_m</span>, <span class="op">-</span><span class="va">rainfall_mm</span><span class="op">)</span></span>
+<span>  <span class="va">X</span> <span class="op">&lt;-</span> <span class="va">dat</span> <span class="op">|&gt;</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">site</span>, <span class="va">temperature_C</span>, <span class="va">elevation_m</span>, <span class="va">rainfall_mm</span><span class="op">)</span></span>
+<span>  <span class="va">Xz</span> <span class="op">&lt;-</span> <span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/decostand.html" class="external-link">decostand</a></span><span class="op">(</span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">X</span>, <span class="op">-</span><span class="va">site</span><span class="op">)</span>, method <span class="op">=</span> <span class="st">"standardize"</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">cap_model</span> <span class="op">&lt;-</span> <span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/dbrda.html" class="external-link">capscale</a></span><span class="op">(</span></span>
+<span>    <span class="va">Y</span> <span class="op">~</span> <span class="va">temperature_C</span> <span class="op">+</span> <span class="va">elevation_m</span> <span class="op">+</span> <span class="va">rainfall_mm</span>,</span>
+<span>    data <span class="op">=</span> <span class="va">Xz</span>,</span>
+<span>    distance <span class="op">=</span> <span class="st">"bray"</span>,</span>
+<span>    add <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="va">P2</span><span class="op">$</span><span class="va">SEED</span><span class="op">)</span></span>
+<span>  <span class="va">model_test</span> <span class="op">&lt;-</span> <span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/anova.cca.html" class="external-link">anova.cca</a></span><span class="op">(</span><span class="va">cap_model</span>, permutations <span class="op">=</span> <span class="fl">199</span><span class="op">)</span></span>
+<span>  <span class="va">model_p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">model_test</span><span class="op">$</span><span class="va">`Pr(&gt;F)`</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="va">adj_r2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/RsquareAdj.html" class="external-link">RsquareAdj</a></span><span class="op">(</span><span class="va">cap_model</span><span class="op">)</span><span class="op">$</span><span class="va">adj.r.squared</span><span class="op">)</span></span>
+<span>  <span class="va">vif_vals</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/goodness.cca.html" class="external-link">vif.cca</a></span><span class="op">(</span><span class="va">cap_model</span><span class="op">)</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="cn">NA_real_</span><span class="op">)</span></span>
+<span>  <span class="va">vif_vals</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">vif_vals</span><span class="op">)</span></span>
+<span>  <span class="va">vif_vals</span> <span class="op">&lt;-</span> <span class="va">vif_vals</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.finite</a></span><span class="op">(</span><span class="va">vif_vals</span><span class="op">)</span><span class="op">]</span></span>
+<span>  <span class="va">vif_max</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">vif_vals</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">vif_vals</span><span class="op">)</span> <span class="kw">else</span> <span class="cn">NA_real_</span></span>
+<span></span>
+<span>  <span class="va">sc_sites</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/scores.html" class="external-link">scores</a></span><span class="op">(</span><span class="va">cap_model</span>, display <span class="op">=</span> <span class="st">"sites"</span>, scaling <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">sc_bp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/scores.html" class="external-link">scores</a></span><span class="op">(</span><span class="va">cap_model</span>, display <span class="op">=</span> <span class="st">"bp"</span>, scaling <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">sc_sites</span><span class="op">$</span><span class="va">site</span> <span class="op">&lt;-</span> <span class="va">dat</span><span class="op">$</span><span class="va">site</span></span>
+<span>  <span class="va">sc_sites</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">sc_sites</span>, <span class="va">X</span>, by <span class="op">=</span> <span class="st">"site"</span><span class="op">)</span></span>
+<span>  <span class="va">sc_sites</span><span class="op">$</span><span class="va">temp_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/ntile.html" class="external-link">ntile</a></span><span class="op">(</span><span class="va">sc_sites</span><span class="op">$</span><span class="va">temperature_C</span>, <span class="fl">4</span><span class="op">)</span>, labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Q"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">arrow_mul</span> <span class="op">&lt;-</span> <span class="fl">1.3</span></span>
+<span>  <span class="va">sc_bp</span><span class="op">$</span><span class="va">var</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">sc_bp</span><span class="op">)</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">sc_bp</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">sc_bp</span><span class="op">$</span><span class="va">CAP1</span> <span class="op">&lt;-</span> <span class="va">sc_bp</span><span class="op">$</span><span class="va">CAP1</span> <span class="op">*</span> <span class="va">arrow_mul</span></span>
+<span>    <span class="va">sc_bp</span><span class="op">$</span><span class="va">CAP2</span> <span class="op">&lt;-</span> <span class="va">sc_bp</span><span class="op">$</span><span class="va">CAP2</span> <span class="op">*</span> <span class="va">arrow_mul</span></span>
+<span>  <span class="op">}</span></span>
+<span></span>
+<span>  <span class="va">cor_tbl</span> <span class="op">&lt;-</span> <span class="va">sc_sites</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
+<span>      cor_cap1_temp <span class="op">=</span> <span class="fu">safe_cor</span><span class="op">(</span><span class="va">CAP1</span>, <span class="va">temperature_C</span><span class="op">)</span>,</span>
+<span>      cor_cap1_elev <span class="op">=</span> <span class="fu">safe_cor</span><span class="op">(</span><span class="va">CAP1</span>, <span class="va">elevation_m</span><span class="op">)</span>,</span>
+<span>      cor_cap1_rain <span class="op">=</span> <span class="fu">safe_cor</span><span class="op">(</span><span class="va">CAP1</span>, <span class="va">rainfall_mm</span><span class="op">)</span></span>
+<span>    <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>design <span class="op">=</span> <span class="va">label</span>, .before <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">metrics</span> <span class="op">&lt;-</span> <span class="va">cor_tbl</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span>
+<span>      transect_angle_deg <span class="op">=</span> <span class="va">angle_deg</span>,</span>
+<span>      n_quadrats <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">quadrats</span><span class="op">)</span>,</span>
+<span>      temp_range_C <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diff.html" class="external-link">diff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">sc_sites</span><span class="op">$</span><span class="va">temperature_C</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      adj_r2 <span class="op">=</span> <span class="va">adj_r2</span>,</span>
+<span>      model_p <span class="op">=</span> <span class="va">model_p</span>,</span>
+<span>      max_vif <span class="op">=</span> <span class="va">vif_max</span>,</span>
+<span>      .before <span class="op">=</span> <span class="va">cor_cap1_temp</span></span>
+<span>    <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span></span>
+<span>      <span class="va">design</span>,</span>
+<span>      <span class="va">transect_angle_deg</span>,</span>
+<span>      <span class="va">n_quadrats</span>,</span>
+<span>      <span class="va">temp_range_C</span>,</span>
+<span>      <span class="va">adj_r2</span>,</span>
+<span>      <span class="va">model_p</span>,</span>
+<span>      <span class="va">cor_cap1_temp</span>,</span>
+<span>      <span class="va">cor_cap1_elev</span>,</span>
+<span>      <span class="va">cor_cap1_rain</span>,</span>
+<span>      <span class="va">max_vif</span></span>
+<span>    <span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">sampling_plot</span> <span class="op">&lt;-</span> <span class="fu">build_sampling_plot</span><span class="op">(</span></span>
+<span>    <span class="va">res</span>,</span>
+<span>    title <span class="op">=</span> <span class="va">label</span>,</span>
+<span>    subtitle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"angle = %.1f deg"</span>, <span class="va">angle_deg</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span>  <span class="va">cap_plot</span> <span class="op">&lt;-</span> <span class="fu">build_cap_plot</span><span class="op">(</span><span class="va">sc_sites</span>, <span class="va">sc_bp</span>, title <span class="op">=</span> <span class="va">label</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    label <span class="op">=</span> <span class="va">label</span>,</span>
+<span>    angle <span class="op">=</span> <span class="va">angle_deg</span>,</span>
+<span>    res <span class="op">=</span> <span class="va">res</span>,</span>
+<span>    A <span class="op">=</span> <span class="va">A</span>,</span>
+<span>    E <span class="op">=</span> <span class="va">E</span>,</span>
+<span>    dat <span class="op">=</span> <span class="va">dat</span>,</span>
+<span>    cap <span class="op">=</span> <span class="va">cap_model</span>,</span>
+<span>    cor_tbl <span class="op">=</span> <span class="va">cor_tbl</span>,</span>
+<span>    metrics <span class="op">=</span> <span class="va">metrics</span>,</span>
+<span>    sampling_plot <span class="op">=</span> <span class="va">sampling_plot</span>,</span>
+<span>    cap_plot <span class="op">=</span> <span class="va">cap_plot</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="run-both-designs">4) Run both designs<a class="anchor" aria-label="anchor" href="#run-both-designs"></a>
+</h2>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># 'domain' was created above so that both designs share the same geometry.</span></span>
+<span><span class="va">along</span> <span class="op">&lt;-</span> <span class="fu">analyse_design</span><span class="op">(</span></span>
+<span>  P_base <span class="op">=</span> <span class="va">P</span>,</span>
+<span>  domain <span class="op">=</span> <span class="va">domain</span>,</span>
+<span>  label <span class="op">=</span> <span class="st">"Along temperature gradient"</span>,</span>
+<span>  angle_deg <span class="op">=</span> <span class="va">temp_angle</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <pre><code>R&gt; ---- Interactions Summary ----
 R&gt; Species: 16 (A..P)
 R&gt; Radius : 1
@@ -194,125 +440,102 @@ R&gt;      B        L  0.98
 R&gt;      B        M  0.98
 R&gt;      B        N  0.98
 R&gt;      B        O  0.98
-R&gt; ------------------------------
-R&gt; ========== INITIALISING SPATIAL SAMPLING SIMULATION ==========
-R&gt; ========== SIMULATION PARAMETERS ==========
-R&gt; list(SEED = 2026L, OUTPUT_PREFIX = "out/run_basic", N_INDIVIDUALS = 3000L, 
-R&gt;     N_SPECIES = 16L, DOMINANT_FRACTION = 0.3, FISHER_ALPHA = 4.2, 
-R&gt;     FISHER_X = 0.95, GRADIENT_SPECIES = c("A", "B", "C", "D", 
-R&gt;     "E", "F", "G", "H", "I", "J"), GRADIENT_ASSIGNMENTS = c("temperature", 
-R&gt;     "temperature", "temperature", "temperature", "elevation", 
-R&gt;     "elevation", "elevation", "rainfall", "rainfall", "rainfall"
-R&gt;     ), GRADIENT_OPTIMA = 0.5, GRADIENT_TOLERANCE = 0.06, SAMPLING_RESOLUTION = 70L, 
-R&gt;     ENVIRONMENTAL_NOISE = 0.02, MAX_CLUSTERS_DOMINANT = 5, CLUSTER_SPREAD_DOMINANT = 3, 
-R&gt;     INTERACTION_RADIUS = 1, INTERACTION_MATRIX = structure(c(1, 
-R&gt;     0.98, 0.98, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-R&gt;     0.98, 0.75, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.98, 
-R&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.98, 0.98, 
-R&gt;     1, 0.8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.98, 0.98, 1, 
-R&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.98, 0.98, 1, 1, 
-R&gt;     1, 1.15, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.98, 0.98, 1, 1, 
-R&gt;     1.25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.98, 0.98, 1, 1, 
-R&gt;     1, 1, 1, 1.1, 1, 1, 1, 1, 1, 1, 1, 1, 0.98, 0.98, 1, 1, 1, 
-R&gt;     1, 1.2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.98, 0.98, 1, 1, 1, 1, 
-R&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.98, 0.98, 1, 1, 1, 1, 1, 
-R&gt;     1, 1, 1, 1, 1, 1, 1, 1, 1, 0.98, 0.98, 1, 1, 1, 1, 1, 1, 
-R&gt;     1, 1, 1, 1, 1, 1, 1, 1, 0.98, 0.98, 1, 1, 1, 1, 1, 1, 1, 
-R&gt;     1, 1, 1, 1, 1, 1, 1, 0.98, 0.98, 1, 1, 1, 1, 1, 1, 1, 1, 
-R&gt;     1, 1, 1, 1, 1, 1, 0.98, 0.98, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-R&gt;     1, 1, 1, 1, 1, 0.98, 0.98, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-R&gt;     1, 1, 1), dim = c(16L, 16L), dimnames = list(c("A", "B", 
-R&gt;     "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", 
-R&gt;     "O", "P"), c("A", "B", "C", "D", "E", "F", "G", "H", "I", 
-R&gt;     "J", "K", "L", "M", "N", "O", "P"))), INTERACTIONS_FILE = NULL, 
-R&gt;     INTERACTIONS_EDGELIST = c("B,A,0.80", "C,A,0.85", "D,B,0.75", 
-R&gt;     "E,D,0.80", "B,*,0.98", "C,*,0.98", "F,G,1.25", "G,F,1.15", 
-R&gt;     "H,I,1.20", "I,H,1.10"), SAMPLING_SCHEME = "random", N_QUADRATS = 40L, 
-R&gt;     QUADRAT_SIZE_OPTION = "medium", N_TRANSECTS = 1, N_QUADRATS_PER_TRANSECT = 8, 
-R&gt;     TRANSECT_ANGLE = 90, VORONOI_SEED_FACTOR = 10, POINT_SIZE = 0.2, 
-R&gt;     POINT_ALPHA = 1, QUADRAT_ALPHA = 0.05, BACKGROUND_COLOUR = "white", 
-R&gt;     FOREGROUND_COLOUR = "#22223b", QUADRAT_COLOUR = "black", 
-R&gt;     ADVANCED_ANALYSIS = FALSE, SPATIAL_PROCESS_A = "poisson", 
-R&gt;     A_PARENT_INTENSITY = NA_real_, A_MEAN_OFFSPRING = 10, A_CLUSTER_SCALE = 1, 
-R&gt;     SPATIAL_PROCESS_OTHERS = "poisson", OTHERS_BETA = NA_real_, 
-R&gt;     OTHERS_GAMMA = NA_real_, OTHERS_R = 1, OTHERS_S = 2, GRADIENT = structure(list(
-R&gt;         species = c("A", "B", "C", "D"), gradient = c("temperature", 
-R&gt;         "temperature", "elevation", "rainfall"), optimum = c(0.5, 
-R&gt;         0.5, 0.5, 0.5), tol = c(0.12, 0.12, 0.12, 0.12)), class = c("tbl_df", 
-R&gt;     "tbl", "data.frame"), row.names = c(NA, -4L))) 
+R&gt; ------------------------------</code></pre>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">across</span> <span class="op">&lt;-</span> <span class="fu">analyse_design</span><span class="op">(</span></span>
+<span>  P_base <span class="op">=</span> <span class="va">P</span>,</span>
+<span>  domain <span class="op">=</span> <span class="va">domain</span>,</span>
+<span>  label <span class="op">=</span> <span class="st">"Across temperature gradient"</span>,</span>
+<span>  angle_deg <span class="op">=</span> <span class="va">across_angle</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<pre><code>R&gt; ---- Interactions Summary ----
+R&gt; Species: 16 (A..P)
+R&gt; Radius : 1
+R&gt; Non-1 entries: 36 (14.1% of 256)
+R&gt; Asymmetry (mean |M - t(M)|): 0.009
 R&gt; 
-R&gt; ========== RUNNING SIMULATION ==========</code></pre>
-</div>
-<div class="section level2">
-<h2 id="the-two-tables-we-need-for-constrained-ordination">3) The two tables we need for constrained ordination<a class="anchor" aria-label="anchor" href="#the-two-tables-we-need-for-constrained-ordination"></a>
-</h2>
-<div class="section level3">
-<h3 id="species-table-responses">3.1 Species table (responses)<a class="anchor" aria-label="anchor" href="#species-table-responses"></a>
-</h3>
-<p><code>res$abund_matrix</code> is a site × species abundance
-table.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">A</span> <span class="op">&lt;-</span> <span class="va">res</span><span class="op">$</span><span class="va">abund_matrix</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">A</span><span class="op">)</span></span></code></pre></div>
-<pre><code>R&gt;   site  A B C D E F G H I J K L M N O P
-R&gt; 1    1  6 3 6 0 1 1 0 2 1 1 1 1 0 0 0 1
-R&gt; 2    2  7 6 6 1 0 1 0 0 0 1 1 1 0 0 0 1
-R&gt; 3    3 10 7 3 2 3 2 2 2 0 1 4 0 0 1 0 0
-R&gt; 4    4 10 5 3 1 2 3 1 1 3 2 0 0 0 2 0 1
-R&gt; 5    5 10 7 4 1 4 2 1 0 0 1 1 1 1 0 0 0
-R&gt; 6    6 13 1 5 2 3 0 1 3 1 2 0 0 0 2 1 0</code></pre>
-</div>
-<div class="section level3">
-<h3 id="environmental-table-constraints">3.2 Environmental table (constraints)<a class="anchor" aria-label="anchor" href="#environmental-table-constraints"></a>
-</h3>
-<p><code><a href="../reference/calculate_quadrat_environment.html">calculate_quadrat_environment()</a></code> provides mean
-environment per quadrat.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">E</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculate_quadrat_environment.html">calculate_quadrat_environment</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">env_gradients</span>, <span class="va">res</span><span class="op">$</span><span class="va">quadrats</span>, <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_crs.html" class="external-link">st_crs</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">domain</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">E</span><span class="op">)</span></span></code></pre></div>
-<pre><code>R&gt;   site temperature_C elevation_m rainfall_mm
-R&gt; 1    1      10.83725    1053.328    400.8709
-R&gt; 2    2      18.23657    1038.481    640.2647
-R&gt; 3    3      11.35814    1521.489    488.3560
-R&gt; 4    4      13.16324    1068.070    390.6784
-R&gt; 5    5      12.10161    1110.593    699.9657
-R&gt; 6    6      10.20961    1297.525    675.6118</code></pre>
-<p>For constrained ordination we need the two tables aligned by
-site.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">E</span>, <span class="va">A</span>, by <span class="op">=</span> <span class="st">"site"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">A</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Response matrix (species): remove site column</span></span>
-<span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">dat</span> <span class="op">|&gt;</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="op">-</span><span class="va">site</span>, <span class="op">-</span><span class="va">temperature_C</span>, <span class="op">-</span><span class="va">elevation_m</span>, <span class="op">-</span><span class="va">rainfall_mm</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Constraint matrix (environment)</span></span>
-<span><span class="va">X</span> <span class="op">&lt;-</span> <span class="va">dat</span> <span class="op">|&gt;</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">site</span>, <span class="va">temperature_C</span>, <span class="va">elevation_m</span>, <span class="va">rainfall_mm</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Standardise constraints (z-scores), as in Tangled Bank</span></span>
-<span><span class="va">Xz</span> <span class="op">&lt;-</span> <span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/decostand.html" class="external-link">decostand</a></span><span class="op">(</span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">X</span>, <span class="op">-</span><span class="va">site</span><span class="op">)</span>, method <span class="op">=</span> <span class="st">"standardize"</span><span class="op">)</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level2">
-<h2 id="fit-db-rda-vegancapscale">4) Fit db-RDA (vegan::capscale)<a class="anchor" aria-label="anchor" href="#fit-db-rda-vegancapscale"></a>
-</h2>
-<p>Distance-based RDA (db-RDA) is a constrained ordination that lets you
-choose a non-Euclidean dissimilarity index. Here we use Bray–Curtis
-dissimilarity on the abundance matrix.</p>
+R&gt; Non-1 entries (sorted by |value-1|):
+R&gt;  focal neighbor value
+R&gt;      D        B  0.75
+R&gt;      F        G  1.25
+R&gt;      E        D  0.80
+R&gt;      H        I  1.20
+R&gt;      G        F  1.15
+R&gt;      I        H  1.10
+R&gt;      B        A  0.98
+R&gt;      B        C  0.98
+R&gt;      B        D  0.98
+R&gt;      B        E  0.98
+R&gt;      B        F  0.98
+R&gt;      B        G  0.98
+R&gt;      B        H  0.98
+R&gt;      B        I  0.98
+R&gt;      B        J  0.98
+R&gt;      B        K  0.98
+R&gt;      B        L  0.98
+R&gt;      B        M  0.98
+R&gt;      B        N  0.98
+R&gt;      B        O  0.98
+R&gt; ------------------------------</code></pre>
+<p>Quick check that only sampling differs (same simulated species
+cloud):</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cap_full</span> <span class="op">&lt;-</span> <span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/dbrda.html" class="external-link">capscale</a></span><span class="op">(</span><span class="va">Y</span> <span class="op">~</span> <span class="va">temperature_C</span> <span class="op">+</span> <span class="va">elevation_m</span> <span class="op">+</span> <span class="va">rainfall_mm</span>,</span>
-<span>                           data <span class="op">=</span> <span class="va">Xz</span>,</span>
-<span>                           distance <span class="op">=</span> <span class="st">"bray"</span>,</span>
-<span>                           add <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">cap_full</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isTRUE</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal</a></span><span class="op">(</span></span>
+<span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_coordinates.html" class="external-link">st_coordinates</a></span><span class="op">(</span><span class="va">along</span><span class="op">$</span><span class="va">res</span><span class="op">$</span><span class="va">species_dist</span><span class="op">)</span>,</span>
+<span>  <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_coordinates.html" class="external-link">st_coordinates</a></span><span class="op">(</span><span class="va">across</span><span class="op">$</span><span class="va">res</span><span class="op">$</span><span class="va">species_dist</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<pre><code>R&gt; [1] TRUE</code></pre>
+</div>
+<div class="section level2">
+<h2 id="figure-1-sampling-designs-a-b">5) Figure 1: sampling designs (<code>a</code>, <code>b</code>)<a class="anchor" aria-label="anchor" href="#figure-1-sampling-designs-a-b"></a>
+</h2>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fig_sampling</span> <span class="op">&lt;-</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/wrap_plots.html" class="external-link">wrap_plots</a></span><span class="op">(</span></span>
+<span>  <span class="va">along</span><span class="op">$</span><span class="va">sampling_plot</span>,</span>
+<span>  <span class="va">across</span><span class="op">$</span><span class="va">sampling_plot</span>,</span>
+<span>  ncol <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  guides <span class="op">=</span> <span class="st">"collect"</span></span>
+<span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>tag_levels <span class="op">=</span> <span class="st">"a"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">fig_sampling</span></span></code></pre></div>
+<div class="figure">
+<img src="spesim-ordination-dbrda_files/figure-html/fig-sampling-1.png" class="r-plt" alt="Figure 1. Quadrat placement over the temperature surface: (a) along-gradient transect, (b) across-gradient transect." width="100%"><p class="caption">
+Figure 1. Quadrat placement over the temperature surface: (a)
+along-gradient transect, (b) across-gradient transect.
+</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="full-db-rda-workflow-for-each-design">6) Full db-RDA workflow for each design<a class="anchor" aria-label="anchor" href="#full-db-rda-workflow-for-each-design"></a>
+</h2>
+<div class="section level3">
+<h3 id="site-species-and-site-environment-tables">6.1 Site × species and site × environment tables<a class="anchor" aria-label="anchor" href="#site-species-and-site-environment-tables"></a>
+</h3>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span></span>
+<span>  <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>design <span class="op">=</span> <span class="va">along</span><span class="op">$</span><span class="va">label</span>, n_sites <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">along</span><span class="op">$</span><span class="va">A</span><span class="op">)</span>, n_species_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">along</span><span class="op">$</span><span class="va">A</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1L</span><span class="op">)</span>,</span>
+<span>  <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>design <span class="op">=</span> <span class="va">across</span><span class="op">$</span><span class="va">label</span>, n_sites <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">across</span><span class="op">$</span><span class="va">A</span><span class="op">)</span>, n_species_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">across</span><span class="op">$</span><span class="va">A</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1L</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<pre><code>R&gt;  [38;5;246m# A tibble: 2 × 3 [39m
+R&gt;   design                      n_sites n_species_cols
+R&gt;    [3m [38;5;246m&lt;chr&gt; [39m [23m                          [3m [38;5;246m&lt;int&gt; [39m [23m           [3m [38;5;246m&lt;int&gt; [39m [23m
+R&gt;  [38;5;250m1 [39m Along temperature gradient       10             16
+R&gt;  [38;5;250m2 [39m Across temperature gradient      10             16</code></pre>
+</div>
+<div class="section level3">
+<h3 id="db-rda-model-summaries">6.2 db-RDA model summaries<a class="anchor" aria-label="anchor" href="#db-rda-model-summaries"></a>
+</h3>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">along</span><span class="op">$</span><span class="va">cap</span></span></code></pre></div>
 <pre><code>R&gt; 
 R&gt; Call: vegan::capscale(formula = Y ~ temperature_C + elevation_m +
 R&gt; rainfall_mm, data = Xz, distance = "bray", add = TRUE)
 R&gt; 
 R&gt;               Inertia Proportion Rank
-R&gt; Total         5.11837    1.00000     
-R&gt; Constrained   0.40246    0.07863    3
-R&gt; Unconstrained 4.71592    0.92137   36
+R&gt; Total          3.6496     1.0000     
+R&gt; Constrained    2.7367     0.7499    3
+R&gt; Unconstrained  0.9129     0.2501    6
 R&gt; 
 R&gt; Inertia is Lingoes adjusted squared Bray distance
 R&gt; 
@@ -320,124 +543,621 @@ R&gt; -- NOTE:
 R&gt; Species scores projected from 'Y'
 R&gt; 
 R&gt; Eigenvalues for constrained axes:
-R&gt;    CAP1    CAP2    CAP3 
-R&gt; 0.18135 0.11160 0.10950 
+R&gt;   CAP1   CAP2   CAP3 
+R&gt; 1.2707 1.0065 0.4595 
 R&gt; 
 R&gt; Eigenvalues for unconstrained axes:
-R&gt;   MDS1   MDS2   MDS3   MDS4   MDS5   MDS6   MDS7   MDS8 
-R&gt; 0.5315 0.4484 0.4299 0.3348 0.2855 0.2460 0.2212 0.1799 
-R&gt; (Showing 8 of 36 unconstrained eigenvalues)
+R&gt;   MDS1   MDS2   MDS3   MDS4   MDS5   MDS6 
+R&gt; 0.3211 0.2116 0.1785 0.1391 0.0558 0.0067 
 R&gt; 
-R&gt; Constant added to distances: 0.07088024</code></pre>
-<p>Permutation test for the overall constrained model:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/anova.html" class="external-link">anova</a></span><span class="op">(</span><span class="va">cap_full</span><span class="op">)</span></span></code></pre></div>
-<pre><code>R&gt; Permutation test for capscale under reduced model
-R&gt; Permutation: free
-R&gt; Number of permutations: 999
+R&gt; Constant added to distances: 0.01943086</code></pre>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">across</span><span class="op">$</span><span class="va">cap</span></span></code></pre></div>
+<pre><code>R&gt; 
+R&gt; Call: vegan::capscale(formula = Y ~ temperature_C + elevation_m +
+R&gt; rainfall_mm, data = Xz, distance = "bray", add = TRUE)
 R&gt; 
-R&gt; Model: vegan::capscale(formula = Y ~ temperature_C + elevation_m + rainfall_mm, data = Xz, distance = "bray", add = TRUE)
-R&gt;          Df SumOfSqs      F Pr(&gt;F)
-R&gt; Model     3   0.4025 1.0241  0.415
-R&gt; Residual 36   4.7159</code></pre>
-<p>Adjusted R² (variance explained by constraints):</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/RsquareAdj.html" class="external-link">RsquareAdj</a></span><span class="op">(</span><span class="va">cap_full</span><span class="op">)</span><span class="op">$</span><span class="va">adj.r.squared</span>, <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
-<pre><code>R&gt; [1] 0.002</code></pre>
-<p>Check multicollinearity via variance inflation factors (VIF):</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/goodness.cca.html" class="external-link">vif.cca</a></span><span class="op">(</span><span class="va">cap_full</span><span class="op">)</span></span></code></pre></div>
-<pre><code>R&gt; temperature_C   elevation_m   rainfall_mm 
-R&gt;      1.207498      1.276892      1.372349</code></pre>
+R&gt;               Inertia Proportion Rank
+R&gt; Total          1.7332     1.0000     
+R&gt; Constrained    0.6668     0.3847    3
+R&gt; Unconstrained  1.0664     0.6153    6
+R&gt; 
+R&gt; Inertia is Lingoes adjusted squared Bray distance
+R&gt; 
+R&gt; -- NOTE:
+R&gt; Species scores projected from 'Y'
+R&gt; 
+R&gt; Eigenvalues for constrained axes:
+R&gt;   CAP1   CAP2   CAP3 
+R&gt; 0.3458 0.2479 0.0730 
+R&gt; 
+R&gt; Eigenvalues for unconstrained axes:
+R&gt;   MDS1   MDS2   MDS3   MDS4   MDS5   MDS6 
+R&gt; 0.3594 0.2819 0.2038 0.1401 0.0484 0.0328 
+R&gt; 
+R&gt; Constant added to distances: 0.04571525</code></pre>
+</div>
 </div>
 <div class="section level2">
-<h2 id="ordination-plots-tangled-bank-style">5) Ordination plots (Tangled Bank style)<a class="anchor" aria-label="anchor" href="#ordination-plots-tangled-bank-style"></a>
+<h2 id="figure-2-db-rda-ordinations-a-b">7) Figure 2: db-RDA ordinations (<code>a</code>,
+<code>b</code>)<a class="anchor" aria-label="anchor" href="#figure-2-db-rda-ordinations-a-b"></a>
 </h2>
-<p>We create a clean ggplot of the first two constrained axes:</p>
-<ul>
-<li>
-<strong>Sites</strong> as points</li>
-<li>
-<strong>Environmental vectors</strong> as arrows</li>
-<li>Optional grouping by a simple “bioregion” proxy (temperature
-quartiles)</li>
-</ul>
-<div class="section level3">
-<h3 id="extract-scores">5.1 Extract scores<a class="anchor" aria-label="anchor" href="#extract-scores"></a>
-</h3>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sc_sites</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/scores.html" class="external-link">scores</a></span><span class="op">(</span><span class="va">cap_full</span>, display <span class="op">=</span> <span class="st">"sites"</span>, scaling <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">sc_bp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/scores.html" class="external-link">scores</a></span><span class="op">(</span><span class="va">cap_full</span>, display <span class="op">=</span> <span class="st">"bp"</span>, scaling <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">sc_sites</span><span class="op">$</span><span class="va">site</span> <span class="op">&lt;-</span> <span class="va">dat</span><span class="op">$</span><span class="va">site</span></span>
-<span><span class="va">sc_sites</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">sc_sites</span>, <span class="va">X</span>, by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"site"</span> <span class="op">=</span> <span class="st">"site"</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Simple temperature-based grouping (for teaching): 4 bins</span></span>
-<span><span class="va">sc_sites</span><span class="op">$</span><span class="va">temp_bin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html" class="external-link">cut</a></span><span class="op">(</span><span class="va">sc_sites</span><span class="op">$</span><span class="va">temperature_C</span>,</span>
-<span>                         breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">sc_sites</span><span class="op">$</span><span class="va">temperature_C</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">0.25</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>                         include.lowest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Arrow scaling: make biplot vectors visible in the same coordinate system</span></span>
-<span><span class="va">arrow_mul</span> <span class="op">&lt;-</span> <span class="fl">1.3</span></span>
-<span><span class="va">sc_bp</span><span class="op">$</span><span class="va">var</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">sc_bp</span><span class="op">)</span></span>
-<span><span class="va">sc_bp</span><span class="op">$</span><span class="va">CAP1</span> <span class="op">&lt;-</span> <span class="va">sc_bp</span><span class="op">$</span><span class="va">CAP1</span> <span class="op">*</span> <span class="va">arrow_mul</span></span>
-<span><span class="va">sc_bp</span><span class="op">$</span><span class="va">CAP2</span> <span class="op">&lt;-</span> <span class="va">sc_bp</span><span class="op">$</span><span class="va">CAP2</span> <span class="op">*</span> <span class="va">arrow_mul</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="plot-sites-biplot-arrows">5.2 Plot sites + biplot arrows<a class="anchor" aria-label="anchor" href="#plot-sites-biplot-arrows"></a>
-</h3>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cap_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">sc_sites</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">CAP1</span>, y <span class="op">=</span> <span class="va">CAP2</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">0</span>, linewidth <span class="op">=</span> <span class="fl">0.2</span>, colour <span class="op">=</span> <span class="st">"grey70"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline</a></span><span class="op">(</span>xintercept <span class="op">=</span> <span class="fl">0</span>, linewidth <span class="op">=</span> <span class="fl">0.2</span>, colour <span class="op">=</span> <span class="st">"grey70"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>colour <span class="op">=</span> <span class="va">temp_bin</span><span class="op">)</span>, size <span class="op">=</span> <span class="fl">1.6</span>, alpha <span class="op">=</span> <span class="fl">0.85</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_fixed.html" class="external-link">coord_equal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span></span>
-<span>    x <span class="op">=</span> <span class="st">"db-RDA axis 1 (CAP1)"</span>,</span>
-<span>    y <span class="op">=</span> <span class="st">"db-RDA axis 2 (CAP2)"</span>,</span>
-<span>    colour <span class="op">=</span> <span class="st">"Temperature bin"</span>,</span>
-<span>    title <span class="op">=</span> <span class="st">"db-RDA on spesim quadrat data"</span>,</span>
-<span>    subtitle <span class="op">=</span> <span class="st">"Sites (quadrats) constrained by mean environment; Bray–Curtis distances"</span></span>
-<span>  <span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">fig_ordination</span> <span class="op">&lt;-</span> <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/wrap_plots.html" class="external-link">wrap_plots</a></span><span class="op">(</span></span>
+<span>  <span class="va">along</span><span class="op">$</span><span class="va">cap_plot</span>,</span>
+<span>  <span class="va">across</span><span class="op">$</span><span class="va">cap_plot</span>,</span>
+<span>  ncol <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  guides <span class="op">=</span> <span class="st">"collect"</span></span>
+<span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>tag_levels <span class="op">=</span> <span class="st">"a"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">cap_plot</span></span></code></pre></div>
-<p><img src="spesim-ordination-dbrda_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" alt="" width="85%"></p>
-<p>Add environmental vectors:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">cap_plot</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_segment.html" class="external-link">geom_segment</a></span><span class="op">(</span></span>
-<span>    data <span class="op">=</span> <span class="va">sc_bp</span>,</span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fl">0</span>, y <span class="op">=</span> <span class="fl">0</span>, xend <span class="op">=</span> <span class="va">CAP1</span>, yend <span class="op">=</span> <span class="va">CAP2</span><span class="op">)</span>,</span>
-<span>    inherit.aes <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>    arrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/arrow.html" class="external-link">arrow</a></span><span class="op">(</span>length <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grid/unit.html" class="external-link">unit</a></span><span class="op">(</span><span class="fl">0.15</span>, <span class="st">"cm"</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>    linewidth <span class="op">=</span> <span class="fl">0.3</span>,</span>
-<span>    colour <span class="op">=</span> <span class="st">"black"</span></span>
-<span>  <span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_text.html" class="external-link">geom_text</a></span><span class="op">(</span></span>
-<span>    data <span class="op">=</span> <span class="va">sc_bp</span>,</span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">CAP1</span>, y <span class="op">=</span> <span class="va">CAP2</span>, label <span class="op">=</span> <span class="va">var</span><span class="op">)</span>,</span>
-<span>    inherit.aes <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>    size <span class="op">=</span> <span class="fl">2.6</span>,</span>
-<span>    vjust <span class="op">=</span> <span class="op">-</span><span class="fl">0.6</span></span>
-<span>  <span class="op">)</span></span></code></pre></div>
-<p><img src="spesim-ordination-dbrda_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="85%"></p>
-</div>
-<div class="section level3">
-<h3 id="sanity-check-which-gradients-align-with-cap1">5.3 Sanity check: which gradients align with CAP1?<a class="anchor" aria-label="anchor" href="#sanity-check-which-gradients-align-with-cap1"></a>
-</h3>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sc_sites</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
-<span>    cor_cap1_temp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">CAP1</span>, <span class="va">temperature_C</span><span class="op">)</span>,</span>
-<span>    cor_cap1_elev <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">CAP1</span>, <span class="va">elevation_m</span><span class="op">)</span>,</span>
-<span>    cor_cap1_rain <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">CAP1</span>, <span class="va">rainfall_mm</span><span class="op">)</span></span>
-<span>  <span class="op">)</span></span></code></pre></div>
-<pre><code>R&gt;   cor_cap1_temp cor_cap1_elev cor_cap1_rain
-R&gt; 1     0.6267209    -0.1603595     0.2005029</code></pre>
+<span><span class="va">fig_ordination</span></span></code></pre></div>
+<div class="figure">
+<img src="spesim-ordination-dbrda_files/figure-html/fig-ordination-1.png" class="r-plt" alt="Figure 2. db-RDA ordination biplots for each sampling design." width="100%"><p class="caption">
+Figure 2. db-RDA ordination biplots for each sampling design.
+</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="why-this-is-useful-for-teaching">6) Why this is useful for teaching<a class="anchor" aria-label="anchor" href="#why-this-is-useful-for-teaching"></a>
+<h2 id="figure-3-sanity-check-cap1-vs-temperature-a-b">8) Figure 3: sanity check (CAP1 vs temperature; <code>a</code>,
+<code>b</code>)<a class="anchor" aria-label="anchor" href="#figure-3-sanity-check-cap1-vs-temperature-a-b"></a>
+</h2>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p_sanity_along</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">along</span><span class="op">$</span><span class="va">dat</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">temperature_C</span>, y <span class="op">=</span> <span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/scores.html" class="external-link">scores</a></span><span class="op">(</span><span class="va">along</span><span class="op">$</span><span class="va">cap</span>, display <span class="op">=</span> <span class="st">"sites"</span>, scaling <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">[</span>, <span class="st">"CAP1"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">1.2</span>, alpha <span class="op">=</span> <span class="fl">0.85</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_smooth.html" class="external-link">geom_smooth</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"lm"</span>, se <span class="op">=</span> <span class="cn">FALSE</span>, linewidth <span class="op">=</span> <span class="fl">0.5</span>, colour <span class="op">=</span> <span class="st">"black"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Temperature (deg C)"</span>, y <span class="op">=</span> <span class="st">"CAP1"</span>, title <span class="op">=</span> <span class="va">along</span><span class="op">$</span><span class="va">label</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">p_sanity_across</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">across</span><span class="op">$</span><span class="va">dat</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">temperature_C</span>, y <span class="op">=</span> <span class="fu">vegan</span><span class="fu">::</span><span class="fu"><a href="https://vegandevs.github.io/vegan/reference/scores.html" class="external-link">scores</a></span><span class="op">(</span><span class="va">across</span><span class="op">$</span><span class="va">cap</span>, display <span class="op">=</span> <span class="st">"sites"</span>, scaling <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">[</span>, <span class="st">"CAP1"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">1.2</span>, alpha <span class="op">=</span> <span class="fl">0.85</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_smooth.html" class="external-link">geom_smooth</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"lm"</span>, se <span class="op">=</span> <span class="cn">FALSE</span>, linewidth <span class="op">=</span> <span class="fl">0.5</span>, colour <span class="op">=</span> <span class="st">"black"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">8</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Temperature (deg C)"</span>, y <span class="op">=</span> <span class="st">"CAP1"</span>, title <span class="op">=</span> <span class="va">across</span><span class="op">$</span><span class="va">label</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/wrap_plots.html" class="external-link">wrap_plots</a></span><span class="op">(</span><span class="va">p_sanity_along</span>, <span class="va">p_sanity_across</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">patchwork</span><span class="fu">::</span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>tag_levels <span class="op">=</span> <span class="st">"a"</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="spesim-ordination-dbrda_files/figure-html/fig-sanity-1.png" class="r-plt" alt="Figure 3. CAP1 tracks the sampled temperature range differently under the two designs." width="100%"><p class="caption">
+Figure 3. CAP1 tracks the sampled temperature range differently under
+the two designs.
+</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="key-results-summary-table-gt">9) Key results summary table (<code>gt</code>)<a class="anchor" aria-label="anchor" href="#key-results-summary-table-gt"></a>
+</h2>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">summary_tbl</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="va">along</span><span class="op">$</span><span class="va">metrics</span>, <span class="va">across</span><span class="op">$</span><span class="va">metrics</span><span class="op">)</span></span>
+<span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="va">has_gt</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">summary_tbl</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">gt</span><span class="fu">::</span><span class="fu"><a href="https://gt.rstudio.com/reference/gt.html" class="external-link">gt</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">gt</span><span class="fu">::</span><span class="fu"><a href="https://gt.rstudio.com/reference/fmt_number.html" class="external-link">fmt_number</a></span><span class="op">(</span></span>
+<span>      columns <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">transect_angle_deg</span>, <span class="va">temp_range_C</span>, <span class="va">adj_r2</span>, <span class="va">cor_cap1_temp</span>, <span class="va">cor_cap1_elev</span>, <span class="va">cor_cap1_rain</span>, <span class="va">max_vif</span><span class="op">)</span>,</span>
+<span>      decimals <span class="op">=</span> <span class="fl">3</span></span>
+<span>    <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">gt</span><span class="fu">::</span><span class="fu"><a href="https://gt.rstudio.com/reference/fmt_number.html" class="external-link">fmt_number</a></span><span class="op">(</span>columns <span class="op">=</span> <span class="va">model_p</span>, decimals <span class="op">=</span> <span class="fl">4</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">gt</span><span class="fu">::</span><span class="fu"><a href="https://gt.rstudio.com/reference/cols_label.html" class="external-link">cols_label</a></span><span class="op">(</span></span>
+<span>      design <span class="op">=</span> <span class="st">"Sampling design"</span>,</span>
+<span>      transect_angle_deg <span class="op">=</span> <span class="st">"Transect angle (deg)"</span>,</span>
+<span>      n_quadrats <span class="op">=</span> <span class="st">"Quadrats"</span>,</span>
+<span>      temp_range_C <span class="op">=</span> <span class="st">"Sampled temp range (deg C)"</span>,</span>
+<span>      adj_r2 <span class="op">=</span> <span class="st">"Adj. R^2"</span>,</span>
+<span>      model_p <span class="op">=</span> <span class="st">"Model p-value"</span>,</span>
+<span>      cor_cap1_temp <span class="op">=</span> <span class="st">"cor(CAP1, temp)"</span>,</span>
+<span>      cor_cap1_elev <span class="op">=</span> <span class="st">"cor(CAP1, elev)"</span>,</span>
+<span>      cor_cap1_rain <span class="op">=</span> <span class="st">"cor(CAP1, rain)"</span>,</span>
+<span>      max_vif <span class="op">=</span> <span class="st">"Max VIF"</span></span>
+<span>    <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">gt</span><span class="fu">::</span><span class="fu"><a href="https://gt.rstudio.com/reference/tab_header.html" class="external-link">tab_header</a></span><span class="op">(</span></span>
+<span>      title <span class="op">=</span> <span class="st">"db-RDA comparison by sampling design"</span>,</span>
+<span>      subtitle <span class="op">=</span> <span class="st">"Along-gradient vs across-gradient transects"</span></span>
+<span>    <span class="op">)</span></span>
+<span><span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
+<span>  <span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span><span class="va">summary_tbl</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<div id="fazjinybqz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#fazjinybqz table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#fazjinybqz thead, #fazjinybqz tbody, #fazjinybqz tfoot, #fazjinybqz tr, #fazjinybqz td, #fazjinybqz th {
+  border-style: none;
+}
+
+#fazjinybqz p {
+  margin: 0;
+  padding: 0;
+}
+
+#fazjinybqz .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#fazjinybqz .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#fazjinybqz .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#fazjinybqz .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#fazjinybqz .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#fazjinybqz .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#fazjinybqz .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#fazjinybqz .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#fazjinybqz .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#fazjinybqz .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#fazjinybqz .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#fazjinybqz .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#fazjinybqz .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#fazjinybqz .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#fazjinybqz .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#fazjinybqz .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#fazjinybqz .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#fazjinybqz .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#fazjinybqz .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#fazjinybqz .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#fazjinybqz .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#fazjinybqz .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#fazjinybqz .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#fazjinybqz .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#fazjinybqz .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#fazjinybqz .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#fazjinybqz .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#fazjinybqz .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#fazjinybqz .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#fazjinybqz .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#fazjinybqz .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#fazjinybqz .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#fazjinybqz .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#fazjinybqz .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#fazjinybqz .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#fazjinybqz .gt_left {
+  text-align: left;
+}
+
+#fazjinybqz .gt_center {
+  text-align: center;
+}
+
+#fazjinybqz .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#fazjinybqz .gt_font_normal {
+  font-weight: normal;
+}
+
+#fazjinybqz .gt_font_bold {
+  font-weight: bold;
+}
+
+#fazjinybqz .gt_font_italic {
+  font-style: italic;
+}
+
+#fazjinybqz .gt_super {
+  font-size: 65%;
+}
+
+#fazjinybqz .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#fazjinybqz .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#fazjinybqz .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#fazjinybqz .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#fazjinybqz .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#fazjinybqz .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#fazjinybqz .gt_indent_5 {
+  text-indent: 25px;
+}
+
+#fazjinybqz .katex-display {
+  display: inline-flex !important;
+  margin-bottom: 0.75em !important;
+}
+
+#fazjinybqz div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+  height: 0px !important;
+}
+</style>
+<table class="table gt_table" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+<thead>
+<tr class="gt_heading">
+<td colspan="10" class="gt_heading gt_title gt_font_normal" style>db-RDA comparison by sampling design</td>
+    </tr>
+<tr class="gt_heading">
+<td colspan="10" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style>Along-gradient vs across-gradient transects</td>
+    </tr>
+<tr class="gt_col_headings">
+<th class="gt_col_heading gt_columns_bottom_border gt_left" rowspan="1" colspan="1" scope="col" id="design">Sampling design</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="transect_angle_deg">Transect angle (deg)</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="n_quadrats">Quadrats</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="temp_range_C">Sampled temp range (deg C)</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="adj_r2">Adj. R^2</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="model_p">Model p-value</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="cor_cap1_temp">cor(CAP1, temp)</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="cor_cap1_elev">cor(CAP1, elev)</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="cor_cap1_rain">cor(CAP1, rain)</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_right" rowspan="1" colspan="1" scope="col" id="max_vif">Max VIF</th>
+    </tr>
+</thead>
+<tbody class="gt_table_body">
+<tr>
+<td headers="design" class="gt_row gt_left">Along temperature gradient</td>
+<td headers="transect_angle_deg" class="gt_row gt_right">74.603</td>
+<td headers="n_quadrats" class="gt_row gt_right">10</td>
+<td headers="temp_range_C" class="gt_row gt_right">18.551</td>
+<td headers="adj_r2" class="gt_row gt_right">0.625</td>
+<td headers="model_p" class="gt_row gt_right">0.0050</td>
+<td headers="cor_cap1_temp" class="gt_row gt_right">0.966</td>
+<td headers="cor_cap1_elev" class="gt_row gt_right">0.114</td>
+<td headers="cor_cap1_rain" class="gt_row gt_right">−0.964</td>
+<td headers="max_vif" class="gt_row gt_right">342.292</td>
+</tr>
+<tr>
+<td headers="design" class="gt_row gt_left">Across temperature gradient</td>
+<td headers="transect_angle_deg" class="gt_row gt_right">164.603</td>
+<td headers="n_quadrats" class="gt_row gt_right">10</td>
+<td headers="temp_range_C" class="gt_row gt_right">0.435</td>
+<td headers="adj_r2" class="gt_row gt_right">0.077</td>
+<td headers="model_p" class="gt_row gt_right">0.2800</td>
+<td headers="cor_cap1_temp" class="gt_row gt_right">−0.236</td>
+<td headers="cor_cap1_elev" class="gt_row gt_right">0.844</td>
+<td headers="cor_cap1_rain" class="gt_row gt_right">0.020</td>
+<td headers="max_vif" class="gt_row gt_right">1.710</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section level2">
+<h2 id="why-this-is-useful-for-teaching">10) Why this is useful for teaching<a class="anchor" aria-label="anchor" href="#why-this-is-useful-for-teaching"></a>
 </h2>
 <p>Because spesim generates: - the <strong>site × species</strong>
 matrix (<code>abund_matrix</code>), and - the corresponding <strong>site
@@ -445,8 +1165,8 @@ matrix (<code>abund_matrix</code>), and - the corresponding <strong>site
 <code><a href="../reference/calculate_quadrat_environment.html">calculate_quadrat_environment()</a></code>),</p>
 <p>you can repeatedly create controlled datasets where you <em>know the
 truth</em> (strong gradients and interactions were imposed) and then
-practise ordination workflows that aim to recover the dominant
-drivers.</p>
+practise ordination workflows that aim to recover the dominant drivers
+under alternative sampling designs.</p>
 <div class="section level3">
 <h3 id="suggested-exercises">Suggested exercises<a class="anchor" aria-label="anchor" href="#suggested-exercises"></a>
 </h3>
@@ -455,8 +1175,9 @@ drivers.</p>
 constrained R² changes.</li>
 <li>Turn interactions off (<code>INTERACTION_RADIUS &lt;- 0</code>) and
 compare db-RDA fits.</li>
-<li>Compare sampling schemes (random vs transect vs Voronoi) and see how
-sampling design alters ordination stability.</li>
+<li>Compare single-transect, multi-transect, and non-transect designs to
+test sensitivity of constrained ordination outcomes to sampling
+geometry.</li>
 </ul>
 </div>
 </div>
