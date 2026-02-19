@@ -82,9 +82,15 @@ reference:
   - audit_sampling_scheme
   - spesim_spatstat_diagnostics
 
-- title: "Utilities"
+- title: "Species abundance distributions (SAD)"
   contents:
+  - sad_generators
+  - generate_sad
   - generate_fisher_log_series
+  - generate_geometric_probabilities
+  - generate_brokenstick_probabilities
+  - generate_zipf_probabilities
+  - generate_lognormal_probabilities
 
 - title: "Classes"
   contents:
