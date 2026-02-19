@@ -91,7 +91,8 @@ spesim_engine <- function(P, domain) {
   site_coords <- sf::st_coordinates(sf::st_centroid(sf::st_geometry(quadrats))) |>
     as.data.frame() |>
     dplyr::mutate(site = quadrats$quadrat_id) |>
-    dplyr::select(site, x = X, y = Y)
+    dplyr::select(site, x = X, y = Y) |>
+    dplyr::arrange(site)
 
   if (tolower(as.character(P$DOMAIN_TYPE %||% "polygon")) %in% c("network", "coastline")) {
     bb <- sf::st_bbox(domain)
@@ -296,7 +297,7 @@ spesim_resolve_interactions <- function(P,
     src_file <- as.character(P$INTERACTIONS_FILE)
   }
 
-  # 3) load from file | inline rules | neutral fallback
+  # 3) load from file | inline rules | matrix provided in P | neutral fallback
   if (!is.null(src_file) && nzchar(src_file)) {
     I <- load_interactions(src_file, P$N_SPECIES)
   } else if (!is.null(P$INTERACTIONS_EDGELIST)) {
@@ -304,6 +305,13 @@ spesim_resolve_interactions <- function(P,
       rules = as.character(P$INTERACTIONS_EDGELIST),
       n_species = P$N_SPECIES,
       radius = as.numeric(P$INTERACTION_RADIUS %||% 0)
+    )
+  } else if (!is.null(P$INTERACTION_MATRIX)) {
+    # Allow programmatic workflows to provide a matrix directly.
+    IM <- as.matrix(P$INTERACTION_MATRIX)
+    I <- list(
+      radius = as.numeric(P$INTERACTION_RADIUS %||% 0),
+      matrix = IM
     )
   } else {
     I <- list(

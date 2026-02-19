@@ -1,5 +1,6 @@
 // [[Rcpp::plugins(cpp17)]]
 #include <Rcpp.h>
+#include <unordered_map>
 using namespace Rcpp;
 
 // --- Helpers ---------------------------------------------------------------
@@ -72,25 +73,44 @@ inline int count_neighbors_local(const std::vector<double>& X,
   return nbh;
 }
 
-// Update per-point neighbor counts around a point moved from (x_old,y_old) to (x_new,y_new)
-// Only points within r of either location are touched.
-// Returns deltaPairs = (#pairs_new - #pairs_old) for the moved point.
-inline int update_counts_move(std::vector<int>& k,
-                              const std::vector<double>& X,
-                              const std::vector<double>& Y,
-                              const CellGrid& grid,
-                              int i,
-                              double x_old,double y_old,
-                              double x_new,double y_new,
-                              double r2) {
+// Propose neighbor-count deltas for moving point i from (x_old,y_old) to (x_new,y_new)
+// WITHOUT mutating the cached counts.
+//
+// For the Strauss process (fixed-n), the log-density is proportional to
+//   log(pi) ∝ log(gamma) * (#pairs within r)
+// and the only pairs that change are those involving i.
+//
+// We therefore compute:
+//   delta_i = new_neighbors(i) - old_neighbors(i)
+// and per-neighbor +/- 1 adjustments to their cached counts (applied only on accept).
+struct MoveDelta {
+  int delta_i;
+  std::vector< std::pair<int,int> > neighbor_delta; // (index, +/-1)
+};
+
+inline MoveDelta propose_move_deltas(const std::vector<double>& X,
+                                    const std::vector<double>& Y,
+                                    const CellGrid& grid,
+                                    int i,
+                                    double x_old,double y_old,
+                                    double x_new,double y_new,
+                                    double r2) {
+  MoveDelta md;
+  md.delta_i = 0;
+  md.neighbor_delta.clear();
+
+  // old/new neighbor counts for i
+  int old_cnt = count_neighbors_local(X, Y, grid, x_old, y_old, r2, i);
+  int new_cnt = count_neighbors_local(X, Y, grid, x_new, y_new, r2, i);
+  md.delta_i = new_cnt - old_cnt;
+
+  // compute neighbor deltas for points affected by the move
+  std::unordered_map<int,int> dmap;
+
   int ix_old, iy_old; grid.locate(x_old,y_old,ix_old,iy_old);
   int ix_new, iy_new; grid.locate(x_new,y_new,ix_new,iy_new);
 
-  // Mark neighbors in union of neighborhoods of old/new cells
-  // We will adjust the neighbor counts of affected points only once.
-  // Use a small local set (vector<char>) sized by total points? n may be large; instead handle both neighborhoods separately.
-
-  // First: handle neighbors near old position (pairs being removed)
+  // neighbors near old position: pairs potentially removed
   for (int dy=-1; dy<=1; ++dy) {
     for (int dx=-1; dx<=1; ++dx) {
       int cx = ix_old + dx, cy = iy_old + dy;
@@ -102,24 +122,23 @@ inline int update_counts_move(std::vector<int>& k,
         double dy_ = Y[j] - y_old;
         double d2  = dx_*dx_ + dy_*dy_;
         if (d2 <= r2) {
-          // was a neighbor at old location; will be removed unless still neighbor at new
+          // was neighbor at old; check if still neighbor at new
           double dxn = X[j] - x_new;
           double dyn = Y[j] - y_new;
           double d2n = dxn*dxn + dyn*dyn;
           if (d2n > r2) {
-            // break the pair i-j
-            --k[j];
+            dmap[j] -= 1;
           }
         }
       }
     }
   }
 
-  // Second: handle neighbors near new position (pairs being added)
+  // neighbors near new position: pairs potentially added
   for (int dy=-1; dy<=1; ++dy) {
     for (int dx=-1; dx<=1; ++dx) {
       int cx = ix_new + dx, cy = iy_new + dy;
-      if (cx < 0 || cy < 0 || cx >= grid.nx || cy < 0 || cy >= grid.ny) continue;
+      if (cx < 0 || cy < 0 || cx >= grid.nx || cy >= grid.ny) continue;
       const std::vector<int> &bucket = grid.buckets[ grid.idx(cx,cy) ];
       for (int j : bucket) {
         if (j == i) continue;
@@ -127,25 +146,27 @@ inline int update_counts_move(std::vector<int>& k,
         double dyn = Y[j] - y_new;
         double d2n = dxn*dxn + dyn*dyn;
         if (d2n <= r2) {
-          // create the pair i-j unless it already existed at old location
+          // is neighbor at new; check if it was neighbor at old
           double dx_ = X[j] - x_old;
           double dy_ = Y[j] - y_old;
           double d2  = dx_*dx_ + dy_*dy_;
           if (d2 > r2) {
-            ++k[j];
+            dmap[j] += 1;
           }
         }
       }
     }
   }
 
-  // Compute delta for point i itself: new count minus old count
-  int old_cnt = count_neighbors_local(X, Y, grid, x_old, y_old, r2, i);
-  int new_cnt = count_neighbors_local(X, Y, grid, x_new, y_new, r2, i);
-  int delta_i = new_cnt - old_cnt;
-  return delta_i;
-}
+  md.neighbor_delta.reserve(dmap.size());
+  for (auto &kv : dmap) {
+    if (kv.second != 0) {
+      md.neighbor_delta.emplace_back(kv.first, kv.second);
+    }
+  }
 
+  return md;
+}
 // Reflect to bbox
 inline double clamp(double v, double lo, double hi) {
   if (v < lo) return lo;
@@ -229,10 +250,10 @@ NumericMatrix rstrauss_bbox_cpp(int n,
       }
 
       // compute delta for counts (affects k[i] and neighbors)
-      int delta_i = update_counts_move(k, X, Y, grid, i, X[i], Y[i], xn, yn, r2);
+      MoveDelta md = propose_move_deltas(X, Y, grid, i, X[i], Y[i], xn, yn, r2);
+      int delta_i = md.delta_i;
       // acceptance in log-space: Δlogπ = Δpairs * log(gamma),
-      // where Δpairs = new_pairs - old_pairs for point i; all neighbor deltas
-      // already applied in update_counts_move
+      // where Δpairs = new_pairs - old_pairs for point i
       double dlog = ((double)delta_i) * log_gamma;
 
       bool accept = false;
@@ -248,6 +269,9 @@ NumericMatrix rstrauss_bbox_cpp(int n,
         grid.move(i, X[i], Y[i], xn, yn);
         X[i] = xn; Y[i] = yn;
         k[i] += delta_i;
+        for (const auto &pr : md.neighbor_delta) {
+          k[pr.first] += pr.second;
+        }
 
         ++accepted_since_tune;
       }

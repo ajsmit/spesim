@@ -58,7 +58,8 @@ generate_fisher_log_series <- function(
   n_remaining <- n_individuals - n_dominant
 
   if (n_species == 1L) {
-    out <- c(n_dominant)
+    # With a single species, all individuals are assigned to A.
+    out <- c(as.integer(n_individuals))
     names(out) <- "A"
     return(out)
   }
@@ -758,6 +759,43 @@ generate_heterogeneous_distribution <- function(domain, P) {
     .sample_uniform_in_domain(n_A, domain)
   )
 
+  # Optional environmental filtering for A: resample A locations from an
+  # oversampled candidate set with weights proportional to Gaussian suitability.
+  if (!is.null(P$GRADIENT) && NROW(P$GRADIENT) > 0 && ("A" %in% P$GRADIENT$species) && n_A > 0) {
+    os <- as.numeric(P$ENV_FILTER_OVERSAMPLE %||% 6)
+    if (!is.finite(os) || os < 1) os <- 6
+    os <- as.integer(ceiling(os))
+
+    rowA <- P$GRADIENT[P$GRADIENT$species == "A", , drop = FALSE][1, ]
+    env_col <- .resolve_env_col(rowA$gradient, names(env_grid))
+
+    if (!is.na(env_col)) {
+      n_cand <- as.integer(max(n_A, n_A * os))
+      xy_cand <- switch(proc_A,
+        "poisson" = .sample_uniform_in_domain(n_cand, domain),
+        "thomas" = .simulate_thomas_points(n_cand, domain,
+          mu    = as.numeric(P$A_MEAN_OFFSPRING %||% 10),
+          sigma = as.numeric(P$A_CLUSTER_SCALE %||% 1),
+          kappa = as.numeric(P$A_PARENT_INTENSITY %||% NA_real_)
+        ),
+        .sample_uniform_in_domain(n_cand, domain)
+      )
+      if (NROW(xy_cand) < n_cand) {
+        xy_cand <- rbind(xy_cand, .sample_uniform_in_domain(n_cand - NROW(xy_cand), domain))
+      }
+
+      cand_sf <- sf::st_sf(species = "A", geometry = .as_sfc_points(xy_cand, crs_dom))
+      cand_sf <- sf::st_join(cand_sf, env_sf, join = sf::st_nearest_feature)
+      vals <- cand_sf[[env_col]]
+
+      w <- exp(-((vals - rowA$optimum)^2) / (2 * rowA$tol^2))
+      if (!all(is.finite(w)) || all(w <= 0)) w <- rep(1, length(w))
+
+      sel <- sample.int(length(w), size = n_A, replace = FALSE, prob = w)
+      xy_A <- sf::st_coordinates(cand_sf)[sel, , drop = FALSE]
+    }
+  }
+
   # Others as one pool of points; species assigned later by counts
   n_all_others <- length(other_species)
   proc_O <- tolower(P$SPATIAL_PROCESS_OTHERS %||% "poisson")
@@ -792,21 +830,24 @@ generate_heterogeneous_distribution <- function(domain, P) {
   sfc_O <- .as_sfc_points(xy_O, crs_dom)
 
   pts_A <- if (length(sfc_A) > 0) {
-    sf::st_sf(species = factor(rep("A", length(sfc_A))), geometry = sfc_A)
+    sf::st_sf(species = rep("A", length(sfc_A)), geometry = sfc_A)
   } else {
     sf::st_sf(
-      species = factor(character(0)),
+      species = character(0),
       geometry = sf::st_sfc(crs = crs_dom)
     )
   }
+
+  # For non-dominants, we initially store placeholder species labels and assign
+  # species identities *after* point generation.
   pts_O <- if (length(sfc_O) > 0) {
     sf::st_sf(
-      species = factor(other_species, levels = LETTERS[1:P$N_SPECIES]),
+      species = rep(NA_character_, length(sfc_O)),
       geometry = sfc_O
     )
   } else {
     sf::st_sf(
-      species = factor(character(0), levels = LETTERS[1:P$N_SPECIES]),
+      species = character(0),
       geometry = sf::st_sfc(crs = crs_dom)
     )
   }
@@ -814,91 +855,149 @@ generate_heterogeneous_distribution <- function(domain, P) {
   pts <- rbind(pts_A, pts_O)
   if (nrow(pts) == 0) {
     return(sf::st_sf(
-      species = factor(character(0), levels = LETTERS[1:P$N_SPECIES]),
+      species = character(0),
       geometry = sf::st_sfc(crs = crs_dom)
     ))
   }
 
-  # --- 5) Environmental filtering (FIXED): resimulate + weighted selection -----
+  # --- 5) Species assignment: environment + optional local interactions -----
   #
-  # The previous implementation attempted to "importance reweight" points per
-  # species, but sampled q items from q indices without replacement, which is a
-  # no-op (it always keeps all points). Here we instead generate an oversampled
-  # candidate set of points (using the same baseline point-process kind) and
-  # then draw q points *from that larger set* with probability proportional to
-  # environmental suitability.
-  if (!is.null(P$GRADIENT) && NROW(P$GRADIENT) > 0) {
-    os <- as.numeric(P$ENV_FILTER_OVERSAMPLE %||% 6)
-    if (!is.finite(os) || os < 1) os <- 6
-    os <- as.integer(ceiling(os))
+  # The simulator generates locations first, then assigns species identities for
+  # the non-dominant pool to match target abundances. For gradient-responsive
+  # species, assignment is weighted by Gaussian environmental suitability.
+  # If INTERACTION_RADIUS > 0 and INTERACTION_MATRIX is non-neutral, assignment
+  # is also weighted by a local-interaction modifier computed from up to 5
+  # nearest already-assigned neighbours within INTERACTION_RADIUS.
 
-    sp_levels <- unique(as.character(pts$species))
+  # Attach environment once (used for weighted assignment; joined again at end)
+  pts_env <- sf::st_join(pts, env_sf, join = sf::st_nearest_feature)
 
-    for (sp in sp_levels) {
-      if (!(sp %in% P$GRADIENT$species)) next
+  # Identify which points are in the non-dominant pool
+  idx_A <- which(pts_env$species == "A")
+  idx_O <- which(is.na(pts_env$species))
 
-      idx <- which(as.character(pts$species) == sp)
-      q <- length(idx)
-      if (q == 0) next
+  # Target non-dominant counts (exact)
+  target_counts <- table(other_species)
+  target_species <- names(target_counts)
 
-      row <- P$GRADIENT[P$GRADIENT$species == sp, , drop = FALSE][1, ]
-      env_col <- .resolve_env_col(row$gradient, names(env_grid))
-      if (is.na(env_col)) next
+  has_grad <- !is.null(P$GRADIENT) && NROW(P$GRADIENT) > 0
+  use_interactions <- isTRUE(as.numeric(P$INTERACTION_RADIUS %||% 0) > 0) &&
+    !is.null(P$INTERACTION_MATRIX) &&
+    !isTRUE(all(as.numeric(P$INTERACTION_MATRIX) == 1))
 
-      # Use the baseline point-process kind that would have generated this group.
-      # (A can differ from the others.)
-      kind <- if (sp == "A") proc_A else proc_O
-      n_cand <- as.integer(max(q, q * os))
-
-      xy_cand <- switch(kind,
-        "poisson" = .sample_uniform_in_domain(n_cand, domain),
-        "thomas" = {
-          if (sp == "A") {
-            .simulate_thomas_points(n_cand, domain,
-              mu    = as.numeric(P$A_MEAN_OFFSPRING %||% 10),
-              sigma = as.numeric(P$A_CLUSTER_SCALE %||% 1),
-              kappa = as.numeric(P$A_PARENT_INTENSITY %||% NA_real_)
-            )
-          } else {
-            .simulate_thomas_points(n_cand, domain,
-              mu    = as.numeric(P$OTHERS_MU %||% 10),
-              sigma = as.numeric(P$OTHERS_SIGMA %||% 1),
-              kappa = as.numeric(P$OTHERS_BETA %||% NA_real_)
-            )
-          }
-        },
-        "strauss" = .simulate_strauss_points(n_cand, domain,
-          r = as.numeric(P$OTHERS_R %||% 1),
-          s = as.numeric(P$OTHERS_S %||% 0.7)
-        ),
-        "geyer" = .simulate_geyer_points(n_cand, domain,
-          r = as.numeric(P$OTHERS_R %||% 1),
-          gamma = as.numeric(P$OTHERS_GAMMA %||% 1.5),
-          s = as.numeric(P$OTHERS_S %||% 2)
-        ),
-        .sample_uniform_in_domain(n_cand, domain)
-      )
-
-      # Top up if a simulator returned fewer than requested.
-      if (NROW(xy_cand) < n_cand) {
-        xy_cand <- rbind(xy_cand, .sample_uniform_in_domain(n_cand - NROW(xy_cand), domain))
+  # If we have nothing to weight by, do a simple random permutation assignment.
+  if (length(idx_O) > 0) {
+    if (!has_grad && !use_interactions) {
+      pts_env$species[idx_O] <- sample(other_species, size = length(idx_O), replace = FALSE)
+    } else {
+      # Precompute 5-nearest neighbours for all points (for interaction modifier)
+      xy_all <- sf::st_coordinates(pts_env)
+      k_nn <- min(5L, max(0L, nrow(xy_all) - 1L))
+      nn_idx <- NULL
+      nn_dist <- NULL
+      if (k_nn >= 1L) {
+        knn <- FNN::get.knn(xy_all, k = k_nn)
+        nn_idx <- knn$nn.index
+        nn_dist <- knn$nn.dist
       }
 
-      if (NROW(xy_cand) < q) next
+      # Remaining quota per species
+      remain <- as.integer(target_counts)
+      names(remain) <- target_species
 
-      cand_sf <- sf::st_sf(species = sp, geometry = .as_sfc_points(xy_cand, crs_dom))
-      cand_sf <- sf::st_join(cand_sf, env_sf, join = sf::st_nearest_feature)
-      vals <- cand_sf[[env_col]]
+      # Assigned labels (A fixed; others NA until assigned)
+      assigned <- rep(NA_character_, nrow(pts_env))
+      assigned[idx_A] <- "A"
 
-      w <- exp(-((vals - row$optimum)^2) / (2 * row$tol^2))
-      if (!all(is.finite(w)) || all(w <= 0)) w <- rep(1, length(w))
+      # Interaction matrix (ensure dimnames)
+      IM <- P$INTERACTION_MATRIX
+      if (is.null(IM)) {
+        IM <- matrix(1, P$N_SPECIES, P$N_SPECIES,
+          dimnames = list(LETTERS[1:P$N_SPECIES], LETTERS[1:P$N_SPECIES])
+        )
+      }
+      if (is.null(dimnames(IM))) {
+        dimnames(IM) <- list(LETTERS[1:nrow(IM)], LETTERS[1:ncol(IM)])
+      }
 
-      sel <- sample.int(length(w), size = q, replace = FALSE, prob = w)
-      sf::st_geometry(pts)[idx] <- sf::st_geometry(cand_sf)[sel]
+      # Helper: environmental suitability for a focal species at point i
+      env_weight <- function(sp, i) {
+        if (!has_grad) return(1)
+        row <- P$GRADIENT[P$GRADIENT$species == sp, , drop = FALSE]
+        if (NROW(row) == 0) return(1)
+        row <- row[1, ]
+        env_col <- .resolve_env_col(row$gradient, names(env_grid))
+        if (is.na(env_col) || !(env_col %in% names(pts_env))) return(1)
+        val <- as.numeric(pts_env[[env_col]][i])
+        if (!is.finite(val)) return(1)
+        tol <- as.numeric(row$tol)
+        if (!is.finite(tol) || tol <= 0) return(1)
+        opt <- as.numeric(row$optimum)
+        w <- exp(-((val - opt)^2) / (2 * tol^2))
+        if (!is.finite(w) || w <= 0) return(1e-12)
+        w
+      }
+
+      # Helper: local-interaction modifier using up to 5 nearest assigned neighbours
+      interaction_weight <- function(sp, i) {
+        if (!use_interactions || is.null(nn_idx)) return(1)
+        # neighbours for i (precomputed KNN), filter to those already assigned and within radius
+        neigh <- nn_idx[i, ]
+        dist <- nn_dist[i, ]
+        keep <- which(is.finite(dist) & dist <= as.numeric(P$INTERACTION_RADIUS))
+        if (!length(keep)) return(1)
+        neigh <- neigh[keep]
+        neigh_sp <- assigned[neigh]
+        neigh_sp <- neigh_sp[!is.na(neigh_sp)]
+        if (!length(neigh_sp)) return(1)
+
+        # geometric mean of coefficients
+        vals <- as.numeric(IM[sp, neigh_sp, drop = TRUE])
+        vals[!is.finite(vals) | vals <= 0] <- 1e-12
+        exp(mean(log(vals)))
+      }
+
+      # Sequential assignment in random order ("already-assigned" neighbours)
+      order_O <- sample(idx_O, size = length(idx_O), replace = FALSE)
+      for (i in order_O) {
+        avail <- names(remain)[remain > 0]
+        if (!length(avail)) break
+        if (length(avail) == 1L) {
+          assigned[i] <- avail[1]
+          remain[avail[1]] <- remain[avail[1]] - 1L
+          next
+        }
+
+        w <- vapply(avail, function(sp) env_weight(sp, i) * interaction_weight(sp, i), numeric(1))
+        w[!is.finite(w) | w < 0] <- 0
+        if (sum(w) <= 0) {
+          assigned[i] <- sample(avail, 1L)
+        } else {
+          assigned[i] <- sample(avail, 1L, prob = w)
+        }
+        remain[assigned[i]] <- remain[assigned[i]] - 1L
+      }
+
+      # Fill any remaining (should be rare) deterministically
+      if (any(is.na(assigned[idx_O]))) {
+        still <- idx_O[is.na(assigned[idx_O])]
+        avail <- rep(names(remain), pmax(0L, remain))
+        if (length(avail) == length(still)) {
+          assigned[still] <- sample(avail, size = length(still), replace = FALSE)
+        } else if (length(avail) > 0) {
+          assigned[still] <- sample(avail, size = length(still), replace = TRUE)
+        } else {
+          assigned[still] <- sample(target_species, size = length(still), replace = TRUE)
+        }
+      }
+
+      pts_env$species <- assigned
     }
   }
 
-  # --- 6) Final env join and return -----------------------------------
+  # Return to a consistent schema
+  pts$species <- as.character(pts_env$species)
+# --- 6) Final env join and return -----------------------------------
   lin_st <- .linear_domain_state(domain, P)
   if (isTRUE(lin_st$enabled)) {
     xy_all <- sf::st_coordinates(pts)

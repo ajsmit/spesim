@@ -290,32 +290,24 @@ simulate_points_dispatch <- function(kind, domain, n_target, args = list()) {
 
   switch(kind,
     thomas = {
-      # Prefer fast Rcpp sampler if available; fall back to spatstat version
-      if (isTRUE(exists("rthomas_bbox_cpp", mode = "function"))) {
-        bb <- sf::st_bbox(domain)
-        mu <- .nz(args$A_MEAN_OFFSPRING, .nz(args$mu, 10))
-        sigma <- .nz(args$A_CLUSTER_SCALE, .nz(args$sigma, 1))
-        kappa <- .nz(args$A_PARENT_INTENSITY, args$beta) # may be NULL -> pass NA
-
-        # ---- IMPORTANT: positional call (no names) to match Rcpp signature ----
-        xy <- rthomas_bbox_cpp(
-          as.integer(n_target),
-          unname(bb["xmin"]), unname(bb["xmax"]),
-          unname(bb["ymin"]), unname(bb["ymax"]),
-          as.numeric(mu),
-          as.numeric(sigma),
-          if (is.null(kappa)) NA_real_ else as.numeric(kappa)
-        )
-        sfc <- .xy_to_sfc(xy, crs_dom)
-        return(sf::st_sf(geometry = sfc))
-      } else {
-        simulate_points_thomas(
-          domain, n_target,
+      # Use the polygon-aware fast wrapper when available.
+      if (exists("rthomas_fast", mode = "function")) {
+        return(rthomas_fast(
+          domain = domain,
+          n_target = as.integer(n_target),
           kappa = .nz(args$A_PARENT_INTENSITY, args$beta),
           mu = .nz(args$A_MEAN_OFFSPRING, .nz(args$mu, 10)),
           sigma = .nz(args$A_CLUSTER_SCALE, .nz(args$sigma, 1))
-        )
+        ))
       }
+
+      # Fallback (pure R implementation)
+      simulate_points_thomas(
+        domain, n_target,
+        kappa = .nz(args$A_PARENT_INTENSITY, args$beta),
+        mu = .nz(args$A_MEAN_OFFSPRING, .nz(args$mu, 10)),
+        sigma = .nz(args$A_CLUSTER_SCALE, .nz(args$sigma, 1))
+      )
     },
     strauss = {
       if (.has_cpp_strauss()) {

@@ -192,8 +192,21 @@ calculate_species_area <- function(abund_matrix) {
 #' @export
 calculate_distance_decay <- function(abund_matrix, site_coords, metric = c("auto", "euclidean", "along_path")) {
   metric <- match.arg(metric)
+  # Ensure coordinate rows align with abundance rows by site id
+  if ("site" %in% names(site_coords) && "site" %in% names(abund_matrix)) {
+    ord <- match(abund_matrix$site, site_coords$site)
+    if (any(is.na(ord))) {
+      stop("site_coords$site must contain all sites in abund_matrix$site")
+    }
+    site_coords <- site_coords[ord, , drop = FALSE]
+  }
+
   coords <- site_coords[, c("x", "y"), drop = FALSE]
   abund_numeric <- abund_matrix[, -which(names(abund_matrix) == "site"), drop = FALSE]
+
+  # Note: we keep empty sites (all-zero rows). For distance–decay, we compute a
+  # Sorensen dissimilarity matrix that defines empty–empty dissimilarity as 0 and
+  # empty–nonempty as 1, avoiding NA outputs.
 
   if (nrow(coords) < 2 || nrow(abund_numeric) < 2) {
     return(data.frame(Distance = numeric(0), Dissimilarity = numeric(0)))
@@ -229,9 +242,20 @@ calculate_distance_decay <- function(abund_matrix, site_coords, metric = c("auto
   } else {
     geo_dist <- stats::dist(coords, method = "euclidean")
   }
-  comm_dissim <- vegan::vegdist(abund_numeric, method = "bray", binary = TRUE)
+  # Sorensen dissimilarity on presence/absence (binary), with well-defined
+  # behaviour for empty rows.
+  pa <- (as.matrix(abund_numeric) > 0) * 1
+  tot <- rowSums(pa)
+  shared <- pa %*% t(pa)
+  denom <- outer(tot, tot, "+")
+  sim <- (2 * shared) / denom
+  sim[denom == 0] <- 1 # empty-empty -> similarity 1
+  dissim <- 1 - sim
+  diag(dissim) <- 0
+  comm_dissim <- stats::as.dist(dissim)
+
   out <- data.frame(Distance = as.vector(geo_dist), Dissimilarity = as.vector(comm_dissim))
-  out[is.finite(out$Distance), , drop = FALSE]
+  out[is.finite(out$Distance) & is.finite(out$Dissimilarity), , drop = FALSE]
 }
 
 #' Rarefaction Curves Data

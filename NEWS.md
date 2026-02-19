@@ -1,3 +1,13 @@
+# spesim 0.4.5
+
+## Bug fixes + promised features now active
+
+- Fixed `generate_fisher_log_series()` for `n_species = 1` (now sums to `n_individuals`).
+- Fixed fast Strauss MH sampler state updates (accept/reject now consistent).
+- Fixed Thomas and Strauss/Geyer fast helpers to be polygon-aware (bbox simulate + clip + thin/top-up).
+- Implemented environmental filtering + local interspecific interactions during species assignment as documented.
+- Distance–decay now aligns `site_coords` to `abund_matrix` by site id and uses a robust Sorensen dissimilarity for presence/absence.
+
 # spesim 0.4.2
 
 ## Vignettes / neutral SAD clarification

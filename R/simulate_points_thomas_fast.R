@@ -75,7 +75,10 @@ rthomas_fast <- function(domain,
     return(sf::st_sf(geometry = sf::st_sfc(crs = sf::st_crs(domain))))
   }
 
-  pts_bbox <- sf::st_as_sf(as.data.frame(xy), coords = c("X1", "X2"), crs = sf::st_crs(domain))
+  df <- as.data.frame(xy)
+  # rthomas_bbox_cpp() returns an unnamed matrix -> data.frame defaults to V1,V2
+  if (ncol(df) >= 2) names(df)[1:2] <- c("x", "y")
+  pts_bbox <- sf::st_as_sf(df, coords = c("x", "y"), crs = sf::st_crs(domain))
   # Keep only those inside polygon
   inside <- sf::st_within(pts_bbox, sf::st_union(domain), sparse = TRUE)
   keep <- lengths(inside) > 0

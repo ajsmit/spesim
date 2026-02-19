@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulate_points_geyer_fast.R
 \name{simulate_points_geyer_fast}
 \alias{simulate_points_geyer_fast}
-\title{Fast Geyer saturation simulator (bbox Metropolis–Hastings)}
+\title{Fast Geyer saturation simulator (Rcpp backend; polygon-clipped)}
 \usage{
 simulate_points_geyer_fast(
   domain,
@@ -16,7 +16,7 @@ simulate_points_geyer_fast(
 )
 }
 \arguments{
-\item{domain}{sf polygon/multipolygon defining the window (only bbox is used).}
+\item{domain}{sf polygon/multipolygon defining the window.}
 
 \item{n_target}{integer, number of points to return.}
 
@@ -36,5 +36,7 @@ simulate_points_geyer_fast(
 \code{sf} POINT layer with \code{n_target} points.
 }
 \description{
-Fast Geyer saturation simulator (bbox Metropolis–Hastings)
+Runs a fixed-n Metropolis–Hastings sampler in the domain bounding box and
+then clips points to the polygon. The result is thinned/top-upped to return
+exactly \code{n_target} points.
 }
