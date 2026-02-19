@@ -79,6 +79,18 @@ build_linear_pos <- function(x) {
   if (!is.finite(den) || den == 0) den <- 1
   pmax(0, pmin(1, (x - rng[1]) / den))
 }
+
+panel_ready_res <- function(res, max_species = 26L) {
+  spp <- setdiff(names(res$abund_matrix), "site")
+  if (length(spp) <= max_species) return(res)
+  sums <- colSums(res$abund_matrix[, spp, drop = FALSE], na.rm = TRUE)
+  keep <- names(sort(sums, decreasing = TRUE))[seq_len(max_species)]
+  out <- res
+  out$abund_matrix <- cbind(site = res$abund_matrix$site, res$abund_matrix[, keep, drop = FALSE])
+  out$species_dist <- res$species_dist[as.character(res$species_dist$species) %in% keep, ]
+  out$P$N_SPECIES <- length(keep)
+  out
+}
 ```
 
 ## 1) Tie Doubs environmental data to real coordinates
@@ -113,10 +125,18 @@ ggplot(doubs, aes(x, y, colour = dfs)) +
 doubs_abund <- doubs_spe
 names(doubs_abund)[1] <- "site"
 site_coords_doubs <- doubs[, c("site", "x", "y", "linear_pos")]
-attr(site_coords_doubs, "linear_wrap") <- FALSE
+doubs_edges <- build_network_edges(site_coords_doubs, order_by = "linear_pos", directed = TRUE)
 
-dd_doubs_eu <- calculate_distance_decay(doubs_abund, site_coords_doubs, metric = "euclidean")
-dd_doubs_ap <- calculate_distance_decay(doubs_abund, site_coords_doubs, metric = "along_path")
+res_doubs_obs <- spesim_from_observed(
+  abund_matrix = doubs_abund,
+  site_coords = site_coords_doubs,
+  site_env = doubs[, c("site", "dfs", "alt", "flo", "pH", "nit", "oxy")],
+  edges = doubs_edges,
+  directed = TRUE
+)
+
+dd_doubs_eu <- calculate_distance_decay(res_doubs_obs$abund_matrix, res_doubs_obs$site_coords, metric = "euclidean")
+dd_doubs_ap <- calculate_distance_decay(res_doubs_obs$abund_matrix, res_doubs_obs$site_coords, metric = "along_path")
 
 dd_doubs <- rbind(
   transform(dd_doubs_eu, Metric = "Euclidean"),
@@ -130,43 +150,20 @@ ggplot(dd_doubs, aes(Distance, Dissimilarity, colour = Metric)) +
   theme_minimal(base_size = 12)
 ```
 
-## 2) Simulate in Doubs-like constrained network mode using real covariates
+### Interpolate unsampled Doubs sites along the network
 
 ```{r}
-P_doubs <- load_config(pkg_file("spesim_init_basic.txt", "examples"))
-P_doubs$N_SPECIES <- 18
-P_doubs$N_INDIVIDUALS <- 1300
-P_doubs$DOMAIN_TYPE <- "network"
-P_doubs$MODEL_FAMILY <- "hybrid"
-P_doubs$NEUTRAL_M <- 0.10
-P_doubs$DISPERSAL_KERNEL <- "exponential"
-P_doubs$DISPERSAL_SCALE <- 0.9
-P_doubs$DISPERSAL_DIRECTION_BIAS <- 0.25
+doubs_interp <- simulate_between_observed(
+  res_doubs_obs,
+  n_new_sites = 20,
+  direction_bias = 0.4
+)
 
-P_doubs$SAMPLING_SCHEME <- "route"
-P_doubs$ROUTE_QUADRAT_MODE <- "specified"
-P_doubs$ROUTE_POSITIONS <- doubs$linear_pos
-P_doubs$N_QUADRATS <- length(P_doubs$ROUTE_POSITIONS)
-P_doubs$QUADRAT_SIZE_OPTION <- "small"
-
-P_doubs$ENV_COVARIATES_FILE <- pkg_file("DoubsCovariates.csv", "extdata")
-P_doubs$ENV_DRIVERS <- c("alt", "flo", "pH", "nit", "oxy")
-P_doubs$GRADIENT_SPECIES <- c("A", "B", "C", "D", "E")
-P_doubs$GRADIENT_ASSIGNMENTS <- c("alt", "flo", "pH", "nit", "oxy")
-P_doubs$GRADIENT_OPTIMA <- c(alt = 0.7, flo = 0.4, pH = 0.5, nit = 0.3, oxy = 0.8)
-P_doubs$GRADIENT_TOLERANCE <- c(alt = 0.25, flo = 0.30, pH = 0.25, nit = 0.25, oxy = 0.25)
-
-P_doubs$INTERACTION_RADIUS <- 0
-P_doubs$INTERACTIONS_FILE <- NULL
-P_doubs$INTERACTIONS_EDGELIST <- NULL
-
-dom_doubs <- make_domain_from_xy(doubs[, c("x", "y")], buffer_frac = 0.08)
-res_doubs <- spesim_run(P_doubs, domain = dom_doubs, write_outputs = FALSE, seed = P_doubs$SEED, interactions_print = FALSE)
-
-plot_spatial_sampling(
-  res_doubs$domain, res_doubs$species_dist, res_doubs$quadrats, res_doubs$P,
-  show_gradient = TRUE, env_gradients = res_doubs$env_gradients, gradient_type = "alt"
-) + ggtitle("Simulated Doubs-like community using real Doubs covariates")
+ggplot() +
+  geom_point(data = res_doubs_obs$site_coords, aes(x, y), color = "black", size = 2) +
+  geom_point(data = doubs_interp$site_coords, aes(x, y), color = "red", size = 1.7, alpha = 0.8) +
+  labs(title = "Doubs observed sites (black) + interpolated unsampled sites (red)") +
+  theme_minimal(base_size = 12)
 ```
 
 ## 3) Seaweed coastline: real coordinates and covariates
@@ -187,16 +184,83 @@ ggplot(sea, aes(x, y, colour = summerMean)) +
   theme_minimal(base_size = 12)
 ```
 
+### Seaweed sites on a regional basemap (rnaturalearth)
+
+```{r}
+if (requireNamespace("rnaturalearth", quietly = TRUE)) {
+  coast_region <- rnaturalearth::ne_countries(
+    scale = "medium",
+    country = c("South Africa", "Namibia"),
+    returnclass = "sf"
+  )
+
+  sea_sf <- st_as_sf(sea, coords = c("x", "y"), crs = 4326)
+  bb <- st_bbox(sea_sf)
+  x_pad <- (bb$xmax - bb$xmin) * 0.18
+  y_pad <- (bb$ymax - bb$ymin) * 0.22
+
+  ggplot() +
+    geom_sf(data = coast_region, fill = "grey96", colour = "grey55", linewidth = 0.25) +
+    geom_path(
+      data = sea[order(sea$linear_pos), ],
+      aes(x = x, y = y),
+      colour = "#1f78b4",
+      linewidth = 0.8,
+      alpha = 0.75
+    ) +
+    geom_point(
+      data = sea,
+      aes(x = x, y = y, colour = summerMean),
+      size = 2.2,
+      alpha = 0.95
+    ) +
+    coord_sf(
+      xlim = c(bb$xmin - x_pad, bb$xmax + x_pad),
+      ylim = c(bb$ymin - y_pad, bb$ymax + y_pad),
+      expand = FALSE
+    ) +
+    scale_colour_viridis_c(option = "C", end = 0.92, name = "summerMean") +
+    labs(
+      title = "Seaweed sampling sections on the southern African coastline",
+      subtitle = "Observed localities from SeaweedSpa.csv linked to section-level environment"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(
+      panel.grid.major = element_line(colour = "grey90", linewidth = 0.25),
+      panel.grid.minor = element_blank(),
+      plot.title.position = "plot"
+    )
+} else {
+  ggplot(sea, aes(x, y, colour = summerMean)) +
+    geom_path(colour = "#1f78b4", alpha = 0.6, linewidth = 0.7) +
+    geom_point(size = 2.1) +
+    labs(
+      title = "Seaweed sampling sections (fallback without rnaturalearth)",
+      subtitle = "Install rnaturalearth for mapped coastline context",
+      colour = "summerMean"
+    ) +
+    theme_minimal(base_size = 12)
+}
+```
+
 ### Observed distance-decay from seaweed species data
 
 ```{r}
 sea_abund <- sea_spe
 names(sea_abund)[1] <- "site"
 site_coords_sea <- sea[, c("site", "x", "y", "linear_pos")]
-attr(site_coords_sea, "linear_wrap") <- FALSE
+sea_edges <- build_network_edges(site_coords_sea, order_by = "linear_pos", directed = TRUE)
 
-dd_sea_eu <- calculate_distance_decay(sea_abund, site_coords_sea, metric = "euclidean")
-dd_sea_ap <- calculate_distance_decay(sea_abund, site_coords_sea, metric = "along_path")
+res_sea_obs <- spesim_from_observed(
+  abund_matrix = sea_abund,
+  site_coords = site_coords_sea,
+  site_env = sea[, c("site", "summerMean", "winterMin", "augChl")],
+  edges = sea_edges,
+  directed = TRUE
+)
+
+dd_sea_eu <- calculate_distance_decay(res_sea_obs$abund_matrix, res_sea_obs$site_coords, metric = "euclidean")
+dd_sea_ap <- calculate_distance_decay(res_sea_obs$abund_matrix, res_sea_obs$site_coords, metric = "along_path")
 
 dd_sea <- rbind(
   transform(dd_sea_eu, Metric = "Euclidean"),
@@ -210,44 +274,68 @@ ggplot(dd_sea, aes(Distance, Dissimilarity, colour = Metric)) +
   theme_minimal(base_size = 12)
 ```
 
-### Simulate coastline-constrained community with seaweed covariates
+### Interpolate unsampled seaweed sections
 
 ```{r}
-P_sea <- load_config(pkg_file("spesim_init_basic.txt", "examples"))
-P_sea$N_SPECIES <- 26
-P_sea$N_INDIVIDUALS <- 2200
-P_sea$DOMAIN_TYPE <- "coastline"
-P_sea$LINEAR_WRAP <- FALSE
-P_sea$MODEL_FAMILY <- "hybrid"
-P_sea$NEUTRAL_M <- 0.12
-P_sea$DISPERSAL_KERNEL <- "gaussian"
-P_sea$DISPERSAL_SCALE <- 0.2
-P_sea$DISPERSAL_DIRECTION_BIAS <- 0.45
+sea_interp <- simulate_between_observed(
+  res_sea_obs,
+  n_new_sites = 18,
+  direction_bias = 0.35
+)
 
-P_sea$SAMPLING_SCHEME <- "route"
-P_sea$ROUTE_QUADRAT_MODE <- "specified"
-P_sea$ROUTE_POSITIONS <- sea$linear_pos
-P_sea$N_QUADRATS <- length(P_sea$ROUTE_POSITIONS)
-P_sea$QUADRAT_SIZE_OPTION <- "small"
+ggplot() +
+  geom_point(data = res_sea_obs$site_coords, aes(x, y), color = "black", size = 1.8) +
+  geom_point(data = sea_interp$site_coords, aes(x, y), color = "red", size = 1.5, alpha = 0.8) +
+  labs(title = "Seaweed observed sections (black) + interpolated unsampled sections (red)") +
+  theme_minimal(base_size = 12)
+```
 
-P_sea$ENV_COVARIATES_FILE <- pkg_file("SeaweedCovariates.csv", "extdata")
-P_sea$ENV_DRIVERS <- c("summerMean", "winterMin", "augChl")
-P_sea$GRADIENT_SPECIES <- c("A", "B", "C")
-P_sea$GRADIENT_ASSIGNMENTS <- c("summerMean", "winterMin", "augChl")
-P_sea$GRADIENT_OPTIMA <- c(summerMean = 0.65, winterMin = 0.55, augChl = 0.40)
-P_sea$GRADIENT_TOLERANCE <- c(summerMean = 0.25, winterMin = 0.25, augChl = 0.30)
+## 4) Advanced panels: observed vs interpolated
 
-P_sea$INTERACTION_RADIUS <- 0
-P_sea$INTERACTIONS_FILE <- NULL
-P_sea$INTERACTIONS_EDGELIST <- NULL
+### Doubs advanced panels
 
-dom_sea <- make_domain_from_xy(sea[, c("x", "y")], buffer_frac = 0.10)
-res_sea <- spesim_run(P_sea, domain = dom_sea, write_outputs = FALSE, seed = P_sea$SEED, interactions_print = FALSE)
+```{r, fig.width=12, fig.height=14}
+res_doubs_interp <- spesim_from_observed(
+  abund_matrix = doubs_interp$abund_matrix,
+  site_coords = doubs_interp$site_coords,
+  site_env = doubs_interp$site_env,
+  edges = build_network_edges(doubs_interp$site_coords, order_by = "linear_pos", directed = TRUE),
+  directed = TRUE
+)
 
-plot_spatial_sampling(
-  res_sea$domain, res_sea$species_dist, res_sea$quadrats, res_sea$P,
-  show_gradient = TRUE, env_gradients = res_sea$env_gradients, gradient_type = "summerMean"
-) + ggtitle("Simulated coastline community using real seaweed covariates")
+res_doubs_obs_panel <- panel_ready_res(res_doubs_obs, max_species = 26L)
+res_doubs_interp_panel <- panel_ready_res(res_doubs_interp, max_species = 26L)
+
+generate_advanced_panel(res_doubs_obs_panel) +
+  patchwork::plot_annotation(title = "Doubs observed data: advanced panel")
+```
+
+```{r, fig.width=12, fig.height=14}
+generate_advanced_panel(res_doubs_interp_panel) +
+  patchwork::plot_annotation(title = "Doubs interpolated unsampled sites: advanced panel")
+```
+
+### Seaweed advanced panels
+
+```{r, fig.width=12, fig.height=14}
+res_sea_interp <- spesim_from_observed(
+  abund_matrix = sea_interp$abund_matrix,
+  site_coords = sea_interp$site_coords,
+  site_env = sea_interp$site_env,
+  edges = build_network_edges(sea_interp$site_coords, order_by = "linear_pos", directed = TRUE),
+  directed = TRUE
+)
+
+res_sea_obs_panel <- panel_ready_res(res_sea_obs, max_species = 26L)
+res_sea_interp_panel <- panel_ready_res(res_sea_interp, max_species = 26L)
+
+generate_advanced_panel(res_sea_obs_panel) +
+  patchwork::plot_annotation(title = "Seaweed observed data: advanced panel")
+```
+
+```{r, fig.width=12, fig.height=14}
+generate_advanced_panel(res_sea_interp_panel) +
+  patchwork::plot_annotation(title = "Seaweed interpolated unsampled sections: advanced panel")
 ```
 
 ## Practical notes
@@ -255,9 +343,9 @@ plot_spatial_sampling(
 - The CSV paths are wired with `pkg_file(...)`, which resolves
   `system.file("extdata/...", package = "spesim")` for installed-package use
   and falls back to `inst/extdata/...` for source-tree rendering.
-- For Doubs, `X` and `Y` from `DoubsSpa.csv` are used as the site coordinates,
-  and `dfs` from `DoubsEnv.csv` is used as the linear route coordinate.
-- For seaweed, longitude/latitude are used as section coordinates, with an
-  alongshore ordering converted to a linear coordinate.
-- This provides real-world relevance now, while retaining internal synthetic
-  generation for cases without external covariates.
+- For Doubs and seaweed, observed species/environment tables are used directly
+  via `spesim_from_observed()` (no new observed data are simulated).
+- Network connectivity is represented with explicit edges and used in
+  along-path distance-decay calculations.
+- `simulate_between_observed()` provides first-pass interpolation into unsampled
+  spaces between sampled units, with optional directional bias.

@@ -167,11 +167,13 @@ calculate_species_area <- function(abund_matrix) {
 #' @param metric Character scalar. One of:
 #'   \itemize{
 #'     \item \code{"auto"} (default): use along-path distance if
-#'       \code{site_coords$linear_pos} exists, else Euclidean.
+#'       a graph distance matrix or \code{site_coords$linear_pos} exists, else Euclidean.
 #'     \item \code{"euclidean"}: force Euclidean distance on \code{x,y}.
 #'     \item \code{"along_path"}: use absolute differences in
 #'       \code{site_coords$linear_pos}; if \code{linear_wrap} attribute is TRUE,
-#'       use wrapped circular distance.
+#'       use wrapped circular distance. If attribute
+#'       \code{attr(site_coords, "graph_dist_matrix")} is present, that matrix is
+#'       used instead.
 #'   }
 #'
 #' @return A data frame with two numeric columns:
@@ -199,24 +201,37 @@ calculate_distance_decay <- function(abund_matrix, site_coords, metric = c("auto
 
   use_metric <- metric
   if (identical(use_metric, "auto")) {
-    use_metric <- if ("linear_pos" %in% names(site_coords)) "along_path" else "euclidean"
+    has_graph <- is.matrix(attr(site_coords, "graph_dist_matrix"))
+    use_metric <- if (has_graph || "linear_pos" %in% names(site_coords)) "along_path" else "euclidean"
   }
 
   if (identical(use_metric, "along_path")) {
-    if (!"linear_pos" %in% names(site_coords)) {
-      stop("metric='along_path' requires site_coords$linear_pos.")
+    gdist <- attr(site_coords, "graph_dist_matrix")
+    if (is.matrix(gdist)) {
+      if (nrow(gdist) != nrow(coords) || ncol(gdist) != nrow(coords)) {
+        stop("graph_dist_matrix must be square and match number of sites.")
+      }
+      if (isTRUE(attr(site_coords, "graph_directed"))) {
+        gdist <- pmin(gdist, t(gdist))
+      }
+      geo_dist <- stats::as.dist(gdist)
+    } else {
+      if (!"linear_pos" %in% names(site_coords)) {
+        stop("metric='along_path' requires site_coords$linear_pos or graph_dist_matrix.")
+      }
+      lp <- as.numeric(site_coords$linear_pos)
+      dmat <- abs(outer(lp, lp, "-"))
+      if (isTRUE(attr(site_coords, "linear_wrap"))) {
+        dmat <- pmin(dmat, 1 - dmat)
+      }
+      geo_dist <- stats::as.dist(dmat)
     }
-    lp <- as.numeric(site_coords$linear_pos)
-    dmat <- abs(outer(lp, lp, "-"))
-    if (isTRUE(attr(site_coords, "linear_wrap"))) {
-      dmat <- pmin(dmat, 1 - dmat)
-    }
-    geo_dist <- stats::as.dist(dmat)
   } else {
     geo_dist <- stats::dist(coords, method = "euclidean")
   }
   comm_dissim <- vegan::vegdist(abund_numeric, method = "bray", binary = TRUE)
-  data.frame(Distance = as.vector(geo_dist), Dissimilarity = as.vector(comm_dissim))
+  out <- data.frame(Distance = as.vector(geo_dist), Dissimilarity = as.vector(comm_dissim))
+  out[is.finite(out$Distance), , drop = FALSE]
 }
 
 #' Rarefaction Curves Data
