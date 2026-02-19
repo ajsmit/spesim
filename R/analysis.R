@@ -164,6 +164,15 @@ calculate_species_area <- function(abund_matrix) {
 #' @param site_coords A data frame with numeric columns `x` and `y`
 #'   giving site coordinates (in a projected CRS) in the same row order
 #'   as `abund_matrix`.
+#' @param metric Character scalar. One of:
+#'   \itemize{
+#'     \item \code{"auto"} (default): use along-path distance if
+#'       \code{site_coords$linear_pos} exists, else Euclidean.
+#'     \item \code{"euclidean"}: force Euclidean distance on \code{x,y}.
+#'     \item \code{"along_path"}: use absolute differences in
+#'       \code{site_coords$linear_pos}; if \code{linear_wrap} attribute is TRUE,
+#'       use wrapped circular distance.
+#'   }
 #'
 #' @return A data frame with two numeric columns:
 #' \describe{
@@ -179,7 +188,8 @@ calculate_species_area <- function(abund_matrix) {
 #' head(dd)
 #' }
 #' @export
-calculate_distance_decay <- function(abund_matrix, site_coords) {
+calculate_distance_decay <- function(abund_matrix, site_coords, metric = c("auto", "euclidean", "along_path")) {
+  metric <- match.arg(metric)
   coords <- site_coords[, c("x", "y"), drop = FALSE]
   abund_numeric <- abund_matrix[, -which(names(abund_matrix) == "site"), drop = FALSE]
 
@@ -187,7 +197,24 @@ calculate_distance_decay <- function(abund_matrix, site_coords) {
     return(data.frame(Distance = numeric(0), Dissimilarity = numeric(0)))
   }
 
-  geo_dist <- stats::dist(coords, method = "euclidean")
+  use_metric <- metric
+  if (identical(use_metric, "auto")) {
+    use_metric <- if ("linear_pos" %in% names(site_coords)) "along_path" else "euclidean"
+  }
+
+  if (identical(use_metric, "along_path")) {
+    if (!"linear_pos" %in% names(site_coords)) {
+      stop("metric='along_path' requires site_coords$linear_pos.")
+    }
+    lp <- as.numeric(site_coords$linear_pos)
+    dmat <- abs(outer(lp, lp, "-"))
+    if (isTRUE(attr(site_coords, "linear_wrap"))) {
+      dmat <- pmin(dmat, 1 - dmat)
+    }
+    geo_dist <- stats::as.dist(dmat)
+  } else {
+    geo_dist <- stats::dist(coords, method = "euclidean")
+  }
   comm_dissim <- vegan::vegdist(abund_numeric, method = "bray", binary = TRUE)
   data.frame(Distance = as.vector(geo_dist), Dissimilarity = as.vector(comm_dissim))
 }

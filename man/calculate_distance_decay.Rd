@@ -4,7 +4,11 @@
 \alias{calculate_distance_decay}
 \title{Distance-Decay Data}
 \usage{
-calculate_distance_decay(abund_matrix, site_coords)
+calculate_distance_decay(
+  abund_matrix,
+  site_coords,
+  metric = c("auto", "euclidean", "along_path")
+)
 }
 \arguments{
 \item{abund_matrix}{A site x species abundance data frame where the first
@@ -13,6 +17,16 @@ column is \code{site} and the remaining columns are abundances.}
 \item{site_coords}{A data frame with numeric columns \code{x} and \code{y}
 giving site coordinates (in a projected CRS) in the same row order
 as \code{abund_matrix}.}
+
+\item{metric}{Character scalar. One of:
+\itemize{
+\item \code{"auto"} (default): use along-path distance if
+\code{site_coords$linear_pos} exists, else Euclidean.
+\item \code{"euclidean"}: force Euclidean distance on \code{x,y}.
+\item \code{"along_path"}: use absolute differences in
+\code{site_coords$linear_pos}; if \code{linear_wrap} attribute is TRUE,
+use wrapped circular distance.
+}}
 }
 \value{
 A data frame with two numeric columns:

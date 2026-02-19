@@ -72,6 +72,15 @@ spesim now includes a high-level `MODEL_FAMILY` layer:
 - `neutral_hubbell_like`: sequential neutral recruitment with immigration/speciation and dispersal kernel.
 - `hybrid`: neutral recruitment with environmental sorting.
 
+spesim also supports constrained linearized landscapes via `DOMAIN_TYPE`:
+
+- `network`: river-network style along-path coordinate.
+- `coastline`: alongshore coordinate with optional wrap (`LINEAR_WRAP = TRUE`).
+- optional external section/node covariates via `ENV_COVARIATES_FILE`.
+- bundled starter covariate files:
+  `system.file("extdata/doubs_like_nodes.csv", package = "spesim")` and
+  `system.file("extdata/seaweed_coast_sections.csv", package = "spesim")`.
+
 ### Environmental filtering
 
 Species can be assigned to named gradients with an **optimum** and **tolerance**.

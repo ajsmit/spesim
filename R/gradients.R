@@ -38,6 +38,10 @@
 #'   will contain \code{resolution^2} rows.
 #' @param noise_level Non-negative numeric; standard deviation of Gaussian
 #'   noise added independently to each gradient before clipping.
+#' @param covariates Optional data frame of externally supplied environmental
+#'   covariates. Must contain \code{x}, \code{y}. If provided, these values are
+#'   returned (with missing standard columns derived where possible) and the
+#'   synthetic gradient generator is skipped.
 #'
 #' @return A \code{data.frame} with columns:
 #'   \describe{
@@ -57,7 +61,31 @@
 #'
 #' @seealso \code{\link[sf]{st_bbox}}, \code{\link[sf]{st_intersects}}
 #' @export
-create_environmental_gradients <- function(domain, resolution, noise_level) {
+create_environmental_gradients <- function(domain, resolution, noise_level, covariates = NULL) {
+  if (!is.null(covariates)) {
+    grid <- as.data.frame(covariates, stringsAsFactors = FALSE)
+    if (!all(c("x", "y") %in% names(grid))) {
+      stop("`covariates` must contain columns x and y.")
+    }
+    for (nm in c("temperature", "elevation", "rainfall")) {
+      if (!nm %in% names(grid)) {
+        if (nm == "temperature" && "temperature_C" %in% names(grid)) {
+          grid$temperature <- pmax(0, pmin(1, (as.numeric(grid$temperature_C) + 2) / 30))
+        } else if (nm == "elevation" && "elevation_m" %in% names(grid)) {
+          grid$elevation <- pmax(0, pmin(1, as.numeric(grid$elevation_m) / 2000))
+        } else if (nm == "rainfall" && "rainfall_mm" %in% names(grid)) {
+          grid$rainfall <- pmax(0, pmin(1, (as.numeric(grid$rainfall_mm) - 200) / 700))
+        } else {
+          grid[[nm]] <- 0.5
+        }
+      }
+    }
+    if (!"temperature_C" %in% names(grid)) grid$temperature_C <- as.numeric(grid$temperature) * 30 - 2
+    if (!"elevation_m" %in% names(grid)) grid$elevation_m <- as.numeric(grid$elevation) * 2000
+    if (!"rainfall_mm" %in% names(grid)) grid$rainfall_mm <- as.numeric(grid$rainfall) * 700 + 200
+    return(grid)
+  }
+
   bbox <- sf::st_bbox(domain)
   x_seq <- seq(bbox["xmin"], bbox["xmax"], length.out = resolution)
   y_seq <- seq(bbox["ymin"], bbox["ymax"], length.out = resolution)

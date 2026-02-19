@@ -4,7 +4,12 @@
 \alias{create_environmental_gradients}
 \title{Create synthetic environmental gradients over a spatial domain}
 \usage{
-create_environmental_gradients(domain, resolution, noise_level)
+create_environmental_gradients(
+  domain,
+  resolution,
+  noise_level,
+  covariates = NULL
+)
 }
 \arguments{
 \item{domain}{An \code{sf} polygon object defining the extent over which
@@ -15,6 +20,11 @@ will contain \code{resolution^2} rows.}
 
 \item{noise_level}{Non-negative numeric; standard deviation of Gaussian
 noise added independently to each gradient before clipping.}
+
+\item{covariates}{Optional data frame of externally supplied environmental
+covariates. Must contain \code{x}, \code{y}. If provided, these values are
+returned (with missing standard columns derived where possible) and the
+synthetic gradient generator is skipped.}
 }
 \value{
 A \code{data.frame} with columns:

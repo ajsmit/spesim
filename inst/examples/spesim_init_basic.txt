@@ -9,6 +9,14 @@ N_INDIVIDUALS = 2000
 N_SPECIES = 10
 MODEL_FAMILY = manual
 
+# Domain / constrained-landscape controls
+DOMAIN_TYPE = polygon
+LINEAR_AXIS = x
+LINEAR_WRAP = FALSE
+LINEAR_JITTER_SD = 0.0
+DISTANCE_METRIC = auto
+ENV_COVARIATES_FILE = ""
+
 # SAD_MODEL options include:
 # fisher | geometric | brokenstick | zipf | zipf-mandelbrot | lognormal |
 # poisson-lognormal | poisson-gamma | zsm | custom
@@ -21,6 +29,7 @@ NEUTRAL_META_MODEL = zsm
 DISPERSAL_KERNEL = gaussian
 DISPERSAL_SCALE = 0.50
 DISPERSAL_ALPHA = 2.0
+DISPERSAL_DIRECTION_BIAS = 0.0
 HYBRID_ENV_WEIGHT = 1.0
 
 # Fisher SAD parameters (used when SAD_MODEL = fisher)

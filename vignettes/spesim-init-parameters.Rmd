@@ -49,6 +49,12 @@ loader resolves them automatically as documented below.
 | `N_INDIVIDUALS` | integer | `2000` | Total number of individuals in the simulated community. |
 | `N_SPECIES` | integer | `10` | Number of species (labels `A..`). |
 | `MODEL_FAMILY` | character | `"manual"` | High-level preset: `manual`, `niche_filtering`, `neutral_csr`, `neutral_hubbell_like`, `hybrid`. |
+| `DOMAIN_TYPE` | character | `"polygon"` | Spatial support: `polygon`, `network`, or `coastline` (linearized landscape modes). |
+| `LINEAR_AXIS` | character | `"x"` | Axis used for linearized domains when no explicit network polyline is supplied. |
+| `LINEAR_WRAP` | logical | `FALSE` | Use wrapped/circular distances for coastline-like domains. |
+| `LINEAR_JITTER_SD` | numeric | `0.0` | Perpendicular jitter around the linear axis (map units). |
+| `DISTANCE_METRIC` | character | `"auto"` | Distance-decay metric: `auto`, `euclidean`, `along_path`. |
+| `ENV_COVARIATES_FILE` | character | `NULL` | Optional CSV with `x,y` and environmental columns to replace synthetic rasters. |
 | `DOMINANT_FRACTION` | numeric | `0.30` | Fraction of all individuals assigned to the dominant species `A`. |
 
 ## Abundance model (Fisher’s log-series)
@@ -68,6 +74,7 @@ loader resolves them automatically as documented below.
 | `DISPERSAL_KERNEL` | character | `"gaussian"` | Recruitment displacement kernel: `gaussian`, `exponential`, `power_law`. |
 | `DISPERSAL_SCALE` | numeric | `0.5` | Scale parameter for dispersal displacement. |
 | `DISPERSAL_ALPHA` | numeric | `2.0` | Shape parameter for `power_law` kernel. |
+| `DISPERSAL_DIRECTION_BIAS` | numeric | `0.0` | Directional bias in linear domains (`-1` to `1`; positive means increasing coordinate). |
 | `HYBRID_ENV_WEIGHT` | numeric | `1.0` | Environmental sorting strength in `hybrid` (`0` = neutral-only). |
 
 ---

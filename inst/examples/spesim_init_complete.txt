@@ -21,6 +21,16 @@ OUTPUT_PREFIX = out/run
 N_INDIVIDUALS = 2500        # total individuals (all species)
 N_SPECIES     = 22          # number of species (A..)
 
+# Domain / constrained-landscape controls
+DOMAIN_TYPE = polygon        # polygon | network | coastline
+LINEAR_AXIS = x
+LINEAR_WRAP = FALSE
+LINEAR_JITTER_SD = 0.0
+DISTANCE_METRIC = auto       # auto | euclidean | along_path
+ENV_COVARIATES_FILE = ""
+# Example external covariates:
+# ENV_COVARIATES_FILE = "inst/extdata/doubs_like_nodes.csv"
+
 # High-level model family:
 # manual | niche_filtering | neutral_csr | neutral_hubbell_like | hybrid
 MODEL_FAMILY = manual
@@ -42,6 +52,7 @@ NEUTRAL_META_MODEL = zsm
 DISPERSAL_KERNEL = gaussian   # gaussian | exponential | power_law
 DISPERSAL_SCALE = 0.50
 DISPERSAL_ALPHA = 2.0
+DISPERSAL_DIRECTION_BIAS = 0.0
 HYBRID_ENV_WEIGHT = 1.0
 
 # --- Gradient-responsive species -------------------------------------

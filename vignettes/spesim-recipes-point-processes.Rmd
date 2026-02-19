@@ -287,5 +287,9 @@ ggplot(dd_family, aes(Distance, Dissimilarity, colour = Scenario)) +
 - Use `MODEL_FAMILY = "manual"` when you want full low-level control.
 - Use `MODEL_FAMILY = "neutral_hubbell_like"` or `"hybrid"` when you want
   dispersal-driven structure to emerge from recruitment.
+- For Doubs-style/seaweed-style constrained gradients, set
+  `DOMAIN_TYPE = "network"` or `"coastline"` and use `DISTANCE_METRIC = "along_path"`.
+- You can replace synthetic raster fields by supplying `ENV_COVARIATES_FILE`
+  (section/node-level covariates with `x,y` plus environmental columns).
 - If the distance–decay looks noisy, increase `N_QUADRATS` and/or reduce quadrat size.
 - For pedagogy, it helps to vary **one knob at a time** (SAD vs point process), then show how they interact.

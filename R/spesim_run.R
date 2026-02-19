@@ -115,6 +115,15 @@ spesim_run <- function(config,
         P$INTERACTIONS_FILE <- file.path(dirname(init_file), P$INTERACTIONS_FILE)
       }
     }
+    if (!is.null(P$ENV_COVARIATES_FILE) && nzchar(P$ENV_COVARIATES_FILE)) {
+      is_abs <- grepl("^(/|[A-Za-z]:[\\/])", P$ENV_COVARIATES_FILE)
+      if (!is_abs) {
+        P$ENV_COVARIATES_FILE <- file.path(dirname(init_file), P$ENV_COVARIATES_FILE)
+      }
+      if (file.exists(P$ENV_COVARIATES_FILE)) {
+        P$ENV_COVARIATES <- utils::read.csv(P$ENV_COVARIATES_FILE, stringsAsFactors = FALSE)
+      }
+    }
   } else if (is.list(config)) {
     P <- config
   } else {
