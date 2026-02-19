@@ -37,10 +37,11 @@ spesim's downstream spatial simulation typically expects exactly
 lognormal; counts are Poisson).}
 \item{\code{"poisson-gamma"}}{Poisson--gamma sampling model (rates are Gamma;
 counts are Poisson). Closely related to negative-binomial mixtures.}
-\item{\code{"zsm"}}{Neutral-theory helper.
-If the \strong{untb} package is available, spesim will try to call
-\code{untb::zsm()}; otherwise it falls back to an Ewens sampling-formula
-simulation (theta-only).}
+\item{\code{"zsm"}}{Neutral-theory SAD helper (Ewens / theta-only).
+Currently implemented via a theta-only Ewens sampler (Chinese restaurant).
+This controls the \strong{rank--abundance} curve but does \emph{not} impose any
+spatial structure. (Spatial patterns are controlled separately by the
+point-process settings.)}
 \item{\code{"custom"}}{User-supplied SAD via a numeric vector or a function
 (\code{sad} argument).}
 }

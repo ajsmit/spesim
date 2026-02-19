@@ -55,8 +55,7 @@ spesim now supports multiple SAD generators via `SAD_MODEL` in the init file:
 - `geometric`, `brokenstick` (teaching comparators).
 - `zipf`, `zipf-mandelbrot` (rank-based heavy tails).
 - `lognormal`, `poisson-lognormal`, `poisson-gamma` (sampling-model flavours).
-- `zsm` (neutral-theory helper; uses **untb** if installed, otherwise a
-  theta-only Ewens fallback).
+- `zsm` (neutral-theory SAD helper; currently a theta-only Ewens sampler).
 - `custom`: user supplies a numeric vector (probabilities or weights/counts) or
   a function.
 

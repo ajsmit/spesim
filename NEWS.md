@@ -1,3 +1,10 @@
+# spesim 0.4.2
+
+## Vignettes / neutral SAD clarification
+
+- Updated point-process recipes vignette with an explicit explanation of the current neutral-theory SAD helper (what it can and cannot do), plus worked examples and advanced panels.
+- `SAD_MODEL = "zsm"` is now documented and implemented as a **theta-only Ewens sampler**; `ZSM_M` is currently ignored (accepted for forward compatibility).
+
 # spesim 0.4.1
 
 ## Maintenance

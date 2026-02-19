@@ -1,11 +1,11 @@
 ---
-title: "spesim recipes: point processes (Poisson vs Thomas vs Strauss/Geyer)"
+title: "spesim recipes: point processes (and the neutral-theory SAD helper)"
 output:
   rmarkdown::html_vignette:
     toc: true
     highlight: null
 vignette: >
-  %\VignetteIndexEntry{spesim recipes: point processes (Poisson vs Thomas vs Strauss/Geyer)}
+  %\VignetteIndexEntry{spesim recipes: point processes (and the neutral-theory SAD helper)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -14,113 +14,233 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 7,
-  fig.height = 5,
-  fig.align = "center"
+  fig.width = 8,
+  fig.height = 6,
+  fig.align = "center",
+  warning = FALSE,
+  message = FALSE
 )
 ```
 
-This recipe shows how to switch the spatial point-process model for the dominant
-species (A) and for the remaining species.
+This recipe shows how to:
+
+1. switch the **spatial point-process** model for the dominant species (A) and for the remaining species,
+2. use the **neutral-theory SAD helper** (`SAD_MODEL = "zsm"`) *as currently implemented*.
+
+The key idea is that these are **orthogonal knobs**:
+
+- `SAD_MODEL` controls *how many individuals each species gets* (the rank–abundance curve),
+- `SPATIAL_PROCESS_*` controls *where individuals are placed in space*.
 
 ## Base configuration
 
 ```{r}
 library(spesim)
+library(ggplot2)
 
-P <- load_config(system.file("examples/spesim_init_complete.txt", package = "spesim"))
-P$N_SPECIES <- 10
-P$N_INDIVIDUALS <- 1200
-P$ADVANCED_ANALYSIS <- FALSE
+P0 <- load_config(system.file("examples/spesim_init_complete.txt", package = "spesim"))
+
+# Keep the vignette fast but still visually clear.
+P0$N_SPECIES <- 22
+P0$N_INDIVIDUALS <- 2400
+
+# Make distance–decay curves more interpretable by using a regular quadrat layout.
+P0$SAMPLING_SCHEME <- "tiled"
+P0$N_QUADRATS <- 36
+P0$QUADRAT_SIZE_OPTION <- "medium"
+
+# Turn off environmental filtering to keep this vignette focused on
+# point-process and SAD effects (not gradient-driven turnover).
+P0$GRADIENT_SPECIES <- character(0)
+P0$GRADIENT_ASSIGNMENTS <- character(0)
+P0$GRADIENT_OPTIMA <- NULL
+P0$GRADIENT_TOLERANCE <- NULL
 
 # Keep interactions off for clarity
-P$INTERACTION_RADIUS <- 0
-P$INTERACTIONS_EDGELIST <- NULL
+P0$INTERACTION_RADIUS <- 0
+P0$INTERACTIONS_FILE <- NULL
+P0$INTERACTIONS_EDGELIST <- NULL
+
+# A tiny helper to run a case and build its advanced panel.
+run_case <- function(P, title) {
+  res <- spesim_run(P, write_outputs = FALSE, seed = P$SEED, interactions_print = FALSE)
+  panel <- generate_advanced_panel(res) + patchwork::plot_annotation(title = title)
+  list(res = res, panel = panel)
+}
+
+rank_df <- function(res, label) {
+  ra <- calculate_rank_abundance(res$species_dist, res$P)
+  ra <- subset(ra, Source == "Observed")
+  ra$Scenario <- label
+  ra
+}
+
+decay_df <- function(res, label) {
+  dd <- calculate_distance_decay(res$abund_matrix, res$site_coords)
+  dd$Scenario <- label
+  dd
+}
 ```
 
-## Poisson: complete spatial randomness
+## Neutral theory in spesim (what it can and cannot do)
+
+spesim’s **neutral theory option** is currently implemented as a **species–abundance distribution (SAD) helper**:
+
+- Set `SAD_MODEL = "zsm"` and provide `ZSM_THETA` (and optionally `ZSM_M`).
+- spesim then generates an **abundance vector** (counts per species) consistent with a neutral-theory sampling model.
+
+### What it *can* do
+
+- Generate **neutral-like rank–abundance curves** (SADs), controlled mainly by `ZSM_THETA`.
+  - Smaller `theta` → stronger dominance / longer tail.
+  - Larger `theta` → more even communities.
+- Currently, spesim uses a **theta-only Ewens sampler** (Chinese restaurant / Ewens sampling formula).
+- `ZSM_M` is accepted for forward compatibility, but is **currently ignored**.
+- If you need a mechanistic neutral model with immigration / metacommunity coupling, use **untb** directly; spesim’s neutral option is deliberately a SAD helper.
+
+### What it *cannot* do (yet)
+
+- It is **not** a full mechanistic neutral simulation engine:
+  - no births/deaths through time,
+  - no explicit dispersal as a population process,
+  - no dynamic metacommunity/local community coupling.
+- It does **not** create spatial structure by itself.
+  - Spatial patterns still come from `SPATIAL_PROCESS_A` / `SPATIAL_PROCESS_OTHERS` (Poisson/Thomas/Strauss/Geyer).
+
+The practical takeaway: use `SAD_MODEL = "zsm"` for **neutral-like abundance structure**, and pair it with a point-process choice to get the **spatial patterns** you want.
+
+## Example A: SAD differences (Fisher vs neutral-theory ZSM)
+
+Here we hold the spatial process fixed at **Poisson** (CSR) so differences in the **SAD plots** are driven by `SAD_MODEL`.
 
 ```{r}
-P1 <- P
-P1$SPATIAL_PROCESS_A <- "poisson"
-P1$SPATIAL_PROCESS_OTHERS <- "poisson"
+P_sad <- P0
+P_sad$SPATIAL_PROCESS_A <- "poisson"
+P_sad$SPATIAL_PROCESS_OTHERS <- "poisson"
 
-set.seed(P$SEED)
-res_pois <- spesim_run(P1, write_outputs = FALSE, seed = P1$SEED, interactions_print = FALSE)
-plot_spatial_sampling(res_pois$domain, res_pois$species_dist, res_pois$quadrats, res_pois$P)
+# Fisher baseline
+P_fisher <- P_sad
+P_fisher$SAD_MODEL <- "fisher"
+P_fisher$DOMINANT_FRACTION <- 0.30
+
+# Neutral-like SADs via zsm
+P_zlow <- P_sad
+P_zlow$SAD_MODEL <- "zsm"
+P_zlow$ZSM_THETA <- 1.5
+P_zlow$ZSM_M <- NA_real_
+
+P_zhigh <- P_zlow
+P_zhigh$ZSM_THETA <- 50
+
+case_fisher <- run_case(P_fisher, "Poisson + Fisher SAD")
+case_zlow   <- run_case(P_zlow,   "Poisson + ZSM (theta = 1.5)")
+case_zhigh  <- run_case(P_zhigh,  "Poisson + ZSM (theta = 50)")
 ```
 
-## Thomas clustering for the dominant species
+### Rank–abundance (overlay)
 
 ```{r}
-P2 <- P
-P2$SPATIAL_PROCESS_A <- "thomas"
-P2$A_PARENT_INTENSITY <- NA
-P2$A_MEAN_OFFSPRING <- 10
-P2$A_CLUSTER_SCALE <- 1.0
-P2$SPATIAL_PROCESS_OTHERS <- "poisson"
+ra_all <- rbind(
+  rank_df(case_fisher$res, "Fisher"),
+  rank_df(case_zlow$res,   "ZSM θ=1.5"),
+  rank_df(case_zhigh$res,  "ZSM θ=50")
+)
 
-res_th <- spesim_run(P2, write_outputs = FALSE, seed = P2$SEED, interactions_print = FALSE)
-plot_spatial_sampling(res_th$domain, res_th$species_dist, res_th$quadrats, res_th$P)
+ggplot(ra_all, aes(Rank, Abundance, colour = Scenario)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_y_log10() +
+  labs(
+    title = "Rank–abundance curves: Fisher vs neutral-theory helper",
+    y = "Abundance (log10 scale)",
+    x = "Rank (1 = most abundant)"
+  ) +
+  theme_minimal(base_size = 12)
 ```
 
-## Mild inhibition for non-dominants (Strauss)
+### Full advanced panels
 
-```{r}
-P3 <- P2
-P3$SPATIAL_PROCESS_OTHERS <- "strauss"
-P3$OTHERS_R <- 1.0
-P3$OTHERS_S <- 0.5
-
-res_st <- spesim_run(P3, write_outputs = FALSE, seed = P3$SEED, interactions_print = FALSE)
-plot_spatial_sampling(res_st$domain, res_st$species_dist, res_st$quadrats, res_st$P)
-```
-
-## Consequences in the advanced analysis panel
-
-Different point processes correspond to different *mechanisms* of spatial
-structure:
-
-- **Poisson** is a null model (complete spatial randomness).
-- **Thomas clustering** is a proxy for limited dispersal or patchy habitat
-  suitability, producing aggregated individuals.
-- **Strauss inhibition** approximates territoriality/space limitation, producing
-  repulsion among points.
-
-In the advanced panel, these differences often show up as:
-
-- **distance–decay**: clustering can increase dissimilarity among quadrats,
-  strengthening decay,
-- **species–area**: more spatial structure can increase observed beta diversity,
-  steepening the curve,
-- **rarefaction**: strong aggregation can reduce per-quadrat richness at small
-  sample sizes (more uneven encounter rates).
-
-Below we compare the advanced panel between Poisson, Thomas (A clustered), and
-Thomas + Strauss (others inhibited).
-
-```{r}
-p_pois <- generate_advanced_panel(res_pois) + patchwork::plot_annotation(title = "Poisson (CSR)")
-p_th   <- generate_advanced_panel(res_th)   + patchwork::plot_annotation(title = "Thomas clustering for A")
-p_st   <- generate_advanced_panel(res_st)   + patchwork::plot_annotation(title = "Thomas (A) + Strauss inhibition (others)")
+```{r fig.width=8, fig.height=9}
+case_fisher$panel
 ```
 
 ```{r fig.width=8, fig.height=9}
-p_pois
+case_zlow$panel
 ```
 
 ```{r fig.width=8, fig.height=9}
-p_th
+case_zhigh$panel
+```
+
+## Example B: Spatial differences (distance–decay) under a fixed neutral SAD
+
+Now we fix the SAD model to **neutral-theory ZSM** and vary only the **point-process**.
+
+To make the contrast obvious, we choose a strongly structured placement:
+
+- Dominant species **A**: tight **Thomas clustering** (many offspring, small sigma)
+- Other species: strong **Strauss inhibition** (repulsion)
+
+```{r}
+P_neutral <- P0
+P_neutral$SAD_MODEL <- "zsm"
+P_neutral$ZSM_THETA <- 10
+P_neutral$ZSM_M <- NA_real_
+
+# CSR baseline
+P_neutral_pois <- P_neutral
+P_neutral_pois$SPATIAL_PROCESS_A <- "poisson"
+P_neutral_pois$SPATIAL_PROCESS_OTHERS <- "poisson"
+
+# Strong spatial structure
+P_neutral_struct <- P_neutral
+P_neutral_struct$SPATIAL_PROCESS_A <- "thomas"
+P_neutral_struct$A_PARENT_INTENSITY <- NA
+P_neutral_struct$A_MEAN_OFFSPRING <- 25
+P_neutral_struct$A_CLUSTER_SCALE <- 0.45
+
+P_neutral_struct$SPATIAL_PROCESS_OTHERS <- "strauss"
+P_neutral_struct$OTHERS_R <- 1.2
+P_neutral_struct$OTHERS_S <- 0.15
+
+case_neutral_pois   <- run_case(P_neutral_pois,   "ZSM (theta=10) + Poisson (CSR)")
+case_neutral_struct <- run_case(P_neutral_struct, "ZSM (theta=10) + Thomas (A) + Strauss (others)")
+```
+
+### Distance–decay (overlay)
+
+```{r}
+dd_all <- rbind(
+  decay_df(case_neutral_pois$res,   "Poisson"),
+  decay_df(case_neutral_struct$res, "Thomas + Strauss")
+)
+
+ggplot(dd_all, aes(Distance, Dissimilarity, colour = Scenario)) +
+  geom_point(alpha = 0.25) +
+  geom_smooth(se = FALSE, linewidth = 1.2, method = "loess", span = 0.75) +
+  labs(
+    title = "Distance–decay under the same neutral SAD",
+    subtitle = "Spatial structure changes turnover with distance; SAD model is held constant",
+    x = "Inter-quadrat distance",
+    y = "Community dissimilarity (Bray–Curtis on presence/absence)"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+### Full advanced panels
+
+```{r fig.width=8, fig.height=9}
+case_neutral_pois$panel
 ```
 
 ```{r fig.width=8, fig.height=9}
-p_st
+case_neutral_struct$panel
 ```
 
+## Notes / tips
 
-## Notes
-
-- In teaching, it often helps to hold everything else constant and vary one
-  process knob at a time.
-- If you want a more complete set of diagnostics, run
-  `spesim_demo("advanced", make_plots = TRUE)` and inspect the advanced panel.
+- If you want *neutral-like abundance* **and** *neutral-like dispersal/clustering*, you currently need to **combine**:
+  - `SAD_MODEL = "zsm"` (abundances) with
+  - a spatial process such as `thomas` (placement).
+- If the distance–decay looks noisy, increase `N_QUADRATS` and/or reduce quadrat size.
+- For pedagogy, it helps to vary **one knob at a time** (SAD vs point process), then show how they interact.

@@ -33,10 +33,11 @@
 #'     lognormal; counts are Poisson).}
 #'   \item{`"poisson-gamma"`}{Poisson--gamma sampling model (rates are Gamma;
 #'     counts are Poisson). Closely related to negative-binomial mixtures.}
-#'   \item{`"zsm"`}{Neutral-theory helper.
-#'     If the **untb** package is available, spesim will try to call
-#'     `untb::zsm()`; otherwise it falls back to an Ewens sampling-formula
-#'     simulation (theta-only).}
+#'   \item{`"zsm"`}{Neutral-theory SAD helper (Ewens / theta-only).
+#'     Currently implemented via a theta-only Ewens sampler (Chinese restaurant).
+#'     This controls the **rank--abundance** curve but does *not* impose any
+#'     spatial structure. (Spatial patterns are controlled separately by the
+#'     point-process settings.)}
 #'   \item{`"custom"`}{User-supplied SAD via a numeric vector or a function
 #'     (`sad` argument).}
 #' }
@@ -322,42 +323,35 @@ generate_sad <- function(n_species, n_individuals, model = "fisher", sad = NULL,
       theta <- as.numeric(dots$theta %||% 10)
       m <- as.numeric(dots$m %||% NA_real_)
 
-      if (requireNamespace("untb", quietly = TRUE)) {
-        zsm_fun <- getExportedValue("untb", "zsm")
-        # Try common argument name variants.
-        args_try <- list(
-          list(J = n_individuals, theta = theta, m = m),
-          list(J = n_individuals, theta = theta),
-          list(j = n_individuals, theta = theta, m = m),
-          list(j = n_individuals, theta = theta),
-          list(J = n_individuals, theta = theta, immigration = m)
+      # NOTE (2026-02): despite the name, we do NOT call untb::zsm() here.
+      # untb::zsm() implements the McKane (2004) zero-sum multinomial with
+      # arguments (J, P, m) and returns a probability distribution over
+      # abundances 0..J. In spesim we parameterise the neutral SAD via theta
+      # (Ewens sampling formula). To avoid a misleading/broken mapping from
+      # theta -> P, we implement a robust theta-only Ewens sampler.
+      #
+      # If you want a mechanistic neutral model with immigration, use untb
+      # directly; spesim's zsm option is a SAD helper, not a dynamics engine.
+      if (!is.na(m)) {
+        warning(
+          "SAD_MODEL='zsm' currently uses a theta-only Ewens sampler; ",
+          "m was provided but is ignored."
         )
-        res <- NULL
-        for (a in args_try) {
-          # drop NA parameters
-          a <- a[!vapply(a, function(z) length(z) == 1L && isTRUE(is.na(z)), logical(1))]
-          res <- tryCatch(do.call(zsm_fun, a), error = function(e) NULL)
-          if (!is.null(res)) break
-        }
-        if (is.null(res)) {
-          stop("Could not call untb::zsm(); check untb version/signature.")
-        }
-        counts <- as.integer(res)
-      } else {
-        # Fallback: Ewens sampling formula (theta-only), via Chinese restaurant.
-        if (!is.finite(theta) || theta <= 0) stop("theta must be > 0")
-        counts <- integer(0)
-        for (i in seq_len(n_individuals)) {
-          if (length(counts) == 0L) {
-            counts <- 1L
+      }
+
+      # Ewens sampling formula (theta-only), via Chinese restaurant.
+      if (!is.finite(theta) || theta <= 0) stop("theta must be > 0")
+      counts <- integer(0)
+      for (i in seq_len(n_individuals)) {
+        if (length(counts) == 0L) {
+          counts <- 1L
+        } else {
+          p_new <- theta / (theta + i - 1)
+          if (stats::runif(1) < p_new) {
+            counts <- c(counts, 1L)
           } else {
-            p_new <- theta / (theta + i - 1)
-            if (stats::runif(1) < p_new) {
-              counts <- c(counts, 1L)
-            } else {
-              j <- sample.int(length(counts), size = 1L, prob = counts)
-              counts[j] <- counts[j] + 1L
-            }
+            j <- sample.int(length(counts), size = 1L, prob = counts)
+            counts[j] <- counts[j] + 1L
           }
         }
       }
