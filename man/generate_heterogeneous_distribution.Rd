@@ -15,10 +15,17 @@ domain; must have a valid CRS (projected coordinates recommended).}
 \itemize{
 \item \emph{Community size:} \code{N_SPECIES}, \code{N_INDIVIDUALS},
 \code{DOMINANT_FRACTION}, \code{FISHER_ALPHA}, \code{FISHER_X}.
+\item \emph{Model family:} \code{MODEL_FAMILY} in \code{"manual"},
+\code{"niche_filtering"}, \code{"neutral_csr"},
+\code{"neutral_hubbell_like"}, or \code{"hybrid"}.
 \item \emph{Environment:} \code{SAMPLING_RESOLUTION}, \code{ENVIRONMENTAL_NOISE},
 and \code{GRADIENT} (tibble with \code{species}, \code{gradient} in
 \{temperature, elevation, rainfall\}, \code{optimum} in \eqn{[0,1]},
 and \code{tol > 0}). If absent, species are treated as neutral.
+\item \emph{Neutral/hybrid controls (if family is neutral/hybrid):}
+\code{NEUTRAL_M}, \code{NEUTRAL_NU}, \code{NEUTRAL_META_MODEL},
+\code{DISPERSAL_KERNEL}, \code{DISPERSAL_SCALE}, \code{DISPERSAL_ALPHA},
+and \code{HYBRID_ENV_WEIGHT}.
 \item \emph{Point-process selection (strings):}
 \code{SPATIAL_PROCESS_A} and \code{SPATIAL_PROCESS_OTHERS} in
 \code{"poisson"}, \code{"thomas"}, \code{"strauss"}, or \code{"geyer"}.

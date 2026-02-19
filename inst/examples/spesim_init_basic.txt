@@ -7,11 +7,21 @@ OUTPUT_PREFIX = "out/run_basic"
 # Community size and SAD
 N_INDIVIDUALS = 2000
 N_SPECIES = 10
+MODEL_FAMILY = manual
 
 # SAD_MODEL options include:
 # fisher | geometric | brokenstick | zipf | zipf-mandelbrot | lognormal |
 # poisson-lognormal | poisson-gamma | zsm | custom
 SAD_MODEL = fisher
+
+# Neutral/hybrid controls (used when MODEL_FAMILY is neutral_hubbell_like or hybrid)
+NEUTRAL_M = 0.10
+NEUTRAL_NU = 0.00
+NEUTRAL_META_MODEL = zsm
+DISPERSAL_KERNEL = gaussian
+DISPERSAL_SCALE = 0.50
+DISPERSAL_ALPHA = 2.0
+HYBRID_ENV_WEIGHT = 1.0
 
 # Fisher SAD parameters (used when SAD_MODEL = fisher)
 DOMINANT_FRACTION = 0.30

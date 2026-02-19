@@ -107,11 +107,34 @@ spesim_materialize_P <- function(P) {
   # Point-process strings
   P$SPATIAL_PROCESS_A <- tolower(as.character(P$SPATIAL_PROCESS_A %||% "poisson"))
   P$SPATIAL_PROCESS_OTHERS <- tolower(as.character(P$SPATIAL_PROCESS_OTHERS %||% "poisson"))
+  P$MODEL_FAMILY <- tolower(as.character(P$MODEL_FAMILY %||% "manual"))
+  P$MODEL_FAMILY <- gsub("-", "_", P$MODEL_FAMILY)
+  P$DISPERSAL_KERNEL <- tolower(as.character(P$DISPERSAL_KERNEL %||% "gaussian"))
+  P$DISPERSAL_KERNEL <- gsub("-", "_", P$DISPERSAL_KERNEL)
+  P$NEUTRAL_META_MODEL <- tolower(as.character(P$NEUTRAL_META_MODEL %||% "zsm"))
+  P$NEUTRAL_META_MODEL <- gsub("_", "-", P$NEUTRAL_META_MODEL)
   if (!P$SPATIAL_PROCESS_A %in% c("poisson", "thomas")) {
     stop("SPATIAL_PROCESS_A must be 'poisson' or 'thomas'.")
   }
   if (!P$SPATIAL_PROCESS_OTHERS %in% c("poisson", "strauss", "geyer", "thomas")) {
     stop("SPATIAL_PROCESS_OTHERS must be 'poisson', 'thomas', 'strauss', or 'geyer'.")
+  }
+  if (!P$MODEL_FAMILY %in% c("manual", "niche_filtering", "neutral_csr", "neutral_hubbell_like", "hybrid")) {
+    stop("MODEL_FAMILY must be one of: manual, niche_filtering, neutral_csr, neutral_hubbell_like, hybrid.")
+  }
+  if (!P$DISPERSAL_KERNEL %in% c("gaussian", "exponential", "power_law")) {
+    stop("DISPERSAL_KERNEL must be one of: gaussian, exponential, power_law.")
+  }
+  ok_sad <- c(
+    "fisher", "geometric", "brokenstick", "zipf", "zipf-mandelbrot",
+    "lognormal", "poisson-lognormal", "poisson-gamma", "zsm", "custom"
+  )
+  if (P$NEUTRAL_META_MODEL %in% c("broken-stick", "brokenstick")) P$NEUTRAL_META_MODEL <- "brokenstick"
+  if (P$NEUTRAL_META_MODEL %in% c("zipfmandelbrot", "zipf-mandelbrot")) P$NEUTRAL_META_MODEL <- "zipf-mandelbrot"
+  if (P$NEUTRAL_META_MODEL %in% c("poissonlognormal", "poisson-lognormal")) P$NEUTRAL_META_MODEL <- "poisson-lognormal"
+  if (P$NEUTRAL_META_MODEL %in% c("poissongamma", "poisson-gamma")) P$NEUTRAL_META_MODEL <- "poisson-gamma"
+  if (!P$NEUTRAL_META_MODEL %in% ok_sad) {
+    stop("NEUTRAL_META_MODEL must match a supported SAD model.")
   }
 
   # Gradients: rebuild P$GRADIENT from the canonical GRADIENT_* fields

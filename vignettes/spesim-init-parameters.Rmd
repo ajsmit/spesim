@@ -48,6 +48,7 @@ loader resolves them automatically as documented below.
 | `OUTPUT_PREFIX` | character | `"output"` | Base path/prefix for outputs (timestamp appended). |
 | `N_INDIVIDUALS` | integer | `2000` | Total number of individuals in the simulated community. |
 | `N_SPECIES` | integer | `10` | Number of species (labels `A..`). |
+| `MODEL_FAMILY` | character | `"manual"` | High-level preset: `manual`, `niche_filtering`, `neutral_csr`, `neutral_hubbell_like`, `hybrid`. |
 | `DOMINANT_FRACTION` | numeric | `0.30` | Fraction of all individuals assigned to the dominant species `A`. |
 
 ## Abundance model (Fisher’s log-series)
@@ -56,6 +57,18 @@ loader resolves them automatically as documented below.
 |-----|------|---------|-------------|
 | `FISHER_ALPHA` | numeric | `3.0` | Fisher’s alpha for the non‑dominant tail. |
 | `FISHER_X` | numeric | `0.95` | Log‑series parameter (close to 1). |
+
+## Neutral / hybrid recruitment controls
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `NEUTRAL_M` | numeric | `0.1` | Immigration probability per recruitment step in `neutral_hubbell_like`/`hybrid`. |
+| `NEUTRAL_NU` | numeric | `0.0` | Speciation probability during local recruitment (implemented as species reassignment from metacommunity weights). |
+| `NEUTRAL_META_MODEL` | character | `"zsm"` | SAD model used to define metacommunity species weights. |
+| `DISPERSAL_KERNEL` | character | `"gaussian"` | Recruitment displacement kernel: `gaussian`, `exponential`, `power_law`. |
+| `DISPERSAL_SCALE` | numeric | `0.5` | Scale parameter for dispersal displacement. |
+| `DISPERSAL_ALPHA` | numeric | `2.0` | Shape parameter for `power_law` kernel. |
+| `HYBRID_ENV_WEIGHT` | numeric | `1.0` | Environmental sorting strength in `hybrid` (`0` = neutral-only). |
 
 ---
 
