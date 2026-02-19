@@ -364,6 +364,78 @@ generate_heterogeneous_distribution <- function(domain, P) {
       crs = crs
     )
   }
+  .linear_domain_state <- function(poly, P) {
+    d_type <- tolower(as.character(P$DOMAIN_TYPE %||% "polygon"))
+    d_type <- gsub("-", "_", d_type)
+    enabled <- d_type %in% c("network", "coastline")
+    bb <- sf::st_bbox(poly)
+    axis <- tolower(as.character(P$LINEAR_AXIS %||% "x"))
+    if (!axis %in% c("x", "y")) axis <- "x"
+    wrap <- isTRUE(P$LINEAR_WRAP)
+    jitter_sd <- as.numeric(P$LINEAR_JITTER_SD %||% 0)
+    if (!is.finite(jitter_sd) || jitter_sd < 0) jitter_sd <- 0
+    list(
+      enabled = enabled,
+      type = d_type,
+      axis = axis,
+      wrap = wrap,
+      jitter_sd = jitter_sd,
+      xmin = as.numeric(bb["xmin"]),
+      xmax = as.numeric(bb["xmax"]),
+      ymin = as.numeric(bb["ymin"]),
+      ymax = as.numeric(bb["ymax"])
+    )
+  }
+  .xy_to_linear_pos <- function(xy, st) {
+    if (NROW(xy) == 0) return(numeric(0))
+    if (!isTRUE(st$enabled)) return(rep(NA_real_, NROW(xy)))
+    if (identical(st$axis, "x")) {
+      den <- st$xmax - st$xmin
+      if (!is.finite(den) || den == 0) den <- 1
+      p <- (xy[, 1] - st$xmin) / den
+    } else {
+      den <- st$ymax - st$ymin
+      if (!is.finite(den) || den == 0) den <- 1
+      p <- (xy[, 2] - st$ymin) / den
+    }
+    if (isTRUE(st$wrap)) {
+      p %% 1
+    } else {
+      pmax(0, pmin(1, p))
+    }
+  }
+  .linear_pos_to_xy <- function(pos, st, poly) {
+    if (length(pos) == 0L) return(matrix(numeric(0), ncol = 2))
+    p <- as.numeric(pos)
+    p[!is.finite(p)] <- 0.5
+    if (isTRUE(st$wrap)) {
+      p <- p %% 1
+    } else {
+      p <- pmax(0, pmin(1, p))
+    }
+    n <- length(p)
+    out <- matrix(NA_real_, nrow = n, ncol = 2)
+    ymid <- (st$ymin + st$ymax) / 2
+    xmid <- (st$xmin + st$xmax) / 2
+    if (identical(st$axis, "x")) {
+      out[, 1] <- st$xmin + p * (st$xmax - st$xmin)
+      out[, 2] <- ymid + stats::rnorm(n, 0, st$jitter_sd)
+    } else {
+      out[, 2] <- st$ymin + p * (st$ymax - st$ymin)
+      out[, 1] <- xmid + stats::rnorm(n, 0, st$jitter_sd)
+    }
+    # ensure points remain inside polygonal domain
+    bad <- which(!.in_domain(out, poly))
+    if (length(bad) > 0) {
+      out[bad, ] <- .sample_uniform_in_domain(length(bad), poly)
+    }
+    out
+  }
+  .constrain_xy_to_linear <- function(xy, st, poly) {
+    if (!isTRUE(st$enabled) || NROW(xy) == 0) return(xy)
+    p <- .xy_to_linear_pos(xy, st)
+    .linear_pos_to_xy(p, st, poly)
+  }
   .simulate_neutral_recruitment <- function(poly, P) {
     J <- as.integer(P$N_INDIVIDUALS %||% 0L)
     S <- as.integer(P$N_SPECIES %||% 1L)
@@ -378,6 +450,7 @@ generate_heterogeneous_distribution <- function(domain, P) {
     family <- tolower(as.character(P$MODEL_FAMILY %||% "manual"))
     family <- gsub("-", "_", family)
     hybrid_mode <- identical(family, "hybrid")
+    linear_st <- .linear_domain_state(poly, P)
 
     m <- as.numeric(P$NEUTRAL_M %||% 0.1)
     nu <- as.numeric(P$NEUTRAL_NU %||% 0.0)
@@ -391,6 +464,9 @@ generate_heterogeneous_distribution <- function(domain, P) {
     if (!is.finite(scale) || scale <= 0) scale <- 0.5
     alpha <- as.numeric(P$DISPERSAL_ALPHA %||% 2)
     if (!is.finite(alpha) || alpha <= 0) alpha <- 2
+    dir_bias <- as.numeric(P$DISPERSAL_DIRECTION_BIAS %||% 0)
+    if (!is.finite(dir_bias)) dir_bias <- 0
+    dir_bias <- max(-1, min(1, dir_bias))
     lambda_env <- as.numeric(P$HYBRID_ENV_WEIGHT %||% 1)
     if (!is.finite(lambda_env) || lambda_env < 0) lambda_env <- 1
 
@@ -420,7 +496,12 @@ generate_heterogeneous_distribution <- function(domain, P) {
       meta_prob <- meta_prob / sum(meta_prob)
     }
 
-    env_grid <- create_environmental_gradients(poly, P$SAMPLING_RESOLUTION, P$ENVIRONMENTAL_NOISE)
+    env_grid <- create_environmental_gradients(
+      poly,
+      P$SAMPLING_RESOLUTION,
+      P$ENVIRONMENTAL_NOISE,
+      covariates = P$ENV_COVARIATES %||% NULL
+    )
     env_sf <- sf::st_as_sf(env_grid, coords = c("x", "y"), crs = crs_dom)
     gx <- sort(unique(env_grid$x))
     gy <- sort(unique(env_grid$y))
@@ -455,23 +536,36 @@ generate_heterogeneous_distribution <- function(domain, P) {
     .sample_immigrant_species <- function() {
       sample(spp, size = 1L, prob = meta_prob)
     }
-    .propose_displacement <- function(parent_xy) {
+    .step_magnitude <- function() {
       if (kernel == "gaussian") {
-        dx <- stats::rnorm(1L, 0, scale)
-        dy <- stats::rnorm(1L, 0, scale)
+        abs(stats::rnorm(1L, 0, scale))
       } else if (kernel == "exponential") {
-        ang <- stats::runif(1L, 0, 2 * pi)
-        r <- stats::rexp(1L, rate = 1 / scale)
-        dx <- r * cos(ang)
-        dy <- r * sin(ang)
+        stats::rexp(1L, rate = 1 / scale)
       } else {
-        ang <- stats::runif(1L, 0, 2 * pi)
         u <- stats::runif(1L)
-        r <- scale * ((1 - u)^(-1 / alpha) - 1)
-        dx <- r * cos(ang)
-        dy <- r * sin(ang)
+        scale * ((1 - u)^(-1 / alpha) - 1)
       }
+    }
+    .propose_displacement <- function(parent_xy) {
+      ang <- stats::runif(1L, 0, 2 * pi)
+      r <- .step_magnitude()
+      dx <- r * cos(ang)
+      dy <- r * sin(ang)
       c(parent_xy[1] + dx, parent_xy[2] + dy)
+    }
+    .propose_linear_pos <- function(parent_pos) {
+      mag <- .step_magnitude()
+      axis_range <- if (identical(linear_st$axis, "x")) linear_st$xmax - linear_st$xmin else linear_st$ymax - linear_st$ymin
+      if (!is.finite(axis_range) || axis_range <= 0) axis_range <- 1
+      step <- mag / axis_range
+      p_plus <- (1 + dir_bias) / 2
+      sgn <- if (stats::runif(1) < p_plus) 1 else -1
+      out <- parent_pos + sgn * step
+      if (isTRUE(linear_st$wrap)) {
+        out %% 1
+      } else {
+        max(0, min(1, out))
+      }
     }
     .is_in_domain <- function(xy) {
       .in_domain(matrix(as.numeric(xy), ncol = 2), poly)[1]
@@ -501,6 +595,7 @@ generate_heterogeneous_distribution <- function(domain, P) {
     }
 
     xy <- matrix(NA_real_, nrow = J, ncol = 2)
+    linear_pos <- rep(NA_real_, J)
     spp_out <- character(J)
 
     for (i in seq_len(J)) {
@@ -520,10 +615,22 @@ generate_heterogeneous_distribution <- function(domain, P) {
       accepted <- FALSE
       for (att in seq_len(40L)) {
         cand_xy <- if (is_immigrant || !is.finite(parent_idx)) {
-          .sample_uniform_in_domain(1L, poly)
+          if (isTRUE(linear_st$enabled)) {
+            p_i <- stats::runif(1)
+            linear_pos[i] <- p_i
+            .linear_pos_to_xy(p_i, linear_st, poly)
+          } else {
+            .sample_uniform_in_domain(1L, poly)
+          }
         } else {
-          cxy <- .propose_displacement(xy[parent_idx, ])
-          if (.is_in_domain(cxy)) matrix(cxy, ncol = 2) else matrix(numeric(0), ncol = 2)
+          if (isTRUE(linear_st$enabled)) {
+            p_i <- .propose_linear_pos(linear_pos[parent_idx])
+            linear_pos[i] <- p_i
+            .linear_pos_to_xy(p_i, linear_st, poly)
+          } else {
+            cxy <- .propose_displacement(xy[parent_idx, ])
+            if (.is_in_domain(cxy)) matrix(cxy, ncol = 2) else matrix(numeric(0), ncol = 2)
+          }
         }
         if (NROW(cand_xy) == 0L) next
         p_acc <- .env_accept_prob(sp_i, cand_xy[1, ])
@@ -536,7 +643,13 @@ generate_heterogeneous_distribution <- function(domain, P) {
       }
 
       if (!accepted) {
-        fallback <- .sample_uniform_in_domain(1L, poly)
+        fallback <- if (isTRUE(linear_st$enabled)) {
+          p_i <- stats::runif(1)
+          linear_pos[i] <- p_i
+          .linear_pos_to_xy(p_i, linear_st, poly)
+        } else {
+          .sample_uniform_in_domain(1L, poly)
+        }
         xy[i, ] <- fallback[1, ]
         spp_out[i] <- sp_i
       }
@@ -546,6 +659,9 @@ generate_heterogeneous_distribution <- function(domain, P) {
       species = as.character(spp_out),
       geometry = .as_sfc_points(xy, crs_dom)
     )
+    if (isTRUE(linear_st$enabled)) {
+      out$linear_pos <- linear_pos
+    }
     sf::st_join(out, env_sf, join = sf::st_nearest_feature)
   }
 
@@ -590,7 +706,8 @@ generate_heterogeneous_distribution <- function(domain, P) {
   env_grid <- create_environmental_gradients(
     domain,
     P$SAMPLING_RESOLUTION,
-    P$ENVIRONMENTAL_NOISE
+    P$ENVIRONMENTAL_NOISE,
+    covariates = P$ENV_COVARIATES %||% NULL
   )
   env_sf <- sf::st_as_sf(
     env_grid,
@@ -761,6 +878,13 @@ generate_heterogeneous_distribution <- function(domain, P) {
   }
 
   # --- 6) Final env join and return -----------------------------------
+  lin_st <- .linear_domain_state(domain, P)
+  if (isTRUE(lin_st$enabled)) {
+    xy_all <- sf::st_coordinates(pts)
+    xy_fix <- .constrain_xy_to_linear(xy_all, lin_st, domain)
+    sf::st_geometry(pts) <- .as_sfc_points(xy_fix, crs_dom)
+    pts$linear_pos <- .xy_to_linear_pos(xy_fix, lin_st)
+  }
   pts <- sf::st_join(pts, env_sf, join = sf::st_nearest_feature)
   pts$species <- as.character(pts$species)
   pts

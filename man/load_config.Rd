@@ -47,6 +47,15 @@ Model-family presets:
 \item \code{neutral_hubbell_like}: sequential neutral recruitment with immigration/speciation and dispersal.
 \item \code{hybrid}: neutral recruitment with environmental sorting during recruitment.
 }
+
+Constrained landscape options:
+\itemize{
+\item \code{DOMAIN_TYPE = "network"} or \code{"coastline"} enables a
+linearized coordinate for recruitment and distance-decay summaries.
+\item \code{DISTANCE_METRIC = "along_path"} uses along-coordinate distance.
+\item \code{ENV_COVARIATES_FILE} can supply external section/node
+covariates (CSV with \code{x}, \code{y}, and environmental columns).
+}
 }
 \examples{
 \dontrun{

@@ -178,6 +178,15 @@
 #'   \item \code{hybrid}: neutral recruitment with environmental sorting during recruitment.
 #' }
 #'
+#' Constrained landscape options:
+#' \itemize{
+#'   \item \code{DOMAIN_TYPE = "network"} or \code{"coastline"} enables a
+#'   linearized coordinate for recruitment and distance-decay summaries.
+#'   \item \code{DISTANCE_METRIC = "along_path"} uses along-coordinate distance.
+#'   \item \code{ENV_COVARIATES_FILE} can supply external section/node
+#'   covariates (CSV with \code{x}, \code{y}, and environmental columns).
+#' }
+#'
 #' @param init_file Character scalar; path to the configuration file.
 #'
 #' @return A named list \code{P} with fully-resolved parameters used by the
@@ -198,6 +207,15 @@ load_config <- function(init_file) {
     OUTPUT_PREFIX = "output",
     N_INDIVIDUALS = 2000,
     N_SPECIES = 10,
+
+    # Domain / constrained-landscape controls
+    DOMAIN_TYPE = "polygon", # polygon | network | coastline
+    LINEAR_AXIS = "x",       # x | y (used when DOMAIN_TYPE != polygon and no line geometry is supplied)
+    LINEAR_WRAP = FALSE,     # TRUE for circular coastlines
+    LINEAR_JITTER_SD = 0.0,  # optional perpendicular jitter around linear axis
+    DISTANCE_METRIC = "auto",# auto | euclidean | along_path
+    ENV_COVARIATES_FILE = NULL,
+    ENV_COVARIATES = NULL,
 
     # High-level model family
     MODEL_FAMILY = "manual", # manual | niche_filtering | neutral_csr | neutral_hubbell_like | hybrid
@@ -237,6 +255,7 @@ load_config <- function(init_file) {
     DISPERSAL_KERNEL = "gaussian", # gaussian | exponential | power_law
     DISPERSAL_SCALE = 0.5,
     DISPERSAL_ALPHA = 2.0,
+    DISPERSAL_DIRECTION_BIAS = 0.0, # -1..1, positive = increasing linear coordinate
     HYBRID_ENV_WEIGHT = 1.0,
 
     GRADIENT_SPECIES = character(0),
@@ -303,6 +322,11 @@ load_config <- function(init_file) {
   P$SPATIAL_PROCESS_OTHERS <- tolower(as.character(P$SPATIAL_PROCESS_OTHERS))
   P$MODEL_FAMILY <- tolower(as.character(P$MODEL_FAMILY %||% "manual"))
   P$MODEL_FAMILY <- gsub("-", "_", P$MODEL_FAMILY)
+  P$DOMAIN_TYPE <- tolower(as.character(P$DOMAIN_TYPE %||% "polygon"))
+  P$DOMAIN_TYPE <- gsub("-", "_", P$DOMAIN_TYPE)
+  P$LINEAR_AXIS <- tolower(as.character(P$LINEAR_AXIS %||% "x"))
+  P$DISTANCE_METRIC <- tolower(as.character(P$DISTANCE_METRIC %||% "auto"))
+  P$DISTANCE_METRIC <- gsub("-", "_", P$DISTANCE_METRIC)
   P$NEUTRAL_META_MODEL <- tolower(as.character(P$NEUTRAL_META_MODEL %||% "zsm"))
   P$NEUTRAL_META_MODEL <- gsub("_", "-", P$NEUTRAL_META_MODEL)
   P$DISPERSAL_KERNEL <- tolower(as.character(P$DISPERSAL_KERNEL %||% "gaussian"))
@@ -345,6 +369,15 @@ load_config <- function(init_file) {
   if (!P$DISPERSAL_KERNEL %in% ok_kernel) {
     stop("DISPERSAL_KERNEL must be one of: ", paste(ok_kernel, collapse = ", "))
   }
+  if (!P$DOMAIN_TYPE %in% c("polygon", "network", "coastline")) {
+    stop("DOMAIN_TYPE must be one of: polygon, network, coastline.")
+  }
+  if (!P$LINEAR_AXIS %in% c("x", "y")) {
+    stop("LINEAR_AXIS must be 'x' or 'y'.")
+  }
+  if (!P$DISTANCE_METRIC %in% c("auto", "euclidean", "along_path")) {
+    stop("DISTANCE_METRIC must be one of: auto, euclidean, along_path.")
+  }
 
   # Safe numeric coercion for known numeric fields (no warnings)
   num_fields <- c(
@@ -357,7 +390,8 @@ load_config <- function(init_file) {
     "POIGAMMA_SHAPE", "POIGAMMA_RATE",
     "ZSM_THETA", "ZSM_M",
     "NEUTRAL_M", "NEUTRAL_NU",
-    "DISPERSAL_SCALE", "DISPERSAL_ALPHA", "HYBRID_ENV_WEIGHT",
+    "DISPERSAL_SCALE", "DISPERSAL_ALPHA", "DISPERSAL_DIRECTION_BIAS", "HYBRID_ENV_WEIGHT",
+    "LINEAR_JITTER_SD",
 
     "SAMPLING_RESOLUTION", "ENVIRONMENTAL_NOISE",
     "MAX_CLUSTERS_DOMINANT", "CLUSTER_SPREAD_DOMINANT",
@@ -374,6 +408,12 @@ load_config <- function(init_file) {
       suppressWarnings(P[[f]] <- as.numeric(P[[f]]))
     }
   }
+  if (!is.finite(P$DISPERSAL_DIRECTION_BIAS) || P$DISPERSAL_DIRECTION_BIAS < -1 || P$DISPERSAL_DIRECTION_BIAS > 1) {
+    stop("DISPERSAL_DIRECTION_BIAS must be in [-1, 1].")
+  }
+  if (!is.finite(P$LINEAR_JITTER_SD) || P$LINEAR_JITTER_SD < 0) {
+    stop("LINEAR_JITTER_SD must be >= 0.")
+  }
 
   # Apply model family presets (explicitly provided init keys take precedence).
   P <- .apply_model_family_preset(P, explicit_keys = names(raw_vals))
@@ -385,9 +425,29 @@ load_config <- function(init_file) {
   if (!is.null(P$INTERACTIONS_FILE)) {
     P$INTERACTIONS_FILE <- as.character(P$INTERACTIONS_FILE)
   }
+  if (!is.null(P$ENV_COVARIATES_FILE)) {
+    P$ENV_COVARIATES_FILE <- as.character(P$ENV_COVARIATES_FILE)
+    if (!nzchar(P$ENV_COVARIATES_FILE)) P$ENV_COVARIATES_FILE <- NULL
+  }
 
   # Logical flags
   P$ADVANCED_ANALYSIS <- as.logical(P$ADVANCED_ANALYSIS)
+  P$LINEAR_WRAP <- as.logical(P$LINEAR_WRAP)
+
+  # Optional external environmental covariates
+  if (!is.null(P$ENV_COVARIATES_FILE)) {
+    if (file.exists(P$ENV_COVARIATES_FILE)) {
+      covs <- tryCatch(
+        utils::read.csv(P$ENV_COVARIATES_FILE, stringsAsFactors = FALSE),
+        error = function(e) stop("Could not read ENV_COVARIATES_FILE: ", e$message)
+      )
+      req <- c("x", "y")
+      if (!all(req %in% names(covs))) {
+        stop("ENV_COVARIATES_FILE must contain columns: x, y")
+      }
+      P$ENV_COVARIATES <- covs
+    }
+  }
 
   # Colours (validate gracefully)
   .validate_colour <- function(x, default) {

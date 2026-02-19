@@ -68,7 +68,12 @@ spesim_engine <- function(P, domain) {
   if (nrow(quadrats) == 0) stop("Failed to place any quadrats.")
 
   all_species <- LETTERS[1:P$N_SPECIES]
-  env_gradients <- create_environmental_gradients(domain, P$SAMPLING_RESOLUTION, P$ENVIRONMENTAL_NOISE)
+  env_gradients <- create_environmental_gradients(
+    domain,
+    P$SAMPLING_RESOLUTION,
+    P$ENVIRONMENTAL_NOISE,
+    covariates = P$ENV_COVARIATES %||% NULL
+  )
   abund_matrix <- create_abundance_matrix(species_dist, quadrats, all_species)
   site_env <- calculate_quadrat_environment(env_gradients, quadrats, sf::st_crs(domain))
 
@@ -76,6 +81,22 @@ spesim_engine <- function(P, domain) {
     as.data.frame() |>
     dplyr::mutate(site = quadrats$quadrat_id) |>
     dplyr::select(site, x = X, y = Y)
+
+  if (tolower(as.character(P$DOMAIN_TYPE %||% "polygon")) %in% c("network", "coastline")) {
+    bb <- sf::st_bbox(domain)
+    if (tolower(as.character(P$LINEAR_AXIS %||% "x")) == "x") {
+      den <- as.numeric(bb["xmax"] - bb["xmin"])
+      if (!is.finite(den) || den == 0) den <- 1
+      site_coords$linear_pos <- (site_coords$x - as.numeric(bb["xmin"])) / den
+    } else {
+      den <- as.numeric(bb["ymax"] - bb["ymin"])
+      if (!is.finite(den) || den == 0) den <- 1
+      site_coords$linear_pos <- (site_coords$y - as.numeric(bb["ymin"])) / den
+    }
+    site_coords$linear_pos <- pmax(0, pmin(1, site_coords$linear_pos))
+    attr(site_coords, "distance_metric") <- "along_path"
+    attr(site_coords, "linear_wrap") <- isTRUE(P$LINEAR_WRAP)
+  }
 
   list(
     P = P,
@@ -109,6 +130,11 @@ spesim_materialize_P <- function(P) {
   P$SPATIAL_PROCESS_OTHERS <- tolower(as.character(P$SPATIAL_PROCESS_OTHERS %||% "poisson"))
   P$MODEL_FAMILY <- tolower(as.character(P$MODEL_FAMILY %||% "manual"))
   P$MODEL_FAMILY <- gsub("-", "_", P$MODEL_FAMILY)
+  P$DOMAIN_TYPE <- tolower(as.character(P$DOMAIN_TYPE %||% "polygon"))
+  P$DOMAIN_TYPE <- gsub("-", "_", P$DOMAIN_TYPE)
+  P$LINEAR_AXIS <- tolower(as.character(P$LINEAR_AXIS %||% "x"))
+  P$DISTANCE_METRIC <- tolower(as.character(P$DISTANCE_METRIC %||% "auto"))
+  P$DISTANCE_METRIC <- gsub("-", "_", P$DISTANCE_METRIC)
   P$DISPERSAL_KERNEL <- tolower(as.character(P$DISPERSAL_KERNEL %||% "gaussian"))
   P$DISPERSAL_KERNEL <- gsub("-", "_", P$DISPERSAL_KERNEL)
   P$NEUTRAL_META_MODEL <- tolower(as.character(P$NEUTRAL_META_MODEL %||% "zsm"))
@@ -124,6 +150,20 @@ spesim_materialize_P <- function(P) {
   }
   if (!P$DISPERSAL_KERNEL %in% c("gaussian", "exponential", "power_law")) {
     stop("DISPERSAL_KERNEL must be one of: gaussian, exponential, power_law.")
+  }
+  if (!P$DOMAIN_TYPE %in% c("polygon", "network", "coastline")) {
+    stop("DOMAIN_TYPE must be one of: polygon, network, coastline.")
+  }
+  if (!P$LINEAR_AXIS %in% c("x", "y")) {
+    stop("LINEAR_AXIS must be 'x' or 'y'.")
+  }
+  if (!P$DISTANCE_METRIC %in% c("auto", "euclidean", "along_path")) {
+    stop("DISTANCE_METRIC must be one of: auto, euclidean, along_path.")
+  }
+  if (!is.finite(as.numeric(P$DISPERSAL_DIRECTION_BIAS %||% 0)) ||
+      as.numeric(P$DISPERSAL_DIRECTION_BIAS %||% 0) < -1 ||
+      as.numeric(P$DISPERSAL_DIRECTION_BIAS %||% 0) > 1) {
+    stop("DISPERSAL_DIRECTION_BIAS must be in [-1, 1].")
   }
   ok_sad <- c(
     "fisher", "geometric", "brokenstick", "zipf", "zipf-mandelbrot",
