@@ -73,6 +73,13 @@ reference:
   contents:
   - read_latest_report
 
+- title: "Observed / network workflows"
+  contents:
+  - spesim_from_observed
+  - build_network_edges
+  - simulate_between_observed
+  - place_quadrats_route
+
 - title: "Audits (method testing)"
   contents:
   - spesim_audit
@@ -117,3 +124,6 @@ articles:
   - spesim-init-parameters
   - spesim-interactions
   - spesim-point-processes
+  - spesim-constrained-landscapes
+  - spesim-real-world-landscapes
+  - spesim-doubs-network-method
