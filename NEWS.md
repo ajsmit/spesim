@@ -1,3 +1,9 @@
+# spesim 0.4.1
+
+## Maintenance
+
+- Build/check hygiene improvements (CRAN incoming note reductions).
+
 # spesim 0.4.0
 
 ## Runner refactor + stable results

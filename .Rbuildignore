@@ -34,7 +34,6 @@ Thumbs\.db
 ^renv\.lock$
 
 # Build
-^build$
 ^.*\.Rproj$
 ^.*\.Rcheck$
 
@@ -43,6 +42,9 @@ Thumbs\.db
 ^REVIEW_spesim\.md$
 ^spesim\.code-workspace$
 ^out($|/)
+
+# Local tarballs
+^.*\.tar\.gz$
 
 # Compiled artefacts (should never be in the source tarball)
 ^src/.*\.(o|so|dll)$
@@ -58,4 +60,3 @@ Thumbs\.db
 # Exclude site cache (optional)
 ^_pkgdown\.yml$
 ^docs$
-^Meta$

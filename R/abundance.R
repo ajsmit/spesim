@@ -101,10 +101,11 @@ generate_fisher_log_series <- function(
 #' individuals.
 #'
 #' @details
-#' \strong{Abundances.} Total individuals per species are drawn with
-#' \code{\link{generate_fisher_log_series}()}, allocating a fixed fraction to
-#' species "A" and distributing the remainder by a log-series across
-#' \code{B, C, ...}.
+#' \strong{Abundances.} Total individuals per species are generated with
+#' \code{\link{generate_sad}()} using \code{P$SAD_MODEL} (default: \code{"fisher"}).
+#' The built-in Fisher option allocates a fixed fraction to species "A" and
+#' distributes the remainder by a log-series across \code{B, C, ...}; other SAD
+#' models generate a full \code{A..} vector directly.
 #'
 #' \strong{Baseline locations (point processes).} Locations are simulated using
 #' the process names in \code{P}. Supported values (case-insensitive):
@@ -182,6 +183,7 @@ generate_fisher_log_series <- function(
 #'
 #' @seealso
 #' \code{\link{create_environmental_gradients}()},
+#' \code{\link{generate_sad}()},
 #' \code{\link{generate_fisher_log_series}()},
 #' \code{\link{load_config}()},
 #' \code{\link{load_interactions}()}
@@ -357,12 +359,29 @@ generate_heterogeneous_distribution <- function(domain, P) {
   }
 
   # --- 1) Target abundances --------------------------------------------
-  abund <- generate_fisher_log_series(
-    P$N_SPECIES,
-    P$N_INDIVIDUALS,
-    P$DOMINANT_FRACTION,
-    P$FISHER_ALPHA,
-    P$FISHER_X
+  abund <- generate_sad(
+    n_species = P$N_SPECIES,
+    n_individuals = P$N_INDIVIDUALS,
+    model = P$SAD_MODEL %||% "fisher",
+    # fisher
+    dominant_fraction = P$DOMINANT_FRACTION,
+    alpha = P$FISHER_ALPHA,
+    x = P$FISHER_X,
+    # geometric / zipf
+    k = P$GEOMETRIC_K,
+    exponent = P$ZIPF_EXPONENT,
+    q = P$ZIPF_Q,
+    # lognormal families
+    meanlog = P$LOGNORMAL_MEANLOG,
+    sdlog = P$LOGNORMAL_SDLOG,
+    # poisson-gamma
+    shape = P$POIGAMMA_SHAPE,
+    rate = P$POIGAMMA_RATE,
+    # neutral
+    theta = P$ZSM_THETA,
+    m = P$ZSM_M,
+    # custom
+    sad = P$SAD_VECTOR
   )
   n_A <- unname(abund["A"] %||% 0)
   other_species <- rep(

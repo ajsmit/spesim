@@ -20,9 +20,14 @@ OUTPUT_PREFIX = out/run
 # --- Community size and composition ----------------------------------
 N_INDIVIDUALS = 2500        # total individuals (all species)
 N_SPECIES     = 22          # number of species (A..)
-DOMINANT_FRACTION = 0.30    # fraction of individuals assigned to species 'A'
 
-# Fisher’s log-series parameters for the non-dominant pool
+# SAD model for the community
+# Options: fisher | geometric | brokenstick | zipf | zipf-mandelbrot | lognormal |
+#          poisson-lognormal | poisson-gamma | zsm | custom
+SAD_MODEL = fisher
+
+# Fisher’s log-series parameters (used when SAD_MODEL = fisher)
+DOMINANT_FRACTION = 0.30    # fraction of individuals assigned to species 'A'
 FISHER_ALPHA = 4.2
 FISHER_X     = 0.95
 

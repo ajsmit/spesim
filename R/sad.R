@@ -1,0 +1,418 @@
+#' Species abundance distribution (SAD) generators
+#'
+#' @description
+#' Utilities to generate **species abundance distributions** (SADs) for a
+#' community of `n_species` and `n_individuals`.
+#'
+#' In spesim, SADs are used to create a per-species abundance vector (named
+#' `A`, `B`, ...), after which individuals are placed in space.
+#'
+#' @details
+#' Most classic SADs are defined as a probability vector
+#' \eqn{p_1,\ldots,p_S} over species ranks, then sampled to integer counts via
+#' `rmultinom(1, n_individuals, prob = p)`.
+#'
+#' Some sampling-model SADs (e.g. Poisson--lognormal, Poisson--gamma) are
+#' implemented by first simulating latent rates and then drawing counts. Because
+#' spesim's downstream spatial simulation typically expects exactly
+#' `n_individuals` points, these generators rescale/adjust to sum exactly to
+#' `n_individuals`.
+#'
+#' @section Models:
+#' `generate_sad()` supports (case-insensitive):
+#' \describe{
+#'   \item{`"fisher"`}{Fisher log-series with an explicit dominant species via
+#'     [generate_fisher_log_series()].}
+#'   \item{`"geometric"`}{Geometric series (niche pre-emption / Motomura).}
+#'   \item{`"brokenstick"`}{Broken stick (MacArthur).}
+#'   \item{`"zipf"`}{Zipf rank-abundance: \eqn{p_i \propto i^{-a}}.}
+#'   \item{`"zipf-mandelbrot"`}{Zipf--Mandelbrot:
+#'     \eqn{p_i \propto (i + q)^{-a}}.}
+#'   \item{`"lognormal"`}{Lognormal weights + multinomial sampling.}
+#'   \item{`"poisson-lognormal"`}{Poisson--lognormal sampling model (rates are
+#'     lognormal; counts are Poisson).}
+#'   \item{`"poisson-gamma"`}{Poisson--gamma sampling model (rates are Gamma;
+#'     counts are Poisson). Closely related to negative-binomial mixtures.}
+#'   \item{`"zsm"`}{Neutral-theory helper.
+#'     If the **untb** package is available, spesim will try to call
+#'     `untb::zsm()`; otherwise it falls back to an Ewens sampling-formula
+#'     simulation (theta-only).}
+#'   \item{`"custom"`}{User-supplied SAD via a numeric vector or a function
+#'     (`sad` argument).}
+#' }
+#'
+#' @name sad_generators
+NULL
+
+# --- internal helpers -------------------------------------------------------
+
+.sad_require_species_labels <- function(n_species) {
+  n_species <- as.integer(n_species)
+  if (!is.finite(n_species) || n_species < 1L) {
+    stop("n_species must be an integer >= 1")
+  }
+  if (n_species > length(LETTERS)) {
+    stop("n_species > 26 is not supported (uses LETTERS for species labels).")
+  }
+  LETTERS[seq_len(n_species)]
+}
+
+.sad_counts_adjust_to_n <- function(counts, n) {
+  # Robustly coerce a numeric vector to non-negative integer counts summing to n.
+  n <- as.integer(n)
+  if (!is.finite(n) || n < 0L) stop("n must be a non-negative integer")
+
+  x <- as.numeric(counts)
+  x[!is.finite(x)] <- 0
+  x[x < 0] <- 0
+
+  if (length(x) == 0L) {
+    return(integer(0))
+  }
+
+  if (sum(x) == 0) {
+    # uniform seed to avoid all-zeros
+    x <- rep(1, length(x))
+  }
+
+  # proportional allocation with remainder distribution by fractional parts
+  scaled <- x / sum(x) * n
+  base <- floor(scaled)
+  rem <- n - sum(base)
+
+  if (rem > 0L) {
+    frac <- scaled - base
+    o <- order(frac, decreasing = TRUE)
+    base[o[seq_len(rem)]] <- base[o[seq_len(rem)]] + 1L
+  } else if (rem < 0L) {
+    # remove individuals from the smallest fractional parts where base > 0
+    frac <- scaled - base
+    o <- order(frac, decreasing = FALSE)
+    k <- -rem
+    idx <- o[base[o] > 0]
+    if (length(idx) > 0L) {
+      take <- idx[seq_len(min(k, length(idx)))]
+      base[take] <- base[take] - 1L
+      # If still too many, keep subtracting from any positive cells.
+      while (sum(base) > n) {
+        j <- which(base > 0)[1]
+        base[j] <- base[j] - 1L
+      }
+    }
+  }
+
+  base <- as.integer(base)
+  # final guard
+  if (sum(base) != n) {
+    diff <- n - sum(base)
+    if (length(base) >= 1L) base[1] <- base[1] + diff
+  }
+  base
+}
+
+.sad_prob_normalize <- function(p) {
+  p <- as.numeric(p)
+  p[!is.finite(p)] <- 0
+  p[p < 0] <- 0
+  if (length(p) == 0L) return(p)
+  s <- sum(p)
+  if (!is.finite(s) || s <= 0) {
+    return(rep(1 / length(p), length(p)))
+  }
+  p / s
+}
+
+.sad_counts_from_prob <- function(n, prob) {
+  prob <- .sad_prob_normalize(prob)
+  as.integer(stats::rmultinom(1, size = as.integer(n), prob = prob)[, 1])
+}
+
+# --- probability generators ------------------------------------------------
+
+#' Geometric-series (niche pre-emption) SAD probabilities
+#'
+#' @param n_species Integer (>= 1). Number of species.
+#' @param k Numeric in (0, 1). Pre-emption parameter. Larger `k` increases
+#'   dominance (more individuals in the top-ranked species).
+#'
+#' @return Numeric vector of probabilities of length `n_species` summing to 1.
+#' @export
+generate_geometric_probabilities <- function(n_species, k = 0.5) {
+  spp <- .sad_require_species_labels(n_species)
+  k <- as.numeric(k)
+  if (!is.finite(k) || k <= 0 || k >= 1) stop("k must be in (0, 1)")
+  i <- seq_along(spp)
+  p <- k * (1 - k)^(i - 1)
+  .sad_prob_normalize(p)
+}
+
+#' Broken-stick SAD probabilities
+#'
+#' @description
+#' Simulates a broken-stick partition of the unit interval using `runif()`.
+#'
+#' @param n_species Integer (>= 1). Number of species.
+#'
+#' @return Numeric vector of probabilities of length `n_species` summing to 1.
+#' @export
+generate_brokenstick_probabilities <- function(n_species) {
+  spp <- .sad_require_species_labels(n_species)
+  if (length(spp) == 1L) return(1)
+  cuts <- sort(stats::runif(length(spp) - 1L))
+  seg <- diff(c(0, cuts, 1))
+  p <- sort(seg, decreasing = TRUE)
+  .sad_prob_normalize(p)
+}
+
+#' Zipf / Zipf--Mandelbrot SAD probabilities
+#'
+#' @param n_species Integer (>= 1). Number of species.
+#' @param exponent Numeric (> 0). Tail exponent `a`.
+#' @param q Numeric (>= 0). Mandelbrot offset. `q = 0` gives Zipf.
+#'
+#' @return Numeric vector of probabilities of length `n_species` summing to 1.
+#' @export
+generate_zipf_probabilities <- function(n_species, exponent = 1, q = 0) {
+  spp <- .sad_require_species_labels(n_species)
+  exponent <- as.numeric(exponent)
+  q <- as.numeric(q)
+  if (!is.finite(exponent) || exponent <= 0) stop("exponent must be > 0")
+  if (!is.finite(q) || q < 0) stop("q must be >= 0")
+  i <- seq_along(spp)
+  p <- (i + q)^(-exponent)
+  .sad_prob_normalize(p)
+}
+
+#' Lognormal SAD probabilities (weights)
+#'
+#' @param n_species Integer (>= 1). Number of species.
+#' @param meanlog,sdlog Passed to [stats::rlnorm()].
+#'
+#' @return Numeric vector of probabilities of length `n_species` summing to 1.
+#' @export
+generate_lognormal_probabilities <- function(n_species, meanlog = 0, sdlog = 1) {
+  spp <- .sad_require_species_labels(n_species)
+  w <- stats::rlnorm(length(spp), meanlog = meanlog, sdlog = sdlog)
+  .sad_prob_normalize(w)
+}
+
+# --- count generators -------------------------------------------------------
+
+#' Generate a species abundance distribution (SAD)
+#'
+#' @description
+#' Returns a named vector of integer abundances for `n_species` that sums to
+#' `n_individuals`.
+#'
+#' @param n_species Integer (>= 1). Number of species.
+#' @param n_individuals Integer (>= 0). Number of individuals.
+#' @param model Character scalar. One of the models described under
+#'   \dQuote{Models} in `?sad_generators`.
+#' @param sad For `model = "custom"`: either a numeric vector (probabilities or
+#'   counts) or a function `function(n_species, n_individuals, ...)` returning a
+#'   numeric vector.
+#' @param ... Model-specific parameters. Common arguments include:
+#'   `k` (geometric), `exponent` and `q` (Zipf / Mandelbrot), `meanlog`, `sdlog`
+#'   (lognormal), `shape`, `rate` (Poisson--gamma), and neutral-theory `theta`,
+#'   `m`.
+#'
+#' For `model = "fisher"`, pass `dominant_fraction`, `alpha`, and `x` (see
+#' [generate_fisher_log_series()]).
+#'
+#' @return A named integer vector of length `n_species` (some entries may be 0)
+#'   whose names are `LETTERS[1:n_species]`.
+#' @export
+generate_sad <- function(n_species, n_individuals, model = "fisher", sad = NULL, ...) {
+  spp <- .sad_require_species_labels(n_species)
+  n_individuals <- as.integer(n_individuals)
+  if (!is.finite(n_individuals) || n_individuals < 0L) {
+    stop("n_individuals must be an integer >= 0")
+  }
+
+  model <- tolower(as.character(model %||% "fisher"))
+  model <- gsub("_", "-", model)
+  if (model %in% c("broken-stick", "brokenstick")) model <- "brokenstick"
+  if (model %in% c("zipfmandelbrot", "zipf-mandelbrot")) model <- "zipf-mandelbrot"
+  if (model %in% c("poissonlognormal", "poisson-lognormal")) model <- "poisson-lognormal"
+  if (model %in% c("poissongamma", "poisson-gamma")) model <- "poisson-gamma"
+
+  dots <- list(...)
+
+  out_counts <- switch(model,
+    fisher = {
+      dominant_fraction <- dots$dominant_fraction %||% dots$DOMINANT_FRACTION
+      alpha <- dots$alpha %||% dots$FISHER_ALPHA
+      x <- dots$x %||% dots$FISHER_X
+      generate_fisher_log_series(
+        n_species = length(spp),
+        n_individuals = n_individuals,
+        dominant_fraction = as.numeric(dominant_fraction %||% 0.3),
+        alpha = as.numeric(alpha %||% 3),
+        x = as.numeric(x %||% 0.95)
+      )
+    },
+
+    geometric = {
+      k <- dots$k %||% 0.5
+      p <- generate_geometric_probabilities(length(spp), k = k)
+      counts <- .sad_counts_from_prob(n_individuals, p)
+      stats::setNames(counts, spp)
+    },
+
+    brokenstick = {
+      p <- generate_brokenstick_probabilities(length(spp))
+      counts <- .sad_counts_from_prob(n_individuals, p)
+      stats::setNames(counts, spp)
+    },
+
+    zipf = {
+      exponent <- dots$exponent %||% dots$a %||% 1
+      p <- generate_zipf_probabilities(length(spp), exponent = exponent, q = 0)
+      counts <- .sad_counts_from_prob(n_individuals, p)
+      stats::setNames(counts, spp)
+    },
+
+    `zipf-mandelbrot` =,
+    zipfmandelbrot =,
+    zipf_mandelbrot = {
+      exponent <- dots$exponent %||% dots$a %||% 1
+      q <- dots$q %||% 1
+      p <- generate_zipf_probabilities(length(spp), exponent = exponent, q = q)
+      counts <- .sad_counts_from_prob(n_individuals, p)
+      stats::setNames(counts, spp)
+    },
+
+    lognormal = {
+      meanlog <- dots$meanlog %||% 0
+      sdlog <- dots$sdlog %||% 1
+      p <- generate_lognormal_probabilities(length(spp), meanlog = meanlog, sdlog = sdlog)
+      counts <- .sad_counts_from_prob(n_individuals, p)
+      stats::setNames(counts, spp)
+    },
+
+    `poisson-lognormal` =,
+    poisson_lognormal =,
+    poilog = {
+      meanlog <- dots$meanlog %||% 0
+      sdlog <- dots$sdlog %||% 1
+      lambda <- stats::rlnorm(length(spp), meanlog = meanlog, sdlog = sdlog)
+      lambda <- lambda / sum(lambda) * n_individuals
+      raw <- stats::rpois(length(spp), lambda)
+      counts <- .sad_counts_adjust_to_n(raw, n_individuals)
+      stats::setNames(counts, spp)
+    },
+
+    `poisson-gamma` =,
+    poisson_gamma =,
+    poigamma =,
+    nbinom =,
+    negbin = {
+      shape <- as.numeric(dots$shape %||% dots$k %||% 1)
+      rate <- as.numeric(dots$rate %||% 1)
+      if (!is.finite(shape) || shape <= 0) stop("shape must be > 0")
+      if (!is.finite(rate) || rate <= 0) stop("rate must be > 0")
+      lambda <- stats::rgamma(length(spp), shape = shape, rate = rate)
+      lambda <- lambda / sum(lambda) * n_individuals
+      raw <- stats::rpois(length(spp), lambda)
+      counts <- .sad_counts_adjust_to_n(raw, n_individuals)
+      stats::setNames(counts, spp)
+    },
+
+    zsm = {
+      theta <- as.numeric(dots$theta %||% 10)
+      m <- as.numeric(dots$m %||% NA_real_)
+
+      if (requireNamespace("untb", quietly = TRUE)) {
+        zsm_fun <- getExportedValue("untb", "zsm")
+        # Try common argument name variants.
+        args_try <- list(
+          list(J = n_individuals, theta = theta, m = m),
+          list(J = n_individuals, theta = theta),
+          list(j = n_individuals, theta = theta, m = m),
+          list(j = n_individuals, theta = theta),
+          list(J = n_individuals, theta = theta, immigration = m)
+        )
+        res <- NULL
+        for (a in args_try) {
+          # drop NA parameters
+          a <- a[!vapply(a, function(z) length(z) == 1L && isTRUE(is.na(z)), logical(1))]
+          res <- tryCatch(do.call(zsm_fun, a), error = function(e) NULL)
+          if (!is.null(res)) break
+        }
+        if (is.null(res)) {
+          stop("Could not call untb::zsm(); check untb version/signature.")
+        }
+        counts <- as.integer(res)
+      } else {
+        # Fallback: Ewens sampling formula (theta-only), via Chinese restaurant.
+        if (!is.finite(theta) || theta <= 0) stop("theta must be > 0")
+        counts <- integer(0)
+        for (i in seq_len(n_individuals)) {
+          if (length(counts) == 0L) {
+            counts <- 1L
+          } else {
+            p_new <- theta / (theta + i - 1)
+            if (stats::runif(1) < p_new) {
+              counts <- c(counts, 1L)
+            } else {
+              j <- sample.int(length(counts), size = 1L, prob = counts)
+              counts[j] <- counts[j] + 1L
+            }
+          }
+        }
+      }
+
+      counts <- sort(counts, decreasing = TRUE)
+      # Map to a fixed label set of size n_species by truncating and lumping tail.
+      if (length(counts) < length(spp)) {
+        counts <- c(counts, rep(0L, length(spp) - length(counts)))
+      } else if (length(counts) > length(spp)) {
+        head_counts <- counts[seq_len(length(spp) - 1L)]
+        tail_sum <- sum(counts[seq.int(length(spp), length(counts))])
+        counts <- c(head_counts, tail_sum)
+      }
+      counts <- .sad_counts_adjust_to_n(counts, n_individuals)
+      stats::setNames(as.integer(counts), spp)
+    },
+
+    custom = {
+      if (is.null(sad)) stop("For model='custom', provide `sad` as a numeric vector or function.")
+
+      v <- NULL
+      if (is.function(sad)) {
+        v <- sad(n_species = length(spp), n_individuals = n_individuals, ...)
+      } else {
+        v <- sad
+      }
+      if (!is.numeric(v)) stop("Custom SAD must return/provide a numeric vector.")
+
+      v <- as.numeric(v)
+      if (length(v) == length(spp)) {
+        # ok
+      } else if (length(v) > length(spp)) {
+        v <- v[seq_len(length(spp))]
+      } else {
+        v <- c(v, rep(0, length(spp) - length(v)))
+      }
+
+      # Interpret as probabilities if it approximately sums to 1.
+      if (isTRUE(abs(sum(v) - 1) < 1e-6)) {
+        counts <- .sad_counts_from_prob(n_individuals, v)
+      } else {
+        # Interpret as weights/counts and adjust to N.
+        counts <- .sad_counts_adjust_to_n(v, n_individuals)
+      }
+      stats::setNames(as.integer(counts), spp)
+    },
+
+    stop("Unknown SAD model: '", model, "'.")
+  )
+
+  # Ensure full-length output (including zeros) and correct naming.
+  out <- integer(length(spp))
+  names(out) <- spp
+  out[names(out_counts)] <- as.integer(out_counts)
+  out <- .sad_counts_adjust_to_n(out, n_individuals)
+  names(out) <- spp
+  out
+}

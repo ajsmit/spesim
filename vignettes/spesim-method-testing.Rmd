@@ -85,7 +85,7 @@ schemes <- c("random", "systematic", "tiled", "transect", "voronoi")
 outs <- setNames(lapply(schemes, function(s) run_scheme(P0, s)), schemes)
 ```
 
-## 3. Compare the sampling audits (what did the sampling design *actually* do?)
+## 3. What did the sampling design *actually* do?
 
 Sampling schemes differ in how much they are constrained by the boundary and by the non-overlap rule.
 

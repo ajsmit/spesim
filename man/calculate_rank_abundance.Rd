@@ -12,9 +12,9 @@ calculate_rank_abundance(species_dist, P)
 
 \item{P}{A named list as returned by \code{\link{load_config}}
 containing at least the fields used by
-\code{\link{generate_fisher_log_series}}:
-\code{N_SPECIES}, \code{N_INDIVIDUALS}, \code{DOMINANT_FRACTION},
-\code{FISHER_ALPHA}, and \code{FISHER_X}.}
+\code{\link{generate_sad}}:
+\code{N_SPECIES}, \code{N_INDIVIDUALS}, and \code{SAD_MODEL} (plus any
+model-specific parameters).}
 }
 \value{
 A data frame with columns:
@@ -27,15 +27,16 @@ A data frame with columns:
 \description{
 Construct a tidy table for rank-abundance plotting by combining
 the \strong{observed} species counts in \code{species_dist} with the
-\strong{theoretical} Fisher log-series abundances implied by \code{P}.
+\strong{theoretical} SAD abundances implied by \code{P}.
 }
 \details{
 Observed abundances are computed with base R \code{table()}, ranked
 in descending order, and annotated as \code{Source = "Observed"}.
 Theoretical abundances are generated via
-\code{\link{generate_fisher_log_series}} using parameters in \code{P}
-(e.g., \code{N_SPECIES}, \code{N_INDIVIDUALS}, \code{FISHER_ALPHA},
-\code{FISHER_X}, \code{DOMINANT_FRACTION}) and annotated as
+\code{\link{generate_sad}} using parameters in \code{P}
+(e.g., \code{N_SPECIES}, \code{N_INDIVIDUALS}, and \code{SAD_MODEL}; plus
+model-specific parameters such as \code{FISHER_ALPHA}, \code{FISHER_X},
+\code{DOMINANT_FRACTION}) and annotated as
 \code{Source = "Theoretical"}. The two data frames are row-bound.
 }
 \examples{
@@ -46,5 +47,6 @@ head(ra)
 }
 \seealso{
 \code{\link{plot_rank_abundance}},
+\code{\link{generate_sad}},
 \code{\link{generate_fisher_log_series}}
 }

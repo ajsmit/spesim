@@ -56,10 +56,11 @@ incorporated as a multiplicative modifier computed from nearby already-assigned
 individuals.
 }
 \details{
-\strong{Abundances.} Total individuals per species are drawn with
-\code{\link{generate_fisher_log_series}()}, allocating a fixed fraction to
-species "A" and distributing the remainder by a log-series across
-\code{B, C, ...}.
+\strong{Abundances.} Total individuals per species are generated with
+\code{\link{generate_sad}()} using \code{P$SAD_MODEL} (default: \code{"fisher"}).
+The built-in Fisher option allocates a fixed fraction to species "A" and
+distributes the remainder by a log-series across \code{B, C, ...}; other SAD
+models generate a full \code{A..} vector directly.
 
 \strong{Baseline locations (point processes).} Locations are simulated using
 the process names in \code{P}. Supported values (case-insensitive):
@@ -127,6 +128,7 @@ plot(sf::st_geometry(pts), pch = 16, cex = 0.4)
 }
 \seealso{
 \code{\link{create_environmental_gradients}()},
+\code{\link{generate_sad}()},
 \code{\link{generate_fisher_log_series}()},
 \code{\link{load_config}()},
 \code{\link{load_interactions}()}

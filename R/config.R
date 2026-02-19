@@ -189,9 +189,34 @@ load_config <- function(init_file) {
     OUTPUT_PREFIX = "output",
     N_INDIVIDUALS = 2000,
     N_SPECIES = 10,
+
+    # Species abundance distribution (SAD)
+    SAD_MODEL = "fisher", # fisher | geometric | brokenstick | zipf | zipf-mandelbrot | lognormal | poisson-lognormal | poisson-gamma | zsm | custom
+    SAD_VECTOR = NULL,     # for SAD_MODEL = "custom"; numeric probabilities or counts
+
+    # fisher (dominant + log-series tail)
     DOMINANT_FRACTION = 0.30,
     FISHER_ALPHA = 3.0,
     FISHER_X = 0.95,
+
+    # geometric-series
+    GEOMETRIC_K = 0.5,
+
+    # zipf / zipf-mandelbrot
+    ZIPF_EXPONENT = 1.0,
+    ZIPF_Q = 0.0,
+
+    # lognormal families
+    LOGNORMAL_MEANLOG = 0.0,
+    LOGNORMAL_SDLOG = 1.0,
+
+    # poisson-gamma (also used for nbinom-like mixtures)
+    POIGAMMA_SHAPE = 1.0,
+    POIGAMMA_RATE = 1.0,
+
+    # neutral theory / zsm helper
+    ZSM_THETA = 10.0,
+    ZSM_M = NA_real_,
     GRADIENT_SPECIES = character(0),
     GRADIENT_ASSIGNMENTS = character(0),
     GRADIENT_OPTIMA = NULL,
@@ -255,6 +280,22 @@ load_config <- function(init_file) {
   P$SPATIAL_PROCESS_A <- tolower(as.character(P$SPATIAL_PROCESS_A))
   P$SPATIAL_PROCESS_OTHERS <- tolower(as.character(P$SPATIAL_PROCESS_OTHERS))
 
+  # SAD model
+  P$SAD_MODEL <- tolower(as.character(P$SAD_MODEL %||% "fisher"))
+  P$SAD_MODEL <- gsub("_", "-", P$SAD_MODEL)
+  if (P$SAD_MODEL %in% c("broken-stick", "brokenstick")) P$SAD_MODEL <- "brokenstick"
+  if (P$SAD_MODEL %in% c("zipfmandelbrot", "zipf-mandelbrot")) P$SAD_MODEL <- "zipf-mandelbrot"
+  if (P$SAD_MODEL %in% c("poissonlognormal", "poisson-lognormal")) P$SAD_MODEL <- "poisson-lognormal"
+  if (P$SAD_MODEL %in% c("poissongamma", "poisson-gamma")) P$SAD_MODEL <- "poisson-gamma"
+
+  ok_sad <- c(
+    "fisher", "geometric", "brokenstick", "zipf", "zipf-mandelbrot",
+    "lognormal", "poisson-lognormal", "poisson-gamma", "zsm", "custom"
+  )
+  if (!P$SAD_MODEL %in% ok_sad) {
+    stop("SAD_MODEL must be one of: ", paste(ok_sad, collapse = ", "))
+  }
+
   if (!P$SPATIAL_PROCESS_A %in% c("poisson", "thomas")) {
     stop("SPATIAL_PROCESS_A must be 'poisson' or 'thomas'.")
   }
@@ -265,7 +306,14 @@ load_config <- function(init_file) {
   # Safe numeric coercion for known numeric fields (no warnings)
   num_fields <- c(
     "SEED", "N_INDIVIDUALS", "N_SPECIES",
+
+    # SAD
     "DOMINANT_FRACTION", "FISHER_ALPHA", "FISHER_X",
+    "GEOMETRIC_K", "ZIPF_EXPONENT", "ZIPF_Q",
+    "LOGNORMAL_MEANLOG", "LOGNORMAL_SDLOG",
+    "POIGAMMA_SHAPE", "POIGAMMA_RATE",
+    "ZSM_THETA", "ZSM_M",
+
     "SAMPLING_RESOLUTION", "ENVIRONMENTAL_NOISE",
     "MAX_CLUSTERS_DOMINANT", "CLUSTER_SPREAD_DOMINANT",
     "INTERACTION_RADIUS", "N_QUADRATS",

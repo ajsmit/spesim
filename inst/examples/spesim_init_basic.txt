@@ -7,6 +7,13 @@ OUTPUT_PREFIX = "out/run_basic"
 # Community size and SAD
 N_INDIVIDUALS = 2000
 N_SPECIES = 10
+
+# SAD_MODEL options include:
+# fisher | geometric | brokenstick | zipf | zipf-mandelbrot | lognormal |
+# poisson-lognormal | poisson-gamma | zsm | custom
+SAD_MODEL = fisher
+
+# Fisher SAD parameters (used when SAD_MODEL = fisher)
 DOMINANT_FRACTION = 0.30
 FISHER_ALPHA = 4.2
 FISHER_X = 0.95

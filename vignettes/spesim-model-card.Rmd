@@ -49,11 +49,19 @@ A typical run produces:
 
 ### Species–abundance distribution (SAD)
 
-- Non-dominant species are drawn from a Fisher log-series tail.
-- A configurable dominant fraction is allocated to a “dominant species”.
+spesim now supports multiple SAD generators via `SAD_MODEL` in the init file:
 
-This is primarily a **pedagogical control**: it creates realistic-looking rank–
-abundance curves without requiring a mechanistic population model.
+- `fisher` (default): dominant species fraction + Fisher log-series tail.
+- `geometric`, `brokenstick` (teaching comparators).
+- `zipf`, `zipf-mandelbrot` (rank-based heavy tails).
+- `lognormal`, `poisson-lognormal`, `poisson-gamma` (sampling-model flavours).
+- `zsm` (neutral-theory helper; uses **untb** if installed, otherwise a
+  theta-only Ewens fallback).
+- `custom`: user supplies a numeric vector (probabilities or weights/counts) or
+  a function.
+
+This is primarily a **teaching oriented** feature: it creates realistic-looking
+rank–abundance curves without requiring a fully mechanistic population model.
 
 ### Environmental filtering
 
@@ -93,7 +101,7 @@ If you need those, consider pairing spesim with specialised tools (e.g.
 **spatstat** for point process inference/diagnostics, or domain-specific
 individual-based/metacommunity simulators).
 
-## Valid interpretations (and common misinterpretations)
+## Valid interpretations
 
 **Valid:**
 

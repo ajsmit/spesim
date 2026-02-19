@@ -3,24 +3,25 @@
 #' @description
 #' Construct a tidy table for rank-abundance plotting by combining
 #' the **observed** species counts in `species_dist` with the
-#' **theoretical** Fisher log-series abundances implied by `P`.
+#' **theoretical** SAD abundances implied by `P`.
 #'
 #' @details
 #' Observed abundances are computed with base R `table()`, ranked
 #' in descending order, and annotated as `Source = "Observed"`.
 #' Theoretical abundances are generated via
-#' \code{\link{generate_fisher_log_series}} using parameters in `P`
-#' (e.g., \code{N_SPECIES}, \code{N_INDIVIDUALS}, \code{FISHER_ALPHA},
-#' \code{FISHER_X}, \code{DOMINANT_FRACTION}) and annotated as
+#' \code{\link{generate_sad}} using parameters in `P`
+#' (e.g., \code{N_SPECIES}, \code{N_INDIVIDUALS}, and \code{SAD_MODEL}; plus
+#' model-specific parameters such as \code{FISHER_ALPHA}, \code{FISHER_X},
+#' \code{DOMINANT_FRACTION}) and annotated as
 #' `Source = "Theoretical"`. The two data frames are row-bound.
 #'
 #' @param species_dist An `sf` point object with a character column
 #'   `species` giving per-individual species identities.
 #' @param P A named list as returned by \code{\link{load_config}}
 #'   containing at least the fields used by
-#'   \code{\link{generate_fisher_log_series}}:
-#'   \code{N_SPECIES}, \code{N_INDIVIDUALS}, \code{DOMINANT_FRACTION},
-#'   \code{FISHER_ALPHA}, and \code{FISHER_X}.
+#'   \code{\link{generate_sad}}:
+#'   \code{N_SPECIES}, \code{N_INDIVIDUALS}, and \code{SAD_MODEL} (plus any
+#'   model-specific parameters).
 #'
 #' @return A data frame with columns:
 #' \describe{
@@ -30,6 +31,7 @@
 #' }
 #'
 #' @seealso \code{\link{plot_rank_abundance}},
+#'   \code{\link{generate_sad}},
 #'   \code{\link{generate_fisher_log_series}}
 #'
 #' @examples
@@ -47,7 +49,25 @@ calculate_rank_abundance <- function(species_dist, P) {
     mutate(Rank = dplyr::row_number(), Source = "Observed") |>
     select(Rank, Abundance, Source)
 
-  theoretical_abundances <- generate_fisher_log_series(P$N_SPECIES, P$N_INDIVIDUALS, P$DOMINANT_FRACTION, P$FISHER_ALPHA, P$FISHER_X)
+  theoretical_abundances <- generate_sad(
+    n_species = P$N_SPECIES,
+    n_individuals = P$N_INDIVIDUALS,
+    model = P$SAD_MODEL %||% "fisher",
+    dominant_fraction = P$DOMINANT_FRACTION,
+    alpha = P$FISHER_ALPHA,
+    x = P$FISHER_X,
+    k = P$GEOMETRIC_K,
+    exponent = P$ZIPF_EXPONENT,
+    q = P$ZIPF_Q,
+    meanlog = P$LOGNORMAL_MEANLOG,
+    sdlog = P$LOGNORMAL_SDLOG,
+    shape = P$POIGAMMA_SHAPE,
+    rate = P$POIGAMMA_RATE,
+    theta = P$ZSM_THETA,
+    m = P$ZSM_M,
+    sad = P$SAD_VECTOR
+  )
+  theoretical_abundances <- theoretical_abundances[theoretical_abundances > 0]
   theoretical_data <- tibble::tibble(
     Abundance = sort(as.numeric(theoretical_abundances), decreasing = TRUE),
     Rank = seq_along(theoretical_abundances),
