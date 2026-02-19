@@ -1,0 +1,31 @@
+# spesim real-world example: Doubs-like constrained river workflow
+SEED = 77
+N_INDIVIDUALS = 1300
+N_SPECIES = 18
+
+DOMAIN_TYPE = network
+MODEL_FAMILY = hybrid
+DISPERSAL_KERNEL = exponential
+DISPERSAL_SCALE = 0.9
+DISPERSAL_DIRECTION_BIAS = 0.25
+NEUTRAL_M = 0.10
+
+# Route-based quadrat placement along linearized river position
+SAMPLING_SCHEME = route
+ROUTE_QUADRAT_MODE = equidistant
+N_QUADRATS = 30
+QUADRAT_SIZE_OPTION = small
+
+# Real-world covariates (repo-relative path)
+ENV_COVARIATES_FILE = "inst/extdata/DoubsCovariates.csv"
+ENV_DRIVERS = alt, flo, pH, nit, oxy
+
+# Example species-driver mapping
+GRADIENT_SPECIES = A, B, C, D, E
+GRADIENT_ASSIGNMENTS = alt, flo, pH, nit, oxy
+GRADIENT_OPTIMA = alt:0.7, flo:0.4, pH:0.5, nit:0.3, oxy:0.8
+GRADIENT_TOLERANCE = alt:0.25, flo:0.30, pH:0.25, nit:0.25, oxy:0.25
+
+INTERACTION_RADIUS = 0
+INTERACTIONS_FILE = ""
+INTERACTIONS_EDGELIST = ""

@@ -75,13 +75,13 @@ create_abundance_matrix <- function(species_dist, quadrats, all_species_names) {
 #' @description
 #' Converts a gridded environmental table (\code{env_grid}) into an \code{sf}
 #' point layer, joins it to quadrat polygons, and computes per‑quadrat mean
-#' values (temperature, elevation, rainfall). Quadrats with no overlapping
+#' values for all numeric environmental columns. Quadrats with no overlapping
 #' grid points are retained and returned with \code{NA} means.
 #'
 #' @param env_grid A regular (or irregular) data frame with numeric columns
-#'   \code{x}, \code{y} giving point coordinates, and environmental columns
-#'   \code{temperature_C}, \code{elevation_m}, \code{rainfall_mm}. Coordinates
-#'   are assumed to be in the CRS specified by \code{domain_crs}.
+#'   \code{x}, \code{y} giving point coordinates, plus one or more numeric
+#'   environmental columns. Coordinates are assumed to be in the CRS specified
+#'   by \code{domain_crs}.
 #' @param quadrats An \code{sf} POLYGON (or MULTIPOLYGON) layer with a
 #'   \code{quadrat_id} column. Must be in the same CRS as \code{domain_crs}.
 #' @param domain_crs A coordinate reference system for \code{env_grid} points.
@@ -95,7 +95,7 @@ create_abundance_matrix <- function(species_dist, quadrats, all_species_names) {
 #'         \code{\link[sf]{st_as_sf}} using \code{coords = c("x","y")},
 #'   \item performs a spatial join \code{\link[sf]{st_join}} of points into
 #'         quadrats (default predicate: \code{st_intersects}),
-#'   \item groups by \code{quadrat_id} and returns the mean of each
+#'   \item groups by \code{quadrat_id} and returns the mean of each numeric
 #'         environmental variable (with \code{na.rm = TRUE}),
 #'   \item left‑joins back to the full set of quadrats to keep empty sites.
 #' }
@@ -104,9 +104,8 @@ create_abundance_matrix <- function(species_dist, quadrats, all_species_names) {
 #'
 #' @return
 #' A \code{data.frame} with one row per quadrat and columns:
-#' \code{site}, \code{temperature_C}, \code{elevation_m}, \code{rainfall_mm}.
-#' Means are numeric; sites with no overlapping points will have \code{NA} in
-#' the environmental columns.
+#' \code{site} plus one column per summarised numeric environmental variable.
+#' Means are numeric; sites with no overlapping points will have \code{NA}.
 #'
 #' @section CRS:
 #' \code{env_grid} is interpreted in \code{domain_crs}; \code{quadrats} must
@@ -125,11 +124,16 @@ create_abundance_matrix <- function(species_dist, quadrats, all_species_names) {
 calculate_quadrat_environment <- function(env_grid, quadrats, domain_crs) {
   env_sf <- sf::st_as_sf(env_grid, coords = c("x", "y"), crs = domain_crs)
   joined_data <- sf::st_join(quadrats, env_sf)
+  num_cols <- names(joined_data)[vapply(joined_data, is.numeric, logical(1))]
+  num_cols <- setdiff(num_cols, "quadrat_id")
+  if (!length(num_cols)) {
+    return(data.frame(site = quadrats$quadrat_id))
+  }
   site_env <- joined_data |>
     sf::st_drop_geometry() |>
     dplyr::group_by(site = quadrat_id) |>
     dplyr::summarise(
-      dplyr::across(c(temperature_C, elevation_m, rainfall_mm), ~ mean(., na.rm = TRUE)),
+      dplyr::across(dplyr::all_of(num_cols), ~ mean(., na.rm = TRUE)),
       .groups = "drop"
     )
   dplyr::left_join(data.frame(site = quadrats$quadrat_id), site_env, by = "site")

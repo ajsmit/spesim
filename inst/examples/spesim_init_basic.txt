@@ -16,6 +16,7 @@ LINEAR_WRAP = FALSE
 LINEAR_JITTER_SD = 0.0
 DISTANCE_METRIC = auto
 ENV_COVARIATES_FILE = ""
+ENV_DRIVERS = temperature, elevation, rainfall
 
 # SAD_MODEL options include:
 # fisher | geometric | brokenstick | zipf | zipf-mandelbrot | lognormal |
@@ -50,6 +51,8 @@ INTERACTION_RADIUS = 0
 
 # Sampling
 SAMPLING_SCHEME = "random"
+ROUTE_QUADRAT_MODE = "equidistant"
+# ROUTE_POSITIONS = 0.1,0.3,0.5,0.7,0.9
 N_QUADRATS = 20
 QUADRAT_SIZE_OPTION = "medium"
 

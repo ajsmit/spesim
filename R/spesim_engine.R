@@ -63,6 +63,15 @@ spesim_engine <- function(P, domain) {
     "systematic" = place_quadrats_systematic(domain, P$N_QUADRATS, P$QUADRAT_SIZE),
     "transect"   = place_quadrats_transect(domain, P$N_TRANSECTS, P$N_QUADRATS_PER_TRANSECT, P$QUADRAT_SIZE, P$TRANSECT_ANGLE),
     "voronoi"    = place_quadrats_voronoi(domain, P$N_QUADRATS, P$QUADRAT_SIZE, P$VORONOI_SEED_FACTOR),
+    "route"      = place_quadrats_route(
+      domain = domain,
+      n_quadrats = P$N_QUADRATS,
+      quadrat_size = P$QUADRAT_SIZE,
+      axis = P$LINEAR_AXIS %||% "x",
+      mode = P$ROUTE_QUADRAT_MODE %||% "equidistant",
+      positions = P$ROUTE_POSITIONS %||% NULL,
+      jitter_sd = as.numeric(P$LINEAR_JITTER_SD %||% 0)
+    ),
     stop("Invalid 'SAMPLING_SCHEME'.")
   )
   if (nrow(quadrats) == 0) stop("Failed to place any quadrats.")
@@ -72,7 +81,9 @@ spesim_engine <- function(P, domain) {
     domain,
     P$SAMPLING_RESOLUTION,
     P$ENVIRONMENTAL_NOISE,
-    covariates = P$ENV_COVARIATES %||% NULL
+    covariates = P$ENV_COVARIATES %||% NULL,
+    drivers = unique(c(as.character(P$ENV_DRIVERS %||% character(0)),
+                       as.character(P$GRADIENT$gradient %||% character(0))))
   )
   abund_matrix <- create_abundance_matrix(species_dist, quadrats, all_species)
   site_env <- calculate_quadrat_environment(env_gradients, quadrats, sf::st_crs(domain))
@@ -135,6 +146,8 @@ spesim_materialize_P <- function(P) {
   P$LINEAR_AXIS <- tolower(as.character(P$LINEAR_AXIS %||% "x"))
   P$DISTANCE_METRIC <- tolower(as.character(P$DISTANCE_METRIC %||% "auto"))
   P$DISTANCE_METRIC <- gsub("-", "_", P$DISTANCE_METRIC)
+  P$SAMPLING_SCHEME <- tolower(as.character(P$SAMPLING_SCHEME %||% "random"))
+  P$ROUTE_QUADRAT_MODE <- tolower(as.character(P$ROUTE_QUADRAT_MODE %||% "equidistant"))
   P$DISPERSAL_KERNEL <- tolower(as.character(P$DISPERSAL_KERNEL %||% "gaussian"))
   P$DISPERSAL_KERNEL <- gsub("-", "_", P$DISPERSAL_KERNEL)
   P$NEUTRAL_META_MODEL <- tolower(as.character(P$NEUTRAL_META_MODEL %||% "zsm"))
@@ -160,6 +173,12 @@ spesim_materialize_P <- function(P) {
   if (!P$DISTANCE_METRIC %in% c("auto", "euclidean", "along_path")) {
     stop("DISTANCE_METRIC must be one of: auto, euclidean, along_path.")
   }
+  if (!P$SAMPLING_SCHEME %in% c("random", "tiled", "systematic", "transect", "voronoi", "route")) {
+    stop("SAMPLING_SCHEME must be one of: random, tiled, systematic, transect, voronoi, route.")
+  }
+  if (!P$ROUTE_QUADRAT_MODE %in% c("equidistant", "specified")) {
+    stop("ROUTE_QUADRAT_MODE must be one of: equidistant, specified.")
+  }
   if (!is.finite(as.numeric(P$DISPERSAL_DIRECTION_BIAS %||% 0)) ||
       as.numeric(P$DISPERSAL_DIRECTION_BIAS %||% 0) < -1 ||
       as.numeric(P$DISPERSAL_DIRECTION_BIAS %||% 0) > 1) {
@@ -183,8 +202,18 @@ spesim_materialize_P <- function(P) {
   if (length(gs) != length(ga)) {
     stop("GRADIENT_SPECIES and GRADIENT_ASSIGNMENTS must have the same length.")
   }
-  if (length(gs) && !all(ga %in% c("temperature", "elevation", "rainfall"))) {
-    stop("Unknown gradient(s): ", paste(setdiff(ga, c("temperature", "elevation", "rainfall")), collapse = ", "))
+  P$ENV_DRIVERS <- as.character(P$ENV_DRIVERS %||% c("temperature", "elevation", "rainfall"))
+  P$ENV_DRIVERS <- unique(c(P$ENV_DRIVERS, ga))
+  if (!length(P$ENV_DRIVERS)) P$ENV_DRIVERS <- c("temperature", "elevation", "rainfall")
+  if (!is.null(P$ROUTE_POSITIONS)) {
+    P$ROUTE_POSITIONS <- as.numeric(P$ROUTE_POSITIONS)
+    P$ROUTE_POSITIONS <- P$ROUTE_POSITIONS[is.finite(P$ROUTE_POSITIONS)]
+  }
+  if (P$ROUTE_QUADRAT_MODE == "specified" && (is.null(P$ROUTE_POSITIONS) || length(P$ROUTE_POSITIONS) == 0)) {
+    stop("ROUTE_QUADRAT_MODE='specified' requires ROUTE_POSITIONS in [0,1].")
+  }
+  if (!is.null(P$ROUTE_POSITIONS) && any(P$ROUTE_POSITIONS < 0 | P$ROUTE_POSITIONS > 1)) {
+    stop("ROUTE_POSITIONS must lie in [0,1].")
   }
 
   opt_raw <- .parse_named_pairs_numeric(P$GRADIENT_OPTIMA %||% 0.5)

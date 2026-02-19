@@ -41,7 +41,19 @@ In practice, `network` and `coastline` currently use a constrained 1D coordinate
 library(spesim)
 library(ggplot2)
 
-P0 <- load_config(system.file("examples/spesim_init_basic.txt", package = "spesim"))
+pkg_file <- function(subpath, folder = c("extdata", "examples")) {
+  folder <- match.arg(folder)
+  p_installed <- system.file(folder, subpath, package = "spesim")
+  if (nzchar(p_installed) && file.exists(p_installed)) return(p_installed)
+  candidates <- c(
+    file.path("inst", folder, subpath),
+    file.path("..", "inst", folder, subpath)
+  )
+  for (p in candidates) if (file.exists(p)) return(p)
+  stop("Could not find file: ", subpath, " in ", folder)
+}
+
+P0 <- load_config(pkg_file("spesim_init_basic.txt", "examples"))
 P0$N_SPECIES <- 12
 P0$N_INDIVIDUALS <- 1400
 P0$SAMPLING_SCHEME <- "tiled"
@@ -84,7 +96,7 @@ case_poly <- run_case(P_poly, "Polygon baseline (2D)")
 case_poly$map
 ```
 
-## Scenario B: network-style constrained landscape (Doubs-like)
+## Scenario B: network-style constrained landscape (real Doubs covariates)
 
 ```{r}
 P_net <- P0
@@ -93,13 +105,14 @@ P_net$LINEAR_AXIS <- "x"
 P_net$LINEAR_WRAP <- FALSE
 P_net$LINEAR_JITTER_SD <- 0.08
 P_net$DISTANCE_METRIC <- "along_path"
-P_net$ENV_COVARIATES_FILE <- system.file("extdata/doubs_like_nodes.csv", package = "spesim")
+P_net$ENV_COVARIATES_FILE <- pkg_file("DoubsCovariates.csv", "extdata")
+P_net$ENV_DRIVERS <- c("alt", "flo", "pH", "nit", "oxy")
 
-case_net <- run_case(P_net, "Network-like constrained landscape (linearized)")
+case_net <- run_case(P_net, "Network-like constrained landscape (Doubs data, linearized)")
 case_net$map
 ```
 
-## Scenario C: coastline-style constrained landscape with directional dispersal
+## Scenario C: coastline-style constrained landscape with directional dispersal (real seaweed covariates)
 
 ```{r}
 P_coast <- P0
@@ -109,9 +122,10 @@ P_coast$LINEAR_WRAP <- TRUE
 P_coast$LINEAR_JITTER_SD <- 0.06
 P_coast$DISTANCE_METRIC <- "along_path"
 P_coast$DISPERSAL_DIRECTION_BIAS <- 0.55
-P_coast$ENV_COVARIATES_FILE <- system.file("extdata/seaweed_coast_sections.csv", package = "spesim")
+P_coast$ENV_COVARIATES_FILE <- pkg_file("SeaweedCovariates.csv", "extdata")
+P_coast$ENV_DRIVERS <- c("summerMean", "winterMin", "augChl")
 
-case_coast <- run_case(P_coast, "Coastline-like constrained landscape (directional dispersal)")
+case_coast <- run_case(P_coast, "Coastline-like constrained landscape (seaweed data)")
 case_coast$map
 ```
 

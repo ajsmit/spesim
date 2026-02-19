@@ -35,29 +35,31 @@ plot_filtering_response <- function(res, species = "all", add_smooth = TRUE) {
   E <- calculate_quadrat_environment(res$env_gradients, res$quadrats, sf::st_crs(res$domain))
   A <- res$abund_matrix
 
-  .opt_to_units <- function(opt, gname) {
-    switch(gname,
-      "temperature" = opt * 30 - 2,
-      "elevation"   = opt * 2000,
-      "rainfall"    = opt * 700 + 200,
-      NA_real_
-    )
-  }
-  .tol_to_units <- function(tol, gname) {
-    switch(gname,
-      "temperature" = tol * 30,
-      "elevation"   = tol * 2000,
-      "rainfall"    = tol * 700,
-      NA_real_
-    )
-  }
   .env_col <- function(gname) {
-    switch(gname,
+    cols <- names(E)
+    if (gname %in% cols) return(gname)
+    legacy <- switch(gname,
       "temperature" = "temperature_C",
       "elevation"   = "elevation_m",
       "rainfall"    = "rainfall_mm",
       NA_character_
     )
+    if (!is.na(legacy) && legacy %in% cols) return(legacy)
+    cand <- grep(paste0("^", gname, "(_|$)"), cols, value = TRUE)
+    if (length(cand)) return(cand[1])
+    NA_character_
+  }
+  .opt_to_units <- function(opt, env_col) {
+    if (identical(env_col, "temperature_C")) return(opt * 30 - 2)
+    if (identical(env_col, "elevation_m")) return(opt * 2000)
+    if (identical(env_col, "rainfall_mm")) return(opt * 700 + 200)
+    opt
+  }
+  .tol_to_units <- function(tol, env_col) {
+    if (identical(env_col, "temperature_C")) return(tol * 30)
+    if (identical(env_col, "elevation_m")) return(tol * 2000)
+    if (identical(env_col, "rainfall_mm")) return(tol * 700)
+    tol
   }
   .env_label <- function(gname) {
     switch(gname,
@@ -82,8 +84,8 @@ plot_filtering_response <- function(res, species = "all", add_smooth = TRUE) {
     df$gradient <- gname
     df$env <- df[[env_col]]
 
-    opt_u <- .opt_to_units(as.numeric(gi$optimum), gname)
-    tol_u <- .tol_to_units(as.numeric(gi$tol), gname)
+    opt_u <- .opt_to_units(as.numeric(gi$optimum), env_col)
+    tol_u <- .tol_to_units(as.numeric(gi$tol), env_col)
 
     df$optimum <- opt_u
     df$tol <- tol_u

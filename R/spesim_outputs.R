@@ -55,9 +55,16 @@ spesim_write_outputs <- function(res,
 
   # 2x2 spatial panel
   p1 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P)
-  p2 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P, TRUE, res$env_gradients, "temperature_C")
-  p3 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P, TRUE, res$env_gradients, "elevation_m")
-  p4 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P, TRUE, res$env_gradients, "rainfall_mm")
+  env_cols <- setdiff(names(res$env_gradients), c("x", "y"))
+  env_cols <- env_cols[vapply(res$env_gradients[env_cols], is.numeric, logical(1))]
+  preferred <- c("temperature_C", "elevation_m", "rainfall_mm")
+  picks <- unique(c(preferred[preferred %in% env_cols], env_cols))
+  picks <- utils::head(picks, 3)
+  if (!length(picks)) picks <- "temperature_C"
+  while (length(picks) < 3) picks <- c(picks, picks[length(picks)])
+  p2 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P, TRUE, res$env_gradients, picks[1])
+  p3 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P, TRUE, res$env_gradients, picks[2])
+  p4 <- plot_spatial_sampling(res$domain, res$species_dist, res$quadrats, res$P, TRUE, res$env_gradients, picks[3])
 
   panel_plot <- patchwork::wrap_plots(list(
     p1 + ggplot2::theme(legend.position = "right"),

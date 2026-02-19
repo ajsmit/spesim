@@ -21,11 +21,13 @@ as \code{abund_matrix}.}
 \item{metric}{Character scalar. One of:
 \itemize{
 \item \code{"auto"} (default): use along-path distance if
-\code{site_coords$linear_pos} exists, else Euclidean.
+a graph distance matrix or \code{site_coords$linear_pos} exists, else Euclidean.
 \item \code{"euclidean"}: force Euclidean distance on \code{x,y}.
 \item \code{"along_path"}: use absolute differences in
 \code{site_coords$linear_pos}; if \code{linear_wrap} attribute is TRUE,
-use wrapped circular distance.
+use wrapped circular distance. If attribute
+\code{attr(site_coords, "graph_dist_matrix")} is present, that matrix is
+used instead.
 }}
 }
 \value{

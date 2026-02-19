@@ -364,6 +364,21 @@ generate_heterogeneous_distribution <- function(domain, P) {
       crs = crs
     )
   }
+  .resolve_env_col <- function(gname, cols) {
+    g <- as.character(gname %||% "")
+    if (!nzchar(g)) return(NA_character_)
+    if (g %in% cols) return(g)
+    legacy <- switch(g,
+      temperature = "temperature_C",
+      elevation = "elevation_m",
+      rainfall = "rainfall_mm",
+      NA_character_
+    )
+    if (!is.na(legacy) && legacy %in% cols) return(legacy)
+    cand <- grep(paste0("^", g, "(_|$)"), cols, value = TRUE)
+    if (length(cand)) return(cand[1])
+    NA_character_
+  }
   .linear_domain_state <- function(poly, P) {
     d_type <- tolower(as.character(P$DOMAIN_TYPE %||% "polygon"))
     d_type <- gsub("-", "_", d_type)
@@ -496,11 +511,14 @@ generate_heterogeneous_distribution <- function(domain, P) {
       meta_prob <- meta_prob / sum(meta_prob)
     }
 
+    drv <- unique(c(as.character(P$ENV_DRIVERS %||% character(0)),
+                    as.character(P$GRADIENT$gradient %||% character(0))))
     env_grid <- create_environmental_gradients(
       poly,
       P$SAMPLING_RESOLUTION,
       P$ENVIRONMENTAL_NOISE,
-      covariates = P$ENV_COVARIATES %||% NULL
+      covariates = P$ENV_COVARIATES %||% NULL,
+      drivers = drv
     )
     env_sf <- sf::st_as_sf(env_grid, coords = c("x", "y"), crs = crs_dom)
     gx <- sort(unique(env_grid$x))
@@ -573,21 +591,25 @@ generate_heterogeneous_distribution <- function(domain, P) {
     .env_accept_prob <- function(sp, xy) {
       if (!hybrid_mode || lambda_env == 0 || is.null(grad_lookup[[sp]])) return(1)
       g <- grad_lookup[[sp]]
-      env_col <- switch(g$gradient,
-        temperature = "temperature",
-        elevation = "elevation",
-        rainfall = "rainfall",
-        NULL
-      )
-      if (is.null(env_col)) return(1)
+      env_col <- .resolve_env_col(g$gradient, names(env_grid))
+      if (is.na(env_col)) return(1)
       ixx <- .to_grid_index(as.numeric(xy[1]), gx)
       iyy <- .to_grid_index(as.numeric(xy[2]), gy)
-      val <- switch(env_col,
-        temperature = temp_mat[iyy, ixx],
-        elevation = elev_mat[iyy, ixx],
-        rainfall = rain_mat[iyy, ixx],
-        NA_real_
-      )
+      val <- if (env_col == "temperature") {
+        temp_mat[iyy, ixx]
+      } else if (env_col == "elevation") {
+        elev_mat[iyy, ixx]
+      } else if (env_col == "rainfall") {
+        rain_mat[iyy, ixx]
+      } else {
+        pt <- sf::st_as_sf(
+          data.frame(x = as.numeric(xy[1]), y = as.numeric(xy[2])),
+          coords = c("x", "y"),
+          crs = crs_dom
+        )
+        j <- sf::st_nearest_feature(pt, env_sf)
+        as.numeric(env_sf[[env_col]][j])
+      }
       if (!is.finite(val) || !is.finite(g$tol) || g$tol <= 0) return(1)
       w <- exp(-((val - g$optimum)^2) / (2 * g$tol^2))
       w <- max(0, min(1, w^lambda_env))
@@ -707,7 +729,9 @@ generate_heterogeneous_distribution <- function(domain, P) {
     domain,
     P$SAMPLING_RESOLUTION,
     P$ENVIRONMENTAL_NOISE,
-    covariates = P$ENV_COVARIATES %||% NULL
+    covariates = P$ENV_COVARIATES %||% NULL,
+    drivers = unique(c(as.character(P$ENV_DRIVERS %||% character(0)),
+                       as.character(P$GRADIENT$gradient %||% character(0))))
   )
   env_sf <- sf::st_as_sf(
     env_grid,
@@ -818,11 +842,8 @@ generate_heterogeneous_distribution <- function(domain, P) {
       if (q == 0) next
 
       row <- P$GRADIENT[P$GRADIENT$species == sp, , drop = FALSE][1, ]
-      env_col <- switch(row$gradient,
-        temperature = "temperature",
-        elevation   = "elevation",
-        rainfall    = "rainfall"
-      )
+      env_col <- .resolve_env_col(row$gradient, names(env_grid))
+      if (is.na(env_col)) next
 
       # Use the baseline point-process kind that would have generated this group.
       # (A can differ from the others.)
