@@ -128,9 +128,8 @@ generate_full_report <- function(res, include_audit = TRUE, audit_top_n = 6) {
   }
 
   env_report <- c("\nEnvironmental Gradients:")
-  temp_range <- range(res$env_gradients$temperature_C, na.rm = TRUE)
-  elev_range <- range(res$env_gradients$elevation_m, na.rm = TRUE)
-  rain_range <- range(res$env_gradients$rainfall_mm, na.rm = TRUE)
+  env_cols <- setdiff(names(res$env_gradients), c("x", "y"))
+  env_num <- env_cols[vapply(res$env_gradients[env_cols], is.numeric, logical(1))]
 
   if (!is.null(res$P$GRADIENT)) {
     G <- res$P$GRADIENT
@@ -143,28 +142,41 @@ generate_full_report <- function(res, include_audit = TRUE, audit_top_n = 6) {
     rain_species_str <- "None"
   }
 
-  env_report <- c(
-    env_report,
-    sprintf("  Temperature: %.1f-%.1f deg C (range: %.1f deg C)", temp_range[1], temp_range[2], diff(temp_range)),
-    "    Pattern: Diagonal (NW cool -> SE warm)",
-    paste0("    Responsive species: ", temp_species_str),
-    sprintf("  Elevation: %.0f-%.0f m (range: %.0f m)", elev_range[1], elev_range[2], diff(elev_range)),
-    "    Pattern: Central peak (mountain-like topology)",
-    paste0("    Responsive species: ", elev_species_str),
-    sprintf("  Rainfall: %.0f-%.0f mm (range: %.0f mm)", rain_range[1], rain_range[2], diff(rain_range)),
-    "    Pattern: Perpendicular (NE dry -> SW wet)",
-    paste0("    Responsive species: ", rain_species_str)
-  )
+  if (all(c("temperature_C", "elevation_m", "rainfall_mm") %in% env_num)) {
+    temp_range <- range(res$env_gradients$temperature_C, na.rm = TRUE)
+    elev_range <- range(res$env_gradients$elevation_m, na.rm = TRUE)
+    rain_range <- range(res$env_gradients$rainfall_mm, na.rm = TRUE)
+    env_report <- c(
+      env_report,
+      sprintf("  Temperature: %.1f-%.1f deg C (range: %.1f deg C)", temp_range[1], temp_range[2], diff(temp_range)),
+      "    Pattern: Diagonal (NW cool -> SE warm)",
+      paste0("    Responsive species: ", temp_species_str),
+      sprintf("  Elevation: %.0f-%.0f m (range: %.0f m)", elev_range[1], elev_range[2], diff(elev_range)),
+      "    Pattern: Central peak (mountain-like topology)",
+      paste0("    Responsive species: ", elev_species_str),
+      sprintf("  Rainfall: %.0f-%.0f mm (range: %.0f mm)", rain_range[1], rain_range[2], diff(rain_range)),
+      "    Pattern: Perpendicular (NE dry -> SW wet)",
+      paste0("    Responsive species: ", rain_species_str)
+    )
+  } else {
+    env_report <- c(
+      env_report,
+      sprintf("  Drivers available: %s", paste(env_num, collapse = ", ")),
+      sprintf("  Gradient-responsive species: %s", if (is.null(res$P$GRADIENT) || !nrow(res$P$GRADIENT)) "None" else paste(unique(res$P$GRADIENT$species), collapse = ", "))
+    )
+  }
 
-  cor_mat <- cor(res$env_gradients[, c("temperature_C", "elevation_m", "rainfall_mm")], use = "complete.obs")
-  interp <- if (max(abs(cor_mat[upper.tri(cor_mat)])) < 0.3) "Gradients are approximately orthogonal (low correlation)" else "Some gradient correlation detected"
-  corr_report <- c(
-    "\nGradient Correlations:",
-    sprintf("  Temperature-Elevation: r=%.3f", cor_mat[1, 2]),
-    sprintf("  Temperature-Rainfall:  r=%.3f", cor_mat[1, 3]),
-    sprintf("  Elevation-Rainfall:    r=%.3f", cor_mat[2, 3]),
-    paste0("  Interpretation: ", interp)
-  )
+  corr_report <- c("\nGradient Correlations:")
+  if (length(env_num) >= 2L) {
+    cor_mat <- cor(res$env_gradients[, env_num, drop = FALSE], use = "complete.obs")
+    pairs <- which(upper.tri(cor_mat), arr.ind = TRUE)
+    for (k in seq_len(nrow(pairs))) {
+      i <- pairs[k, 1]; j <- pairs[k, 2]
+      corr_report <- c(corr_report, sprintf("  %s-%s: r=%.3f", env_num[i], env_num[j], cor_mat[i, j]))
+    }
+  } else {
+    corr_report <- c(corr_report, "  Not enough numeric drivers for correlation summary.")
+  }
 
   sad <- as.data.frame(table(res$species_dist$species))
   colnames(sad) <- c("Species", "Count")

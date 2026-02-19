@@ -8,7 +8,8 @@ create_environmental_gradients(
   domain,
   resolution,
   noise_level,
-  covariates = NULL
+  covariates = NULL,
+  drivers = c("temperature", "elevation", "rainfall")
 )
 }
 \arguments{
@@ -25,6 +26,10 @@ noise added independently to each gradient before clipping.}
 covariates. Must contain \code{x}, \code{y}. If provided, these values are
 returned (with missing standard columns derived where possible) and the
 synthetic gradient generator is skipped.}
+
+\item{drivers}{Character vector of driver names to generate/expect. Defaults
+to \code{c("temperature","elevation","rainfall")}. For arbitrary names,
+synthetic values are generated on a normalized 0-1 scale.}
 }
 \value{
 A \code{data.frame} with columns:

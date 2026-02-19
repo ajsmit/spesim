@@ -8,9 +8,9 @@ calculate_quadrat_environment(env_grid, quadrats, domain_crs)
 }
 \arguments{
 \item{env_grid}{A regular (or irregular) data frame with numeric columns
-\code{x}, \code{y} giving point coordinates, and environmental columns
-\code{temperature_C}, \code{elevation_m}, \code{rainfall_mm}. Coordinates
-are assumed to be in the CRS specified by \code{domain_crs}.}
+\code{x}, \code{y} giving point coordinates, plus one or more numeric
+environmental columns. Coordinates are assumed to be in the CRS specified
+by \code{domain_crs}.}
 
 \item{quadrats}{An \code{sf} POLYGON (or MULTIPOLYGON) layer with a
 \code{quadrat_id} column. Must be in the same CRS as \code{domain_crs}.}
@@ -21,14 +21,13 @@ object. This CRS should match that of \code{quadrats}.}
 }
 \value{
 A \code{data.frame} with one row per quadrat and columns:
-\code{site}, \code{temperature_C}, \code{elevation_m}, \code{rainfall_mm}.
-Means are numeric; sites with no overlapping points will have \code{NA} in
-the environmental columns.
+\code{site} plus one column per summarised numeric environmental variable.
+Means are numeric; sites with no overlapping points will have \code{NA}.
 }
 \description{
 Converts a gridded environmental table (\code{env_grid}) into an \code{sf}
 point layer, joins it to quadrat polygons, and computes per‑quadrat mean
-values (temperature, elevation, rainfall). Quadrats with no overlapping
+values for all numeric environmental columns. Quadrats with no overlapping
 grid points are retained and returned with \code{NA} means.
 }
 \details{
@@ -38,7 +37,7 @@ The function:
 \code{\link[sf]{st_as_sf}} using \code{coords = c("x","y")},
 \item performs a spatial join \code{\link[sf]{st_join}} of points into
 quadrats (default predicate: \code{st_intersects}),
-\item groups by \code{quadrat_id} and returns the mean of each
+\item groups by \code{quadrat_id} and returns the mean of each numeric
 environmental variable (with \code{na.rm = TRUE}),
 \item left‑joins back to the full set of quadrats to keep empty sites.
 }

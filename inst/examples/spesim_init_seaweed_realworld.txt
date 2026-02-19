@@ -1,0 +1,31 @@
+# spesim real-world example: coastline seaweed workflow
+SEED = 77
+N_INDIVIDUALS = 2200
+N_SPECIES = 26
+
+DOMAIN_TYPE = coastline
+LINEAR_WRAP = FALSE
+MODEL_FAMILY = hybrid
+DISPERSAL_KERNEL = gaussian
+DISPERSAL_SCALE = 0.2
+DISPERSAL_DIRECTION_BIAS = 0.45
+NEUTRAL_M = 0.12
+
+# Route-based quadrat placement
+SAMPLING_SCHEME = route
+ROUTE_QUADRAT_MODE = equidistant
+N_QUADRATS = 40
+QUADRAT_SIZE_OPTION = small
+
+# Real-world covariates (repo-relative path)
+ENV_COVARIATES_FILE = "inst/extdata/SeaweedCovariates.csv"
+ENV_DRIVERS = summerMean, winterMin, augChl
+
+GRADIENT_SPECIES = A, B, C
+GRADIENT_ASSIGNMENTS = summerMean, winterMin, augChl
+GRADIENT_OPTIMA = summerMean:0.65, winterMin:0.55, augChl:0.40
+GRADIENT_TOLERANCE = summerMean:0.25, winterMin:0.25, augChl:0.30
+
+INTERACTION_RADIUS = 0
+INTERACTIONS_FILE = ""
+INTERACTIONS_EDGELIST = ""

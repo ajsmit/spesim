@@ -164,8 +164,9 @@
 #' \code{INTERACTIONS_EDGELIST = c("A,B-D,0.8", "C,A,1.2")}. If neither is provided,
 #' interactions default to neutral (all 1.0) with \code{INTERACTION_RADIUS = 0}.
 #'
-#' Gradient keys supported: \code{temperature}, \code{elevation}, \code{rainfall}.
-#' Use \code{GRADIENT_SPECIES}, \code{GRADIENT_ASSIGNMENTS}, plus either
+#' Gradient keys can be arbitrary driver names (legacy defaults:
+#' \code{temperature}, \code{elevation}, \code{rainfall}). Use
+#' \code{GRADIENT_SPECIES}, \code{GRADIENT_ASSIGNMENTS}, plus either
 #' \code{GRADIENT_OPTIMA} and \code{GRADIENT_TOLERANCE} as scalar, per-species
 #' named, or per-gradient named values.
 #'
@@ -216,6 +217,7 @@ load_config <- function(init_file) {
     DISTANCE_METRIC = "auto",# auto | euclidean | along_path
     ENV_COVARIATES_FILE = NULL,
     ENV_COVARIATES = NULL,
+    ENV_DRIVERS = c("temperature", "elevation", "rainfall"),
 
     # High-level model family
     MODEL_FAMILY = "manual", # manual | niche_filtering | neutral_csr | neutral_hubbell_like | hybrid
@@ -271,6 +273,8 @@ load_config <- function(init_file) {
     INTERACTIONS_FILE = NULL,
     INTERACTIONS_EDGELIST = NULL,
     SAMPLING_SCHEME = "random",
+    ROUTE_QUADRAT_MODE = "equidistant", # equidistant | specified
+    ROUTE_POSITIONS = NULL,              # numeric in [0,1] when ROUTE_QUADRAT_MODE = specified
     N_QUADRATS = 20,
     QUADRAT_SIZE_OPTION = "medium",
     N_TRANSECTS = 1,
@@ -327,6 +331,8 @@ load_config <- function(init_file) {
   P$LINEAR_AXIS <- tolower(as.character(P$LINEAR_AXIS %||% "x"))
   P$DISTANCE_METRIC <- tolower(as.character(P$DISTANCE_METRIC %||% "auto"))
   P$DISTANCE_METRIC <- gsub("-", "_", P$DISTANCE_METRIC)
+  P$SAMPLING_SCHEME <- tolower(as.character(P$SAMPLING_SCHEME %||% "random"))
+  P$ROUTE_QUADRAT_MODE <- tolower(as.character(P$ROUTE_QUADRAT_MODE %||% "equidistant"))
   P$NEUTRAL_META_MODEL <- tolower(as.character(P$NEUTRAL_META_MODEL %||% "zsm"))
   P$NEUTRAL_META_MODEL <- gsub("_", "-", P$NEUTRAL_META_MODEL)
   P$DISPERSAL_KERNEL <- tolower(as.character(P$DISPERSAL_KERNEL %||% "gaussian"))
@@ -378,6 +384,12 @@ load_config <- function(init_file) {
   if (!P$DISTANCE_METRIC %in% c("auto", "euclidean", "along_path")) {
     stop("DISTANCE_METRIC must be one of: auto, euclidean, along_path.")
   }
+  if (!P$SAMPLING_SCHEME %in% c("random", "tiled", "systematic", "transect", "voronoi", "route")) {
+    stop("SAMPLING_SCHEME must be one of: random, tiled, systematic, transect, voronoi, route.")
+  }
+  if (!P$ROUTE_QUADRAT_MODE %in% c("equidistant", "specified")) {
+    stop("ROUTE_QUADRAT_MODE must be one of: equidistant, specified.")
+  }
 
   # Safe numeric coercion for known numeric fields (no warnings)
   num_fields <- c(
@@ -392,6 +404,7 @@ load_config <- function(init_file) {
     "NEUTRAL_M", "NEUTRAL_NU",
     "DISPERSAL_SCALE", "DISPERSAL_ALPHA", "DISPERSAL_DIRECTION_BIAS", "HYBRID_ENV_WEIGHT",
     "LINEAR_JITTER_SD",
+    "ROUTE_POSITIONS",
 
     "SAMPLING_RESOLUTION", "ENVIRONMENTAL_NOISE",
     "MAX_CLUSTERS_DOMINANT", "CLUSTER_SPREAD_DOMINANT",
@@ -428,6 +441,25 @@ load_config <- function(init_file) {
   if (!is.null(P$ENV_COVARIATES_FILE)) {
     P$ENV_COVARIATES_FILE <- as.character(P$ENV_COVARIATES_FILE)
     if (!nzchar(P$ENV_COVARIATES_FILE)) P$ENV_COVARIATES_FILE <- NULL
+  }
+  if (!is.null(P$ENV_DRIVERS)) {
+    P$ENV_DRIVERS <- as.character(P$ENV_DRIVERS)
+    P$ENV_DRIVERS <- trimws(P$ENV_DRIVERS)
+    P$ENV_DRIVERS <- P$ENV_DRIVERS[nzchar(P$ENV_DRIVERS)]
+  }
+  if (is.null(P$ENV_DRIVERS) || length(P$ENV_DRIVERS) == 0) {
+    P$ENV_DRIVERS <- c("temperature", "elevation", "rainfall")
+  }
+  P$ENV_DRIVERS <- unique(P$ENV_DRIVERS)
+  if (!is.null(P$ROUTE_POSITIONS)) {
+    P$ROUTE_POSITIONS <- as.numeric(P$ROUTE_POSITIONS)
+    P$ROUTE_POSITIONS <- P$ROUTE_POSITIONS[is.finite(P$ROUTE_POSITIONS)]
+  }
+  if (P$ROUTE_QUADRAT_MODE == "specified" && (is.null(P$ROUTE_POSITIONS) || length(P$ROUTE_POSITIONS) == 0)) {
+    stop("ROUTE_QUADRAT_MODE='specified' requires ROUTE_POSITIONS in [0,1].")
+  }
+  if (!is.null(P$ROUTE_POSITIONS) && any(P$ROUTE_POSITIONS < 0 | P$ROUTE_POSITIONS > 1)) {
+    stop("ROUTE_POSITIONS must lie in [0,1].")
   }
 
   # Logical flags
@@ -471,9 +503,6 @@ load_config <- function(init_file) {
 
   if (length(gs) != length(ga)) {
     stop("GRADIENT_SPECIES and GRADIENT_ASSIGNMENTS must have the same length.")
-  }
-  if (length(gs) && !all(ga %in% c("temperature", "elevation", "rainfall"))) {
-    stop("Unknown gradient(s): ", paste(setdiff(ga, c("temperature", "elevation", "rainfall")), collapse = ", "))
   }
 
   # Utilities expected elsewhere in the package:

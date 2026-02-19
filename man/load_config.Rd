@@ -34,8 +34,9 @@ a separate interactions config, or embed rules directly with
 \code{INTERACTIONS_EDGELIST = c("A,B-D,0.8", "C,A,1.2")}. If neither is provided,
 interactions default to neutral (all 1.0) with \code{INTERACTION_RADIUS = 0}.
 
-Gradient keys supported: \code{temperature}, \code{elevation}, \code{rainfall}.
-Use \code{GRADIENT_SPECIES}, \code{GRADIENT_ASSIGNMENTS}, plus either
+Gradient keys can be arbitrary driver names (legacy defaults:
+\code{temperature}, \code{elevation}, \code{rainfall}). Use
+\code{GRADIENT_SPECIES}, \code{GRADIENT_ASSIGNMENTS}, plus either
 \code{GRADIENT_OPTIMA} and \code{GRADIENT_TOLERANCE} as scalar, per-species
 named, or per-gradient named values.
 

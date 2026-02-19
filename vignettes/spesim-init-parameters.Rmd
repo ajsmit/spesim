@@ -55,6 +55,7 @@ loader resolves them automatically as documented below.
 | `LINEAR_JITTER_SD` | numeric | `0.0` | Perpendicular jitter around the linear axis (map units). |
 | `DISTANCE_METRIC` | character | `"auto"` | Distance-decay metric: `auto`, `euclidean`, `along_path`. |
 | `ENV_COVARIATES_FILE` | character | `NULL` | Optional CSV with `x,y` and environmental columns to replace synthetic rasters. |
+| `ENV_DRIVERS` | character vector | `c("temperature","elevation","rainfall")` | Environmental driver names to generate/use; supports any number of drivers. |
 | `DOMINANT_FRACTION` | numeric | `0.30` | Fraction of all individuals assigned to the dominant species `A`. |
 
 ## Abundance model (Fisher’s log-series)
@@ -81,14 +82,14 @@ loader resolves them automatically as documented below.
 
 # Environmental filtering (gradients)
 
-Gradients are on a normalized 0–1 scale internally and are reported in
-interpretable units (°C, m, mm). Allowed gradient names are
-`temperature`, `elevation`, `rainfall`.
+Gradients are on a normalized 0–1 scale internally. Legacy built-ins
+(`temperature`, `elevation`, `rainfall`) are additionally reported in
+interpretable units (°C, m, mm). You can now use arbitrary gradient names.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `GRADIENT_SPECIES` | vector (character) | `c()` | Species affected by gradients (e.g., `c(B, C, D)`). |
-| `GRADIENT_ASSIGNMENTS` | vector (character) | `c()` | One entry per `GRADIENT_SPECIES`, choosing from the allowed gradient names. |
+| `GRADIENT_ASSIGNMENTS` | vector (character) | `c()` | One entry per `GRADIENT_SPECIES`, naming the environmental driver for each species. |
 | `GRADIENT_OPTIMA` | scalar / per‑species / per‑gradient | `0.5` | Optimum (0–1). May be a single number, a vector named by species, or named by gradient (e.g., `temperature:0.6, elevation:0.4`). |
 | `GRADIENT_TOLERANCE` | scalar / per‑species / per‑gradient | `0.1` | Niche width (>0). Same naming rules as OPTIMA. |
 | `SAMPLING_RESOLUTION` | integer | `50` | Grid resolution for gradient fields. |
@@ -142,7 +143,9 @@ INTERACTIONS_EDGELIST = c(
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `SAMPLING_SCHEME` | character | `"random"` | One of `random`, `tiled`, `systematic`, `transect`, `voronoi`. |
+| `SAMPLING_SCHEME` | character | `"random"` | One of `random`, `tiled`, `systematic`, `transect`, `voronoi`, `route`. |
+| `ROUTE_QUADRAT_MODE` | character | `"equidistant"` | For `SAMPLING_SCHEME="route"`: `equidistant` or `specified`. |
+| `ROUTE_POSITIONS` | numeric vector | `NULL` | Route positions in `[0,1]` when `ROUTE_QUADRAT_MODE="specified"`. |
 | `N_QUADRATS` | integer | `20` | Total quadrats when applicable. |
 | `QUADRAT_SIZE_OPTION` | character | `"medium"` | One of `small` (=1×1), `medium` (=1.5×1.5), `large` (=2×2). |
 | `N_TRANSECTS` | integer | `1` | Number of parallel transects (for `transect`). |

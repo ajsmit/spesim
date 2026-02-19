@@ -251,29 +251,31 @@ audit_environmental_filtering <- function(res) {
   A <- res$abund_matrix
 
   # helper: convert optimum/tol (0..1) to natural units to match E
-  .opt_to_units <- function(opt, gname) {
-    switch(gname,
-      "temperature" = opt * 30 - 2,
-      "elevation"   = opt * 2000,
-      "rainfall"    = opt * 700 + 200,
-      NA_real_
-    )
-  }
-  .tol_to_units <- function(tol, gname) {
-    switch(gname,
-      "temperature" = tol * 30,
-      "elevation"   = tol * 2000,
-      "rainfall"    = tol * 700,
-      NA_real_
-    )
-  }
   .env_col <- function(gname) {
-    switch(gname,
+    cols <- names(E)
+    if (gname %in% cols) return(gname)
+    legacy <- switch(gname,
       "temperature" = "temperature_C",
       "elevation"   = "elevation_m",
       "rainfall"    = "rainfall_mm",
       NA_character_
     )
+    if (!is.na(legacy) && legacy %in% cols) return(legacy)
+    cand <- grep(paste0("^", gname, "(_|$)"), cols, value = TRUE)
+    if (length(cand)) return(cand[1])
+    NA_character_
+  }
+  .opt_to_units <- function(opt, env_col) {
+    if (identical(env_col, "temperature_C")) return(opt * 30 - 2)
+    if (identical(env_col, "elevation_m")) return(opt * 2000)
+    if (identical(env_col, "rainfall_mm")) return(opt * 700 + 200)
+    opt
+  }
+  .tol_to_units <- function(tol, env_col) {
+    if (identical(env_col, "temperature_C")) return(tol * 30)
+    if (identical(env_col, "elevation_m")) return(tol * 2000)
+    if (identical(env_col, "rainfall_mm")) return(tol * 700)
+    tol
   }
 
   G <- res$P$GRADIENT
@@ -285,8 +287,8 @@ audit_environmental_filtering <- function(res) {
       return(NULL)
     }
 
-    opt_u <- .opt_to_units(as.numeric(G$optimum[i]), g)
-    tol_u <- .tol_to_units(as.numeric(G$tol[i]), g)
+    opt_u <- .opt_to_units(as.numeric(G$optimum[i]), env_col)
+    tol_u <- .tol_to_units(as.numeric(G$tol[i]), env_col)
     if (!is.finite(tol_u) || tol_u <= 0) tol_u <- NA_real_
 
     df <- dplyr::left_join(E, A, by = c("site" = "site"))

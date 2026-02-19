@@ -1,0 +1,263 @@
+---
+title: "spesim: real-world constrained landscapes (Doubs + seaweed)"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{spesim: real-world constrained landscapes (Doubs + seaweed)}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 5,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+This vignette shows how to use real-world coordinates and covariates from
+`inst/extdata`:
+
+- Doubs river data: `DoubsSpa.csv`, `DoubsEnv.csv`, `DoubsSpe.csv`
+- Seaweed coastline data: `SeaweedSpa.csv`, `SeaweedEnv.csv`, `SeaweedSpe.csv`
+
+It also uses pre-merged covariate files shipped in the package:
+
+- `DoubsCovariates.csv`
+- `SeaweedCovariates.csv`
+
+## Limitation note
+
+This is a linearized constrained-landscape MVP, not yet a full graph-theoretic
+river-network engine (no explicit edge/node topology or true network
+shortest-path over branches yet).
+
+## Helpers
+
+```{r}
+library(spesim)
+library(ggplot2)
+library(sf)
+
+read_with_site <- function(path) {
+  x <- read.csv(path, check.names = FALSE)
+  if ("" %in% names(x)) names(x)[names(x) == ""] <- "site"
+  x
+}
+
+pkg_file <- function(subpath, folder = c("extdata", "examples")) {
+  folder <- match.arg(folder)
+  p_installed <- system.file(folder, subpath, package = "spesim")
+  if (nzchar(p_installed) && file.exists(p_installed)) return(p_installed)
+  candidates <- c(
+    file.path("inst", folder, subpath),
+    file.path("..", "inst", folder, subpath)
+  )
+  for (p_local in candidates) {
+    if (file.exists(p_local)) return(p_local)
+  }
+  stop("Could not find file: ", subpath, " in ", folder)
+}
+
+make_domain_from_xy <- function(df, buffer_frac = 0.06) {
+  pts <- st_as_sf(df, coords = c("x", "y"), crs = NA)
+  hull <- st_convex_hull(st_union(pts))
+  bb <- st_bbox(hull)
+  d <- sqrt((bb["xmax"] - bb["xmin"])^2 + (bb["ymax"] - bb["ymin"])^2)
+  st_as_sf(st_buffer(hull, d * buffer_frac))
+}
+
+build_linear_pos <- function(x) {
+  rng <- range(x, na.rm = TRUE)
+  den <- rng[2] - rng[1]
+  if (!is.finite(den) || den == 0) den <- 1
+  pmax(0, pmin(1, (x - rng[1]) / den))
+}
+```
+
+## 1) Tie Doubs environmental data to real coordinates
+
+`DoubsSpa.csv` provides site coordinates (`X`, `Y`). `DoubsEnv.csv` provides
+site-level environmental variables. We join by site ID.
+
+```{r}
+doubs_spa <- read_with_site(pkg_file("DoubsSpa.csv", "extdata"))
+doubs_env <- read_with_site(pkg_file("DoubsEnv.csv", "extdata"))
+doubs_spe <- read_with_site(pkg_file("DoubsSpe.csv", "extdata"))
+
+doubs <- merge(doubs_spa, doubs_env, by = "site", sort = TRUE)
+names(doubs)[names(doubs) == "X"] <- "x"
+names(doubs)[names(doubs) == "Y"] <- "y"
+doubs$linear_pos <- build_linear_pos(doubs$dfs)
+
+ggplot(doubs, aes(x, y, colour = dfs)) +
+  geom_point(size = 2.3) +
+  geom_path(alpha = 0.45) +
+  labs(
+    title = "Doubs sites (from DoubsSpa.csv)",
+    subtitle = "Points connected in river-km order (dfs)",
+    colour = "dfs"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+### Observed distance-decay from Doubs species data
+
+```{r}
+doubs_abund <- doubs_spe
+names(doubs_abund)[1] <- "site"
+site_coords_doubs <- doubs[, c("site", "x", "y", "linear_pos")]
+attr(site_coords_doubs, "linear_wrap") <- FALSE
+
+dd_doubs_eu <- calculate_distance_decay(doubs_abund, site_coords_doubs, metric = "euclidean")
+dd_doubs_ap <- calculate_distance_decay(doubs_abund, site_coords_doubs, metric = "along_path")
+
+dd_doubs <- rbind(
+  transform(dd_doubs_eu, Metric = "Euclidean"),
+  transform(dd_doubs_ap, Metric = "Along-path")
+)
+
+ggplot(dd_doubs, aes(Distance, Dissimilarity, colour = Metric)) +
+  geom_point(alpha = 0.25) +
+  geom_smooth(se = FALSE, method = "loess", span = 0.8, linewidth = 1.1) +
+  labs(title = "Doubs observed distance-decay", y = "Bray-Curtis (binary)") +
+  theme_minimal(base_size = 12)
+```
+
+## 2) Simulate in Doubs-like constrained network mode using real covariates
+
+```{r}
+P_doubs <- load_config(pkg_file("spesim_init_basic.txt", "examples"))
+P_doubs$N_SPECIES <- 18
+P_doubs$N_INDIVIDUALS <- 1300
+P_doubs$DOMAIN_TYPE <- "network"
+P_doubs$MODEL_FAMILY <- "hybrid"
+P_doubs$NEUTRAL_M <- 0.10
+P_doubs$DISPERSAL_KERNEL <- "exponential"
+P_doubs$DISPERSAL_SCALE <- 0.9
+P_doubs$DISPERSAL_DIRECTION_BIAS <- 0.25
+
+P_doubs$SAMPLING_SCHEME <- "route"
+P_doubs$ROUTE_QUADRAT_MODE <- "specified"
+P_doubs$ROUTE_POSITIONS <- doubs$linear_pos
+P_doubs$N_QUADRATS <- length(P_doubs$ROUTE_POSITIONS)
+P_doubs$QUADRAT_SIZE_OPTION <- "small"
+
+P_doubs$ENV_COVARIATES_FILE <- pkg_file("DoubsCovariates.csv", "extdata")
+P_doubs$ENV_DRIVERS <- c("alt", "flo", "pH", "nit", "oxy")
+P_doubs$GRADIENT_SPECIES <- c("A", "B", "C", "D", "E")
+P_doubs$GRADIENT_ASSIGNMENTS <- c("alt", "flo", "pH", "nit", "oxy")
+P_doubs$GRADIENT_OPTIMA <- c(alt = 0.7, flo = 0.4, pH = 0.5, nit = 0.3, oxy = 0.8)
+P_doubs$GRADIENT_TOLERANCE <- c(alt = 0.25, flo = 0.30, pH = 0.25, nit = 0.25, oxy = 0.25)
+
+P_doubs$INTERACTION_RADIUS <- 0
+P_doubs$INTERACTIONS_FILE <- NULL
+P_doubs$INTERACTIONS_EDGELIST <- NULL
+
+dom_doubs <- make_domain_from_xy(doubs[, c("x", "y")], buffer_frac = 0.08)
+res_doubs <- spesim_run(P_doubs, domain = dom_doubs, write_outputs = FALSE, seed = P_doubs$SEED, interactions_print = FALSE)
+
+plot_spatial_sampling(
+  res_doubs$domain, res_doubs$species_dist, res_doubs$quadrats, res_doubs$P,
+  show_gradient = TRUE, env_gradients = res_doubs$env_gradients, gradient_type = "alt"
+) + ggtitle("Simulated Doubs-like community using real Doubs covariates")
+```
+
+## 3) Seaweed coastline: real coordinates and covariates
+
+```{r}
+sea_spa <- read.csv(pkg_file("SeaweedSpa.csv", "extdata"), check.names = FALSE)
+sea_env <- read_with_site(pkg_file("SeaweedEnv.csv", "extdata"))
+sea_spe <- read_with_site(pkg_file("SeaweedSpe.csv", "extdata"))
+
+sea <- transform(sea_spa, site = seq_len(nrow(sea_spa)), x = Longitude, y = Latitude)
+sea <- merge(sea[, c("site", "x", "y")], sea_env, by = "site", sort = TRUE)
+sea$linear_pos <- build_linear_pos(seq_len(nrow(sea)))
+
+ggplot(sea, aes(x, y, colour = summerMean)) +
+  geom_point(size = 2.1) +
+  geom_path(alpha = 0.4) +
+  labs(title = "Seaweed sections (real coordinates)", colour = "summerMean") +
+  theme_minimal(base_size = 12)
+```
+
+### Observed distance-decay from seaweed species data
+
+```{r}
+sea_abund <- sea_spe
+names(sea_abund)[1] <- "site"
+site_coords_sea <- sea[, c("site", "x", "y", "linear_pos")]
+attr(site_coords_sea, "linear_wrap") <- FALSE
+
+dd_sea_eu <- calculate_distance_decay(sea_abund, site_coords_sea, metric = "euclidean")
+dd_sea_ap <- calculate_distance_decay(sea_abund, site_coords_sea, metric = "along_path")
+
+dd_sea <- rbind(
+  transform(dd_sea_eu, Metric = "Euclidean"),
+  transform(dd_sea_ap, Metric = "Along-path")
+)
+
+ggplot(dd_sea, aes(Distance, Dissimilarity, colour = Metric)) +
+  geom_point(alpha = 0.15) +
+  geom_smooth(se = FALSE, method = "loess", span = 0.8, linewidth = 1.1) +
+  labs(title = "Seaweed observed distance-decay", y = "Bray-Curtis (binary)") +
+  theme_minimal(base_size = 12)
+```
+
+### Simulate coastline-constrained community with seaweed covariates
+
+```{r}
+P_sea <- load_config(pkg_file("spesim_init_basic.txt", "examples"))
+P_sea$N_SPECIES <- 26
+P_sea$N_INDIVIDUALS <- 2200
+P_sea$DOMAIN_TYPE <- "coastline"
+P_sea$LINEAR_WRAP <- FALSE
+P_sea$MODEL_FAMILY <- "hybrid"
+P_sea$NEUTRAL_M <- 0.12
+P_sea$DISPERSAL_KERNEL <- "gaussian"
+P_sea$DISPERSAL_SCALE <- 0.2
+P_sea$DISPERSAL_DIRECTION_BIAS <- 0.45
+
+P_sea$SAMPLING_SCHEME <- "route"
+P_sea$ROUTE_QUADRAT_MODE <- "specified"
+P_sea$ROUTE_POSITIONS <- sea$linear_pos
+P_sea$N_QUADRATS <- length(P_sea$ROUTE_POSITIONS)
+P_sea$QUADRAT_SIZE_OPTION <- "small"
+
+P_sea$ENV_COVARIATES_FILE <- pkg_file("SeaweedCovariates.csv", "extdata")
+P_sea$ENV_DRIVERS <- c("summerMean", "winterMin", "augChl")
+P_sea$GRADIENT_SPECIES <- c("A", "B", "C")
+P_sea$GRADIENT_ASSIGNMENTS <- c("summerMean", "winterMin", "augChl")
+P_sea$GRADIENT_OPTIMA <- c(summerMean = 0.65, winterMin = 0.55, augChl = 0.40)
+P_sea$GRADIENT_TOLERANCE <- c(summerMean = 0.25, winterMin = 0.25, augChl = 0.30)
+
+P_sea$INTERACTION_RADIUS <- 0
+P_sea$INTERACTIONS_FILE <- NULL
+P_sea$INTERACTIONS_EDGELIST <- NULL
+
+dom_sea <- make_domain_from_xy(sea[, c("x", "y")], buffer_frac = 0.10)
+res_sea <- spesim_run(P_sea, domain = dom_sea, write_outputs = FALSE, seed = P_sea$SEED, interactions_print = FALSE)
+
+plot_spatial_sampling(
+  res_sea$domain, res_sea$species_dist, res_sea$quadrats, res_sea$P,
+  show_gradient = TRUE, env_gradients = res_sea$env_gradients, gradient_type = "summerMean"
+) + ggtitle("Simulated coastline community using real seaweed covariates")
+```
+
+## Practical notes
+
+- The CSV paths are wired with `pkg_file(...)`, which resolves
+  `system.file("extdata/...", package = "spesim")` for installed-package use
+  and falls back to `inst/extdata/...` for source-tree rendering.
+- For Doubs, `X` and `Y` from `DoubsSpa.csv` are used as the site coordinates,
+  and `dfs` from `DoubsEnv.csv` is used as the linear route coordinate.
+- For seaweed, longitude/latitude are used as section coordinates, with an
+  alongshore ordering converted to a linear coordinate.
+- This provides real-world relevance now, while retaining internal synthetic
+  generation for cases without external covariates.

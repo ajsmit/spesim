@@ -40,7 +40,7 @@ validate_config <- function(config, interactions_file = NULL, strict = FALSE) {
       # scheme sanity
       if (!is.null(P$SAMPLING_SCHEME)) {
         scheme <- tolower(as.character(P$SAMPLING_SCHEME))
-        ok_schemes <- c("random", "tiled", "systematic", "transect", "voronoi")
+        ok_schemes <- c("random", "tiled", "systematic", "transect", "voronoi", "route")
         if (!scheme %in% ok_schemes) {
           errors <- c(errors, sprintf("SAMPLING_SCHEME must be one of: %s", paste(ok_schemes, collapse = ", ")))
         }

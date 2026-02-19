@@ -42,6 +42,9 @@
 #'   covariates. Must contain \code{x}, \code{y}. If provided, these values are
 #'   returned (with missing standard columns derived where possible) and the
 #'   synthetic gradient generator is skipped.
+#' @param drivers Character vector of driver names to generate/expect. Defaults
+#'   to \code{c("temperature","elevation","rainfall")}. For arbitrary names,
+#'   synthetic values are generated on a normalized 0-1 scale.
 #'
 #' @return A \code{data.frame} with columns:
 #'   \describe{
@@ -61,25 +64,41 @@
 #'
 #' @seealso \code{\link[sf]{st_bbox}}, \code{\link[sf]{st_intersects}}
 #' @export
-create_environmental_gradients <- function(domain, resolution, noise_level, covariates = NULL) {
+create_environmental_gradients <- function(domain, resolution, noise_level,
+                                           covariates = NULL,
+                                           drivers = c("temperature", "elevation", "rainfall")) {
+  drivers <- as.character(drivers %||% character(0))
+  drivers <- unique(trimws(drivers))
+  drivers <- drivers[nzchar(drivers)]
+  if (!length(drivers)) drivers <- c("temperature", "elevation", "rainfall")
+  drivers_all <- unique(c(drivers, "temperature", "elevation", "rainfall"))
+
   if (!is.null(covariates)) {
     grid <- as.data.frame(covariates, stringsAsFactors = FALSE)
     if (!all(c("x", "y") %in% names(grid))) {
       stop("`covariates` must contain columns x and y.")
     }
-    for (nm in c("temperature", "elevation", "rainfall")) {
-      if (!nm %in% names(grid)) {
-        if (nm == "temperature" && "temperature_C" %in% names(grid)) {
-          grid$temperature <- pmax(0, pmin(1, (as.numeric(grid$temperature_C) + 2) / 30))
-        } else if (nm == "elevation" && "elevation_m" %in% names(grid)) {
-          grid$elevation <- pmax(0, pmin(1, as.numeric(grid$elevation_m) / 2000))
-        } else if (nm == "rainfall" && "rainfall_mm" %in% names(grid)) {
-          grid$rainfall <- pmax(0, pmin(1, (as.numeric(grid$rainfall_mm) - 200) / 700))
-        } else {
-          grid[[nm]] <- 0.5
-        }
+    for (nm in drivers_all) {
+      if (nm %in% names(grid)) next
+      candidates <- c(paste0(nm, "_C"), paste0(nm, "_m"), paste0(nm, "_mm"), paste0(nm, "_unit"))
+      candidates <- candidates[candidates %in% names(grid)]
+      if (length(candidates)) {
+        v <- as.numeric(grid[[candidates[1]]])
+        rng <- range(v, na.rm = TRUE)
+        den <- rng[2] - rng[1]
+        if (!is.finite(den) || den == 0) den <- 1
+        grid[[nm]] <- pmax(0, pmin(1, (v - rng[1]) / den))
+      } else if (nm == "temperature" && "temperature_C" %in% names(grid)) {
+        grid$temperature <- pmax(0, pmin(1, (as.numeric(grid$temperature_C) + 2) / 30))
+      } else if (nm == "elevation" && "elevation_m" %in% names(grid)) {
+        grid$elevation <- pmax(0, pmin(1, as.numeric(grid$elevation_m) / 2000))
+      } else if (nm == "rainfall" && "rainfall_mm" %in% names(grid)) {
+        grid$rainfall <- pmax(0, pmin(1, (as.numeric(grid$rainfall_mm) - 200) / 700))
+      } else {
+        grid[[nm]] <- 0.5
       }
     }
+    # Maintain legacy convenience unit columns for standard drivers.
     if (!"temperature_C" %in% names(grid)) grid$temperature_C <- as.numeric(grid$temperature) * 30 - 2
     if (!"elevation_m" %in% names(grid)) grid$elevation_m <- as.numeric(grid$elevation) * 2000
     if (!"rainfall_mm" %in% names(grid)) grid$rainfall_mm <- as.numeric(grid$rainfall) * 700 + 200
@@ -94,15 +113,43 @@ create_environmental_gradients <- function(domain, resolution, noise_level, cova
   x_norm <- (grid$x - bbox["xmin"]) / (bbox["xmax"] - bbox["xmin"])
   y_norm <- (grid$y - bbox["ymin"]) / (bbox["ymax"] - bbox["ymin"])
 
-  temp_vals <- x_norm * 0.7 + y_norm * 0.3 + rnorm(nrow(grid), 0, noise_level)
+  # Legacy defaults with interpretable units.
+  temp_vals <- x_norm * 0.7 + y_norm * 0.3 + stats::rnorm(nrow(grid), 0, noise_level)
   dist_center <- sqrt((x_norm - 0.5)^2 + (y_norm - 0.5)^2)
-  elev_vals <- 1 - (dist_center / sqrt(0.5^2 + 0.5^2)) + rnorm(nrow(grid), 0, noise_level)
+  elev_vals <- 1 - (dist_center / sqrt(0.5^2 + 0.5^2)) + stats::rnorm(nrow(grid), 0, noise_level)
   rain_vals <- (-x_norm * 0.6 + y_norm * 0.8)
-  rain_vals <- (rain_vals - min(rain_vals)) / (max(rain_vals) - min(rain_vals)) + rnorm(nrow(grid), 0, noise_level)
+  rain_vals <- (rain_vals - min(rain_vals)) / (max(rain_vals) - min(rain_vals)) + stats::rnorm(nrow(grid), 0, noise_level)
 
-  grid$temperature <- pmax(0, pmin(1, temp_vals))
-  grid$elevation <- pmax(0, pmin(1, elev_vals))
-  grid$rainfall <- pmax(0, pmin(1, rain_vals))
+  base_map <- list(
+    temperature = pmax(0, pmin(1, temp_vals)),
+    elevation = pmax(0, pmin(1, elev_vals)),
+    rainfall = pmax(0, pmin(1, rain_vals))
+  )
+
+  # Generate requested drivers; preserve legacy behavior for the standard three.
+  for (nm in drivers_all) {
+    if (nm %in% names(base_map)) {
+      grid[[nm]] <- base_map[[nm]]
+    } else {
+      key <- sum(utf8ToInt(nm))
+      w1 <- (sin(key) + 1) / 2
+      w2 <- 1 - w1
+      freq <- 1 + (key %% 3)
+      phase <- (key %% 360) * pi / 180
+      raw <- w1 * x_norm + w2 * y_norm +
+        0.25 * sin(2 * pi * freq * x_norm + phase) +
+        0.25 * cos(2 * pi * freq * y_norm + phase / 2) +
+        stats::rnorm(nrow(grid), 0, noise_level)
+      rng <- range(raw, na.rm = TRUE)
+      den <- rng[2] - rng[1]
+      if (!is.finite(den) || den == 0) den <- 1
+      grid[[nm]] <- pmax(0, pmin(1, (raw - rng[1]) / den))
+    }
+  }
+
+  if (!("temperature" %in% names(grid))) grid$temperature <- base_map$temperature
+  if (!("elevation" %in% names(grid))) grid$elevation <- base_map$elevation
+  if (!("rainfall" %in% names(grid))) grid$rainfall <- base_map$rainfall
 
   grid$temperature_C <- grid$temperature * 30 - 2
   grid$elevation_m <- grid$elevation * 2000

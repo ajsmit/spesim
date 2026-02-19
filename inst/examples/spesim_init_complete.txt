@@ -30,6 +30,7 @@ DISTANCE_METRIC = auto       # auto | euclidean | along_path
 ENV_COVARIATES_FILE = ""
 # Example external covariates:
 # ENV_COVARIATES_FILE = "inst/extdata/doubs_like_nodes.csv"
+ENV_DRIVERS = temperature, elevation, rainfall
 
 # High-level model family:
 # manual | niche_filtering | neutral_csr | neutral_hubbell_like | hybrid
@@ -137,6 +138,8 @@ OTHERS_S     = 0.6
 #   voronoi    — place quadrats inside suitable Voronoi cells
 # =====================================================================
 SAMPLING_SCHEME = tiled
+ROUTE_QUADRAT_MODE = equidistant
+# ROUTE_POSITIONS = 0.05,0.2,0.35,0.5,0.65,0.8,0.95
 
 # When SAMPLING_SCHEME in {random, tiled, systematic, voronoi}:
 N_QUADRATS = 25
