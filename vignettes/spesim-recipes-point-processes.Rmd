@@ -25,7 +25,8 @@ knitr::opts_chunk$set(
 This recipe shows how to:
 
 1. switch the **spatial point-process** model for the dominant species (A) and for the remaining species,
-2. use the **neutral-theory SAD helper** (`SAD_MODEL = "zsm"`) *as currently implemented*.
+2. use the **neutral-theory SAD helper** (`SAD_MODEL = "zsm"`),
+3. use the high-level **model family** layer (`MODEL_FAMILY`) for neutral and hybrid recruitment.
 
 The key idea is that these are **orthogonal knobs**:
 
@@ -82,32 +83,29 @@ decay_df <- function(res, label) {
 }
 ```
 
-## Neutral theory in spesim (what it can and cannot do)
+## Neutral theory in spesim (current implementation)
 
-spesim’s **neutral theory option** is currently implemented as a **species–abundance distribution (SAD) helper**:
+spesim supports two neutral-style routes:
 
-- Set `SAD_MODEL = "zsm"` and provide `ZSM_THETA` (and optionally `ZSM_M`).
-- spesim then generates an **abundance vector** (counts per species) consistent with a neutral-theory sampling model.
+- `SAD_MODEL = "zsm"`: theta-only neutral-like **SAD helper**.
+- `MODEL_FAMILY = "neutral_hubbell_like"`: sequential **recruitment** with immigration/speciation and dispersal kernel.
+- `MODEL_FAMILY = "hybrid"`: same recruitment core plus environmental sorting.
 
 ### What it *can* do
 
-- Generate **neutral-like rank–abundance curves** (SADs), controlled mainly by `ZSM_THETA`.
-  - Smaller `theta` → stronger dominance / longer tail.
-  - Larger `theta` → more even communities.
-- Currently, spesim uses a **theta-only Ewens sampler** (Chinese restaurant / Ewens sampling formula).
-- `ZSM_M` is accepted for forward compatibility, but is **currently ignored**.
-- If you need a mechanistic neutral model with immigration / metacommunity coupling, use **untb** directly; spesim’s neutral option is deliberately a SAD helper.
+- `SAD_MODEL = "zsm"` gives neutral-like rank–abundance control via `ZSM_THETA`.
+- `MODEL_FAMILY = "neutral_hubbell_like"` gives distance–decay that emerges from dispersal-limited recruitment.
+- `MODEL_FAMILY = "hybrid"` blends dispersal limitation with environmental sorting.
 
 ### What it *cannot* do (yet)
 
-- It is **not** a full mechanistic neutral simulation engine:
-  - no births/deaths through time,
-  - no explicit dispersal as a population process,
-  - no dynamic metacommunity/local community coupling.
-- It does **not** create spatial structure by itself.
-  - Spatial patterns still come from `SPATIAL_PROCESS_A` / `SPATIAL_PROCESS_OTHERS` (Poisson/Thomas/Strauss/Geyer).
+- It is still a synthetic simulator (not calibrated population dynamics through time).
+- Species labels remain fixed (`A..`) rather than open-ended speciation lineages.
+- Recruitment is intentionally lightweight for method testing speed.
 
-The practical takeaway: use `SAD_MODEL = "zsm"` for **neutral-like abundance structure**, and pair it with a point-process choice to get the **spatial patterns** you want.
+The practical takeaway: use `SAD_MODEL = "zsm"` when you only want neutral-like
+abundance structure; use `MODEL_FAMILY = "neutral_hubbell_like"` or `"hybrid"`
+when you want spatial patterns to emerge from recruitment.
 
 ## Example A: SAD differences (Fisher vs neutral-theory ZSM)
 
@@ -237,10 +235,57 @@ case_neutral_pois$panel
 case_neutral_struct$panel
 ```
 
+## Example C: Model families (neutral_hubbell_like vs hybrid)
+
+Here we switch from point-process assembly to the high-level family layer.
+
+```{r}
+P_family <- P0
+P_family$N_INDIVIDUALS <- 1800
+P_family$SAD_MODEL <- "zsm"
+P_family$ZSM_THETA <- 12
+
+P_family$GRADIENT_SPECIES <- c("A", "B", "C", "D")
+P_family$GRADIENT_ASSIGNMENTS <- c("temperature", "temperature", "elevation", "rainfall")
+P_family$GRADIENT_OPTIMA <- c(A = 0.25, B = 0.70, C = 0.55, D = 0.60)
+P_family$GRADIENT_TOLERANCE <- c(A = 0.12, B = 0.12, C = 0.16, D = 0.14)
+
+P_hubbell <- P_family
+P_hubbell$MODEL_FAMILY <- "neutral_hubbell_like"
+P_hubbell$NEUTRAL_M <- 0.08
+P_hubbell$DISPERSAL_KERNEL <- "gaussian"
+P_hubbell$DISPERSAL_SCALE <- 0.55
+
+P_hybrid <- P_hubbell
+P_hybrid$MODEL_FAMILY <- "hybrid"
+P_hybrid$HYBRID_ENV_WEIGHT <- 1.3
+
+case_hubbell <- run_case(P_hubbell, "MODEL_FAMILY = neutral_hubbell_like")
+case_hybrid  <- run_case(P_hybrid,  "MODEL_FAMILY = hybrid")
+```
+
+```{r}
+dd_family <- rbind(
+  decay_df(case_hubbell$res, "neutral_hubbell_like"),
+  decay_df(case_hybrid$res,  "hybrid")
+)
+
+ggplot(dd_family, aes(Distance, Dissimilarity, colour = Scenario)) +
+  geom_point(alpha = 0.25) +
+  geom_smooth(se = FALSE, linewidth = 1.2, method = "loess", span = 0.75) +
+  labs(
+    title = "Model-family comparison",
+    subtitle = "Hybrid combines neutral recruitment with environmental sorting",
+    x = "Inter-quadrat distance",
+    y = "Community dissimilarity (Bray–Curtis on presence/absence)"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
 ## Notes / tips
 
-- If you want *neutral-like abundance* **and** *neutral-like dispersal/clustering*, you currently need to **combine**:
-  - `SAD_MODEL = "zsm"` (abundances) with
-  - a spatial process such as `thomas` (placement).
+- Use `MODEL_FAMILY = "manual"` when you want full low-level control.
+- Use `MODEL_FAMILY = "neutral_hubbell_like"` or `"hybrid"` when you want
+  dispersal-driven structure to emerge from recruitment.
 - If the distance–decay looks noisy, increase `N_QUADRATS` and/or reduce quadrat size.
 - For pedagogy, it helps to vary **one knob at a time** (SAD vs point process), then show how they interact.

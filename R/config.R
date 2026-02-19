@@ -169,6 +169,15 @@
 #' \code{GRADIENT_OPTIMA} and \code{GRADIENT_TOLERANCE} as scalar, per-species
 #' named, or per-gradient named values.
 #'
+#' Model-family presets:
+#' \itemize{
+#'   \item \code{manual}: no high-level preset.
+#'   \item \code{niche_filtering}: baseline Poisson placement plus gradient filtering.
+#'   \item \code{neutral_csr}: neutral SAD baseline with CSR placement.
+#'   \item \code{neutral_hubbell_like}: sequential neutral recruitment with immigration/speciation and dispersal.
+#'   \item \code{hybrid}: neutral recruitment with environmental sorting during recruitment.
+#' }
+#'
 #' @param init_file Character scalar; path to the configuration file.
 #'
 #' @return A named list \code{P} with fully-resolved parameters used by the
@@ -189,6 +198,9 @@ load_config <- function(init_file) {
     OUTPUT_PREFIX = "output",
     N_INDIVIDUALS = 2000,
     N_SPECIES = 10,
+
+    # High-level model family
+    MODEL_FAMILY = "manual", # manual | niche_filtering | neutral_csr | neutral_hubbell_like | hybrid
 
     # Species abundance distribution (SAD)
     SAD_MODEL = "fisher", # fisher | geometric | brokenstick | zipf | zipf-mandelbrot | lognormal | poisson-lognormal | poisson-gamma | zsm | custom
@@ -217,6 +229,16 @@ load_config <- function(init_file) {
     # neutral theory / zsm helper
     ZSM_THETA = 10.0,
     ZSM_M = NA_real_,
+
+    # Neutral/hybrid recruitment controls
+    NEUTRAL_M = 0.1,
+    NEUTRAL_NU = 0.0,
+    NEUTRAL_META_MODEL = "zsm",
+    DISPERSAL_KERNEL = "gaussian", # gaussian | exponential | power_law
+    DISPERSAL_SCALE = 0.5,
+    DISPERSAL_ALPHA = 2.0,
+    HYBRID_ENV_WEIGHT = 1.0,
+
     GRADIENT_SPECIES = character(0),
     GRADIENT_ASSIGNMENTS = character(0),
     GRADIENT_OPTIMA = NULL,
@@ -279,6 +301,12 @@ load_config <- function(init_file) {
   # Normalise some strings
   P$SPATIAL_PROCESS_A <- tolower(as.character(P$SPATIAL_PROCESS_A))
   P$SPATIAL_PROCESS_OTHERS <- tolower(as.character(P$SPATIAL_PROCESS_OTHERS))
+  P$MODEL_FAMILY <- tolower(as.character(P$MODEL_FAMILY %||% "manual"))
+  P$MODEL_FAMILY <- gsub("-", "_", P$MODEL_FAMILY)
+  P$NEUTRAL_META_MODEL <- tolower(as.character(P$NEUTRAL_META_MODEL %||% "zsm"))
+  P$NEUTRAL_META_MODEL <- gsub("_", "-", P$NEUTRAL_META_MODEL)
+  P$DISPERSAL_KERNEL <- tolower(as.character(P$DISPERSAL_KERNEL %||% "gaussian"))
+  P$DISPERSAL_KERNEL <- gsub("-", "_", P$DISPERSAL_KERNEL)
 
   # SAD model
   P$SAD_MODEL <- tolower(as.character(P$SAD_MODEL %||% "fisher"))
@@ -287,6 +315,10 @@ load_config <- function(init_file) {
   if (P$SAD_MODEL %in% c("zipfmandelbrot", "zipf-mandelbrot")) P$SAD_MODEL <- "zipf-mandelbrot"
   if (P$SAD_MODEL %in% c("poissonlognormal", "poisson-lognormal")) P$SAD_MODEL <- "poisson-lognormal"
   if (P$SAD_MODEL %in% c("poissongamma", "poisson-gamma")) P$SAD_MODEL <- "poisson-gamma"
+  if (P$NEUTRAL_META_MODEL %in% c("broken-stick", "brokenstick")) P$NEUTRAL_META_MODEL <- "brokenstick"
+  if (P$NEUTRAL_META_MODEL %in% c("zipfmandelbrot", "zipf-mandelbrot")) P$NEUTRAL_META_MODEL <- "zipf-mandelbrot"
+  if (P$NEUTRAL_META_MODEL %in% c("poissonlognormal", "poisson-lognormal")) P$NEUTRAL_META_MODEL <- "poisson-lognormal"
+  if (P$NEUTRAL_META_MODEL %in% c("poissongamma", "poisson-gamma")) P$NEUTRAL_META_MODEL <- "poisson-gamma"
 
   ok_sad <- c(
     "fisher", "geometric", "brokenstick", "zipf", "zipf-mandelbrot",
@@ -295,12 +327,23 @@ load_config <- function(init_file) {
   if (!P$SAD_MODEL %in% ok_sad) {
     stop("SAD_MODEL must be one of: ", paste(ok_sad, collapse = ", "))
   }
+  if (!P$NEUTRAL_META_MODEL %in% ok_sad) {
+    stop("NEUTRAL_META_MODEL must be one of: ", paste(ok_sad, collapse = ", "))
+  }
 
   if (!P$SPATIAL_PROCESS_A %in% c("poisson", "thomas")) {
     stop("SPATIAL_PROCESS_A must be 'poisson' or 'thomas'.")
   }
   if (!P$SPATIAL_PROCESS_OTHERS %in% c("poisson", "strauss", "geyer")) {
     stop("SPATIAL_PROCESS_OTHERS must be 'poisson', 'strauss', or 'geyer'.")
+  }
+  ok_family <- c("manual", "niche_filtering", "neutral_csr", "neutral_hubbell_like", "hybrid")
+  if (!P$MODEL_FAMILY %in% ok_family) {
+    stop("MODEL_FAMILY must be one of: ", paste(ok_family, collapse = ", "))
+  }
+  ok_kernel <- c("gaussian", "exponential", "power_law")
+  if (!P$DISPERSAL_KERNEL %in% ok_kernel) {
+    stop("DISPERSAL_KERNEL must be one of: ", paste(ok_kernel, collapse = ", "))
   }
 
   # Safe numeric coercion for known numeric fields (no warnings)
@@ -313,6 +356,8 @@ load_config <- function(init_file) {
     "LOGNORMAL_MEANLOG", "LOGNORMAL_SDLOG",
     "POIGAMMA_SHAPE", "POIGAMMA_RATE",
     "ZSM_THETA", "ZSM_M",
+    "NEUTRAL_M", "NEUTRAL_NU",
+    "DISPERSAL_SCALE", "DISPERSAL_ALPHA", "HYBRID_ENV_WEIGHT",
 
     "SAMPLING_RESOLUTION", "ENVIRONMENTAL_NOISE",
     "MAX_CLUSTERS_DOMINANT", "CLUSTER_SPREAD_DOMINANT",
@@ -329,6 +374,9 @@ load_config <- function(init_file) {
       suppressWarnings(P[[f]] <- as.numeric(P[[f]]))
     }
   }
+
+  # Apply model family presets (explicitly provided init keys take precedence).
+  P <- .apply_model_family_preset(P, explicit_keys = names(raw_vals))
 
   # Keep interaction pointers / edgelists as character
   if (!is.null(P$INTERACTIONS_EDGELIST)) {
@@ -430,6 +478,50 @@ load_config <- function(init_file) {
 
   # Reproducibility
   set.seed(as.integer(P$SEED))
+  P
+}
+
+# Internal: apply high-level presets while preserving explicit init keys.
+.apply_model_family_preset <- function(P, explicit_keys = character(0)) {
+  `%||%` <- function(a, b) if (!is.null(a)) a else b
+
+  family <- tolower(as.character(P$MODEL_FAMILY %||% "manual"))
+  family <- gsub("-", "_", family)
+  explicit_keys <- toupper(as.character(explicit_keys %||% character(0)))
+
+  set_if_not_explicit <- function(key, value) {
+    key <- toupper(as.character(key))
+    if (!(key %in% explicit_keys)) {
+      P[[key]] <<- value
+    }
+  }
+
+  if (family == "niche_filtering") {
+    set_if_not_explicit("SPATIAL_PROCESS_A", "poisson")
+    set_if_not_explicit("SPATIAL_PROCESS_OTHERS", "poisson")
+  } else if (family == "neutral_csr") {
+    set_if_not_explicit("SAD_MODEL", "zsm")
+    set_if_not_explicit("SPATIAL_PROCESS_A", "poisson")
+    set_if_not_explicit("SPATIAL_PROCESS_OTHERS", "poisson")
+  } else if (family == "neutral_hubbell_like") {
+    set_if_not_explicit("SAD_MODEL", "zsm")
+    set_if_not_explicit("NEUTRAL_META_MODEL", "zsm")
+    set_if_not_explicit("NEUTRAL_M", 0.1)
+    set_if_not_explicit("NEUTRAL_NU", 0.0)
+    set_if_not_explicit("DISPERSAL_KERNEL", "gaussian")
+    set_if_not_explicit("DISPERSAL_SCALE", 0.5)
+    set_if_not_explicit("DISPERSAL_ALPHA", 2.0)
+  } else if (family == "hybrid") {
+    set_if_not_explicit("SAD_MODEL", "zsm")
+    set_if_not_explicit("NEUTRAL_META_MODEL", "zsm")
+    set_if_not_explicit("NEUTRAL_M", 0.1)
+    set_if_not_explicit("NEUTRAL_NU", 0.0)
+    set_if_not_explicit("DISPERSAL_KERNEL", "gaussian")
+    set_if_not_explicit("DISPERSAL_SCALE", 0.5)
+    set_if_not_explicit("DISPERSAL_ALPHA", 2.0)
+    set_if_not_explicit("HYBRID_ENV_WEIGHT", 1.0)
+  }
+
   P
 }
 

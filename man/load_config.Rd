@@ -38,6 +38,15 @@ Gradient keys supported: \code{temperature}, \code{elevation}, \code{rainfall}.
 Use \code{GRADIENT_SPECIES}, \code{GRADIENT_ASSIGNMENTS}, plus either
 \code{GRADIENT_OPTIMA} and \code{GRADIENT_TOLERANCE} as scalar, per-species
 named, or per-gradient named values.
+
+Model-family presets:
+\itemize{
+\item \code{manual}: no high-level preset.
+\item \code{niche_filtering}: baseline Poisson placement plus gradient filtering.
+\item \code{neutral_csr}: neutral SAD baseline with CSR placement.
+\item \code{neutral_hubbell_like}: sequential neutral recruitment with immigration/speciation and dispersal.
+\item \code{hybrid}: neutral recruitment with environmental sorting during recruitment.
+}
 }
 \examples{
 \dontrun{

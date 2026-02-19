@@ -62,6 +62,16 @@ spesim now supports multiple SAD generators via `SAD_MODEL` in the init file:
 This is primarily a **teaching oriented** feature: it creates realistic-looking
 rank–abundance curves without requiring a fully mechanistic population model.
 
+### Model families
+
+spesim now includes a high-level `MODEL_FAMILY` layer:
+
+- `manual`: use low-level knobs directly.
+- `niche_filtering`: point-process baseline + gradient filtering.
+- `neutral_csr`: neutral SAD baseline with CSR placement.
+- `neutral_hubbell_like`: sequential neutral recruitment with immigration/speciation and dispersal kernel.
+- `hybrid`: neutral recruitment with environmental sorting.
+
 ### Environmental filtering
 
 Species can be assigned to named gradients with an **optimum** and **tolerance**.
@@ -87,14 +97,17 @@ experimentation.
 
 ## What spesim is *not*
 
-spesim is **not** a full mechanistic ecological simulator. In particular, it does
+spesim is **not** a full mechanistic ecological simulator. In particular, it still does
 *not* attempt to model:
 
 - demography (births/deaths),
-- explicit dispersal kernels as a population process,
 - temporal dynamics or succession,
 - detectability/observation error (unless you add it downstream),
 - parameter inference / likelihood-based point process modelling.
+
+`MODEL_FAMILY = "neutral_hubbell_like"` and `"hybrid"` now include an
+individual recruitment process with dispersal kernels, but this is still a
+single-time synthetic generator rather than a calibrated dynamic ecosystem model.
 
 If you need those, consider pairing spesim with specialised tools (e.g.
 **spatstat** for point process inference/diagnostics, or domain-specific
