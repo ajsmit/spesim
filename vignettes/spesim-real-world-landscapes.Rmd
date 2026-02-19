@@ -187,7 +187,10 @@ ggplot(sea, aes(x, y, colour = summerMean)) +
 ### Seaweed sites on a regional basemap (rnaturalearth)
 
 ```{r}
-if (requireNamespace("rnaturalearth", quietly = TRUE)) {
+# NOTE: rnaturalearth::ne_countries() will attempt to install rnaturalearthdata
+# if it is missing (and this can fail in CI). We therefore require both.
+if (requireNamespace("rnaturalearth", quietly = TRUE) &&
+    requireNamespace("rnaturalearthdata", quietly = TRUE)) {
   coast_region <- rnaturalearth::ne_countries(
     scale = "medium",
     country = c("South Africa", "Namibia"),
