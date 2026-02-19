@@ -116,7 +116,7 @@ generate_fisher_log_series <- function(
 #'   (derived if missing), mean offspring, and Gaussian cluster scale. Implemented internally.}
 #'   \item{\code{"strauss"}}{Inhibition via a sequential-inhibition surrogate using
 #'   interaction radius \code{OTHERS_R} and inhibition strength \code{OTHERS_S} in \eqn{(0,1]}.
-#'   Lower \code{OTHERS_S} increases inhibition.}
+#'   Lower \code{OTHERS_S} increases inhibition (a larger effective hard-core distance).}
 #'   \item{\code{"geyer"}}{Geyer saturation surrogate: acceptance probability proportional to
 #'   \eqn{\gamma^{\min(m, s)}} where \eqn{m} neighbours fall within \code{OTHERS_R} and
 #'   saturation count \code{OTHERS_S}. Implemented internally.}
@@ -165,10 +165,14 @@ generate_fisher_log_series <- function(
 #'       \code{A_MEAN_OFFSPRING} (mean children per parent),
 #'       \code{A_CLUSTER_SCALE} (Gaussian sd of offspring displacement; map units).
 #'     \item \emph{Strauss/Geyer (others) params (if used):}
-#'       \code{OTHERS_R} (interaction radius),
-#'       \code{OTHERS_GAMMA} (interaction parameter; \code{< 1} inhibition, \code{> 1} attraction),
-#'       \code{OTHERS_S} (Geyer saturation count; ignored by Strauss),
-#'       \code{OTHERS_BETA} (baseline intensity/multiplier; optional).
+#'       \itemize{
+#'         \item \strong{Strauss (inhibition surrogate):} \code{OTHERS_R} (interaction radius) and
+#'           \code{OTHERS_S} (inhibition strength in \eqn{(0,1]}; smaller values yield stronger inhibition).
+#'         \item \strong{Geyer (saturation):} \code{OTHERS_R} (interaction radius), \code{OTHERS_GAMMA}
+#'           (interaction parameter; \code{< 1} inhibition, \code{> 1} clustering), and \code{OTHERS_S}
+#'           (saturation count; positive integer).
+#'         \item \code{OTHERS_BETA} (baseline intensity/multiplier; optional; used by some engines).
+#'       }
 #'     \item \emph{Local interactions:} \code{INTERACTION_RADIUS} (map units) and
 #'       \code{INTERACTION_MATRIX} (S x S numeric, dimnames = species letters).
 #'   }
@@ -293,12 +297,17 @@ generate_heterogeneous_distribution <- function(domain, P) {
     out
   }
   .simulate_strauss_points <- function(n, poly, r, s = 0.7) {
-    # sequential inhibition with hard-core radius r_eff ~ r * (1 - 0.5*(1 - s))
+    # Sequential inhibition surrogate with an effective hard-core radius r_eff.
+    # We treat s in (0,1] as an *inhibition strength* parameter: smaller s => stronger inhibition.
     if (n <= 0) {
       return(matrix(numeric(0), ncol = 2))
     }
     bb <- sf::st_bbox(poly)
-    r_eff <- max(1e-6, as.numeric(r) * (0.5 + 0.5 * s)) # s in (0,1]; smaller s => larger r_eff
+    s <- as.numeric(s)
+    if (!is.finite(s)) s <- 0.7
+    s <- max(1e-6, min(1, s))
+    # Map s -> r_eff such that s=1 gives r_eff=r, and s->0 increases r_eff up to ~1.5*r.
+    r_eff <- max(1e-6, as.numeric(r) * (1.5 - 0.5 * s))
     out <- matrix(NA_real_, 0, 2)
     tries <- 0L
     max_tries <- 2000L + 50L * n

@@ -115,13 +115,13 @@ SPATIAL_PROCESS_OTHERS = strauss
 # For Strauss:
 #   OTHERS_BETA  — baseline intensity (points per area). If NA, derived to hit total N_others.
 #   OTHERS_R     — interaction radius
-#   OTHERS_S     — gamma (0..1) inhibition strength (sometimes written as 'gamma' in literature)
+#   OTHERS_S     — inhibition strength in (0,1]; smaller values yield stronger inhibition
 OTHERS_BETA  = NA
 OTHERS_R     = 1.0
 OTHERS_S     = 0.6
 
 # If you instead choose 'geyer', use:
-#   OTHERS_BETA, OTHERS_GAMMA (>1 for clustering), OTHERS_R (radius), OTHERS_S (saturation)
+#   OTHERS_BETA, OTHERS_GAMMA (<1 inhibition; >1 clustering), OTHERS_R (radius), OTHERS_S (saturation count)
 # OTHERS_GAMMA = 1.5
 
 # If you choose 'thomas' for others, use:

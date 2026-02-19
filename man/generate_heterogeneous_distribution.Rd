@@ -34,10 +34,14 @@ and \code{HYBRID_ENV_WEIGHT}.
 \code{A_MEAN_OFFSPRING} (mean children per parent),
 \code{A_CLUSTER_SCALE} (Gaussian sd of offspring displacement; map units).
 \item \emph{Strauss/Geyer (others) params (if used):}
-\code{OTHERS_R} (interaction radius),
-\code{OTHERS_GAMMA} (interaction parameter; \code{< 1} inhibition, \code{> 1} attraction),
-\code{OTHERS_S} (Geyer saturation count; ignored by Strauss),
-\code{OTHERS_BETA} (baseline intensity/multiplier; optional).
+\itemize{
+\item \strong{Strauss (inhibition surrogate):} \code{OTHERS_R} (interaction radius) and
+\code{OTHERS_S} (inhibition strength in \eqn{(0,1]}; smaller values yield stronger inhibition).
+\item \strong{Geyer (saturation):} \code{OTHERS_R} (interaction radius), \code{OTHERS_GAMMA}
+(interaction parameter; \code{< 1} inhibition, \code{> 1} clustering), and \code{OTHERS_S}
+(saturation count; positive integer).
+\item \code{OTHERS_BETA} (baseline intensity/multiplier; optional; used by some engines).
+}
 \item \emph{Local interactions:} \code{INTERACTION_RADIUS} (map units) and
 \code{INTERACTION_MATRIX} (S x S numeric, dimnames = species letters).
 }}
@@ -77,7 +81,7 @@ the process names in \code{P}. Supported values (case-insensitive):
 (derived if missing), mean offspring, and Gaussian cluster scale. Implemented internally.}
 \item{\code{"strauss"}}{Inhibition via a sequential-inhibition surrogate using
 interaction radius \code{OTHERS_R} and inhibition strength \code{OTHERS_S} in \eqn{(0,1]}.
-Lower \code{OTHERS_S} increases inhibition.}
+Lower \code{OTHERS_S} increases inhibition (a larger effective hard-core distance).}
 \item{\code{"geyer"}}{Geyer saturation surrogate: acceptance probability proportional to
 \eqn{\gamma^{\min(m, s)}} where \eqn{m} neighbours fall within \code{OTHERS_R} and
 saturation count \code{OTHERS_S}. Implemented internally.}
