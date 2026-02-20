@@ -33,11 +33,14 @@
 #'     lognormal; counts are Poisson).}
 #'   \item{`"poisson-gamma"`}{Poisson--gamma sampling model (rates are Gamma;
 #'     counts are Poisson). Closely related to negative-binomial mixtures.}
-#'   \item{`"zsm"`}{Neutral-theory SAD helper (Ewens / theta-only).
-#'     Currently implemented via a theta-only Ewens sampler (Chinese restaurant).
-#'     This controls the **rank--abundance** curve but does *not* impose any
-#'     spatial structure. (Spatial patterns are controlled separately by the
-#'     point-process settings.)}
+#'   \item{`"zsm"`}{Neutral-theory SAD helper. With \code{theta} only, this uses a
+#'     theta-only Ewens sampler (Chinese restaurant) to control the
+#'     \strong{rank--abundance} curve. If an immigration probability
+#'     \eqn{m \in (0,1)} is supplied, spesim uses a simple neutral
+#'     \emph{death--birth with immigration} heuristic (Moran style) to make the
+#'     SAD more uneven as \code{m} decreases. This is a pragmatic SAD helper and
+#'     is not a full neutral dynamics engine (spatial patterns are controlled
+#'     separately by the point-process settings).}
 #'   \item{`"custom"`}{User-supplied SAD via a numeric vector or a function
 #'     (`sad` argument).}
 #' }
@@ -323,40 +326,68 @@ generate_sad <- function(n_species, n_individuals, model = "fisher", sad = NULL,
       theta <- as.numeric(dots$theta %||% 10)
       m <- as.numeric(dots$m %||% NA_real_)
 
-      # NOTE (2026-02): despite the name, we do NOT call untb::zsm() here.
-      # untb::zsm() implements the McKane (2004) zero-sum multinomial with
-      # arguments (J, P, m) and returns a probability distribution over
-      # abundances 0..J. In spesim we parameterise the neutral SAD via theta
-      # (Ewens sampling formula). To avoid a misleading/broken mapping from
-      # theta -> P, we implement a robust theta-only Ewens sampler.
-      #
-      # If you want a mechanistic neutral model with immigration, use untb
-      # directly; spesim's zsm option is a SAD helper, not a dynamics engine.
-      if (!is.na(m)) {
-        warning(
-          "SAD_MODEL='zsm' currently uses a theta-only Ewens sampler; ",
-          "m was provided but is ignored."
-        )
-      }
-
-      # Ewens sampling formula (theta-only), via Chinese restaurant.
+      # NOTE: we keep the "zsm" label for user familiarity, but spesim treats this
+      # as a SAD helper.
+      # - With theta only: Ewens sampling formula (theta-only), via Chinese restaurant.
+      # - With m in (0,1): a simple neutral death--birth with immigration heuristic
+      #   to introduce a dispersal-limitation knob on SAD unevenness.
       if (!is.finite(theta) || theta <= 0) stop("theta must be > 0")
-      counts <- integer(0)
-      for (i in seq_len(n_individuals)) {
-        if (length(counts) == 0L) {
-          counts <- 1L
-        } else {
-          p_new <- theta / (theta + i - 1)
-          if (stats::runif(1) < p_new) {
-            counts <- c(counts, 1L)
+
+      if (is.na(m) || !is.finite(m) || m >= 1) {
+        # --- Ewens sampling formula (theta-only) -------------------------------
+        counts <- integer(0)
+        for (i in seq_len(n_individuals)) {
+          if (length(counts) == 0L) {
+            counts <- 1L
           } else {
-            j <- sample.int(length(counts), size = 1L, prob = counts)
-            counts[j] <- counts[j] + 1L
+            p_new <- theta / (theta + i - 1)
+            if (stats::runif(1) < p_new) {
+              counts <- c(counts, 1L)
+            } else {
+              j <- sample.int(length(counts), size = 1L, prob = counts)
+              counts[j] <- counts[j] + 1L
+            }
           }
         }
+        counts <- sort(counts, decreasing = TRUE)
+      } else {
+        # --- Immigration-modulated heuristic ---------------------------------
+        if (!is.finite(m) || m <= 0 || m > 1) stop("m must be in (0,1] or NA")
+
+        S <- length(spp)
+        J <- as.integer(n_individuals)
+
+        # Metacommunity weights: symmetric Dirichlet with total concentration theta.
+        alpha <- rep(theta / S, S)
+        w <- stats::rgamma(S, shape = alpha, rate = 1)
+        p <- w / sum(w)
+
+        # Initial local community.
+        counts <- as.integer(stats::rmultinom(1, size = J, prob = p)[, 1])
+
+        # Moran-style death--birth with immigration.
+        steps <- as.integer(dots$steps %||% max(1000L, 20L * J))
+        for (t in seq_len(steps)) {
+          # death
+          d <- sample.int(S, size = 1L, prob = counts)
+          counts[d] <- counts[d] - 1L
+
+          # birth
+          if (stats::runif(1) < m) {
+            b <- sample.int(S, size = 1L, prob = p)
+          } else {
+            if (sum(counts) <= 0) {
+              b <- sample.int(S, size = 1L, prob = p)
+            } else {
+              b <- sample.int(S, size = 1L, prob = counts)
+            }
+          }
+          counts[b] <- counts[b] + 1L
+        }
+
+        counts <- sort(counts, decreasing = TRUE)
       }
 
-      counts <- sort(counts, decreasing = TRUE)
       # Map to a fixed label set of size n_species by truncating and lumping tail.
       if (length(counts) < length(spp)) {
         counts <- c(counts, rep(0L, length(spp) - length(counts)))

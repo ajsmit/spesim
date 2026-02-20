@@ -52,8 +52,12 @@ While spesim avoids heavy dependencies, the above can emulate key behaviours:
   *Approximation*: Increase clusters, set spread; draw others around centres.
 - **Strauss (inhibition)**: Avoid placing points within radius r.  
   *Approximation*: Rejection sampling when a new point falls within r of prior points.
-- **Geyer saturation**: Favour moderate clustering but saturate local counts.  
+- **Geyer saturation**: Favour moderate clustering but saturate local counts.
   *Approximation*: Weight by neighbour counts within r, cap at a threshold.
+  spesim's fast Geyer engine is **heuristic but internally consistent** — it
+  targets a saturation potential based on per-point neighbour counts and is
+  **not** a reproduction of the exact **spatstat** Geyer saturation process
+  likelihood (see `?simulate_points_geyer_fast` for details).
 
 We include simple, dependency-light heuristics that capture these patterns for teaching.
 If you require exact inference or simulation, pair spesim outputs with **spatstat**

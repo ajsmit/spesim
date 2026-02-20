@@ -10,6 +10,10 @@
 #' This function is retained for backwards compatibility and delegates to
 #' [spesim_run()]. It will emit a deprecation warning.
 #'
+#' @note **Deprecated** since spesim 0.4.0. Use [spesim_run()] instead.
+#'   Calling this function triggers `.Deprecated("spesim_run")`, which emits
+#'   a warning and prints a message pointing to the replacement.
+#'
 #' @param init_file Character path to a text configuration (KEY = value). If
 #'   supplied, the config is read via [load_config()].
 #' @param interactions_file Optional character path for a separate interactions

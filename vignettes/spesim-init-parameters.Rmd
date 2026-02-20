@@ -58,7 +58,16 @@ loader resolves them automatically as documented below.
 | `ENV_DRIVERS` | character vector | `c("temperature","elevation","rainfall")` | Environmental driver names to generate/use; supports any number of drivers. |
 | `DOMINANT_FRACTION` | numeric | `0.30` | Fraction of all individuals assigned to the dominant species `A`. |
 
-## Abundance model (Fisher’s log-series)
+## Species abundance distribution (SAD)
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `SAD_MODEL` | character | `"fisher"` | SAD generator: `fisher`, `geometric`, `brokenstick`, `zipf`, `zipf-mandelbrot`, `lognormal`, `poisson-lognormal`, `poisson-gamma`, `zsm`, `custom`. |
+| `SAD_VECTOR` | numeric vector / NULL | `NULL` | Only for `SAD_MODEL="custom"`: vector of probabilities or counts (will be adjusted to sum to `N_INDIVIDUALS`). |
+| `ZSM_THETA` | numeric | `10.0` | For `SAD_MODEL="zsm"`: biodiversity parameter controlling the rank–abundance curve (larger = more even / more species in the tail). |
+| `ZSM_M` | numeric / NA | `NA` | For `SAD_MODEL="zsm"`: immigration probability `m` in `(0,1]`. If supplied, spesim uses a Moran-style death–birth with immigration heuristic to make the SAD more uneven as `m` decreases. If `NA`, a theta-only Ewens (Chinese restaurant) sampler is used. |
+
+## Fisher parameters (used when `SAD_MODEL = "fisher"`)
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
@@ -107,6 +116,38 @@ gradients| → scalar (recycled).
 |-----|------|---------|-------------|
 | `MAX_CLUSTERS_DOMINANT` | integer | `5` | Max number of clusters for species `A`. |
 | `CLUSTER_SPREAD_DOMINANT` | numeric | `3.0` | Decay scale for cluster attraction. |
+
+---
+
+# Spatial point processes (advanced)
+
+These settings control how individual locations are generated before environmental filtering and interactions.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `SPATIAL_PROCESS_A` | character | `"poisson"` | Point process for the dominant species A. Supported: `poisson`, `thomas`. |
+| `A_PARENT_INTENSITY` | numeric / NA | `NA` | Thomas parent intensity (parents per unit area). If `NA`, derived to hit the target abundance. |
+| `A_MEAN_OFFSPRING` | integer | `10` | Thomas mean offspring per parent. |
+| `A_CLUSTER_SCALE` | numeric | `1` | Thomas cluster scale (Gaussian sd; map units). |
+| `SPATIAL_PROCESS_OTHERS` | character | `"poisson"` | Point process for non-dominant species. Supported: `poisson`, `strauss`, `geyer`. The `geyer` engine is **heuristic but internally consistent** — it is not a reproduction of the exact **spatstat** Geyer saturation likelihood (see `?simulate_points_geyer_fast`). |
+| `OTHERS_R` | numeric | `1` | Interaction radius (map units) for Strauss/Geyer. |
+| `OTHERS_S` | numeric / integer | `2` | Strauss: inhibition strength in `(0,1]` (smaller = stronger inhibition surrogate). Geyer: saturation count (integer `>=0`). |
+| `OTHERS_GAMMA` | numeric / NA | `NA` | Geyer interaction parameter (`<1` inhibition, `>1` clustering). If unset, some internal dispatchers may fall back to `OTHERS_S` for backward compatibility; prefer setting explicitly. |
+| `OTHERS_BETA` | numeric / NA | `NA` | Baseline intensity / multiplier used by some engines or wrappers (units depend on engine). |
+
+**OTHERS_\* parameter quick reference** — same name, different roles depending on `SPATIAL_PROCESS_OTHERS`:
+
+| Parameter | Meaning | Affects | Used when | Default | Constraints |
+|-----------|---------|---------|-----------|---------|-------------|
+| `OTHERS_R` | Interaction radius | Location placement (acceptance rule) | Strauss, Geyer | `1` | `> 0` (map units) |
+| `OTHERS_S` | Inhibition strength (Strauss) or saturation count (Geyer) | Acceptance probability in MH sampler | Strauss, Geyer | `2` | Strauss: `(0, 1]`; Geyer: integer `>= 0` |
+| `OTHERS_GAMMA` | Geyer interaction parameter | Acceptance probability in MH sampler | Geyer only | `NA` (falls back to `OTHERS_S` in some dispatchers) | `> 0`; `< 1` inhibition, `> 1` clustering |
+| `OTHERS_BETA` | Baseline intensity / multiplier | Abundance assignment in some wrappers | Engine-dependent | `NA` | `>= 0` (units depend on engine) |
+
+> **Pipeline stage note.** The OTHERS_\* parameters operate on **location placement only** (the
+> point-process stage). They do not affect abundance totals (controlled by `SAD_MODEL` /
+> `N_INDIVIDUALS`), environmental filtering (controlled by `GRADIENT_*`), or interspecific
+> interactions (controlled by `INTERACTION_RADIUS` / `INTERACTIONS_EDGELIST`).
 
 ---
 

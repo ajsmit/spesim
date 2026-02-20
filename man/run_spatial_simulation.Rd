@@ -49,6 +49,11 @@ object (\code{spesim_result}).
 This function is retained for backwards compatibility and delegates to
 \code{\link[=spesim_run]{spesim_run()}}. It will emit a deprecation warning.
 }
+\note{
+\strong{Deprecated} since spesim 0.4.0. Use \code{\link[=spesim_run]{spesim_run()}} instead.
+Calling this function triggers \code{.Deprecated("spesim_run")}, which emits
+a warning and prints a message pointing to the replacement.
+}
 \seealso{
 \code{\link[=spesim_run]{spesim_run()}}
 }

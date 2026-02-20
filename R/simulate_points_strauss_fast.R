@@ -32,46 +32,39 @@ simulate_points_strauss_fast <- function(
   }
 
   # The C++ engine simulates in the bounding box. We therefore oversample,
-  # clip to the polygon, then thin/top-up to return exactly n_target points.
+  # clip to the polygon, then thin to return exactly n_target points.
+  # If we fall short after clipping, we generate additional points (never by
+  # duplicating existing ones).
   bb <- sf::st_bbox(domain)
   A_B <- as.numeric((bb["xmax"] - bb["xmin"]) * (bb["ymax"] - bb["ymin"]))
   A_D <- as.numeric(sf::st_area(sf::st_union(domain)))
   frac <- as.numeric(A_D / A_B)
   frac <- if (is.finite(frac) && frac > 0) frac else 0.5
-  oversample <- 1.5
-  n_bbox <- as.integer(ceiling((n_target / frac) * oversample))
 
-  mat <- rstrauss_bbox_cpp(
-    n = as.integer(n_bbox),
-    xmin = unname(bb["xmin"]), xmax = unname(bb["xmax"]),
-    ymin = unname(bb["ymin"]), ymax = unname(bb["ymax"]),
-    r = as.numeric(r), gamma = as.numeric(gamma),
-    sweeps = as.integer(sweeps),
-    burnin = as.integer(burnin),
-    thin = as.integer(thin),
-    step0 = step0,
-    target_acc = target_acc,
-    tune_every = as.integer(tune_every)
+  gen_bbox <- function(n_bbox) {
+    mat <- rstrauss_bbox_cpp(
+      n = as.integer(n_bbox),
+      xmin = unname(bb["xmin"]), xmax = unname(bb["xmax"]),
+      ymin = unname(bb["ymin"]), ymax = unname(bb["ymax"]),
+      r = as.numeric(r), gamma = as.numeric(gamma),
+      sweeps = as.integer(sweeps),
+      burnin = as.integer(burnin),
+      thin = as.integer(thin),
+      step0 = step0,
+      target_acc = target_acc,
+      tune_every = as.integer(tune_every)
+    )
+
+    df <- as.data.frame(mat)
+    if (ncol(df) >= 2) names(df)[1:2] <- c("x", "y")
+    sf::st_as_sf(df, coords = c("x", "y"), crs = sf::st_crs(domain))
+  }
+
+  .spesim_iterative_bbox_then_clip(
+    domain = domain,
+    n_target = n_target,
+    frac = frac,
+    gen_bbox = gen_bbox,
+    oversample = 1.5
   )
-
-  df <- as.data.frame(mat)
-  # NumericMatrix -> data.frame column names are typically V1,V2
-  if (ncol(df) >= 2) names(df)[1:2] <- c("x", "y")
-  pts_bbox <- sf::st_as_sf(df, coords = c("x", "y"), crs = sf::st_crs(domain))
-
-  inside <- as.logical(sf::st_within(pts_bbox, sf::st_union(domain), sparse = FALSE)[, 1])
-  pts_in <- pts_bbox[inside, , drop = FALSE]
-
-  if (nrow(pts_in) == 0) {
-    # Fallback: uniform sampling inside polygon
-    pts <- sf::st_sample(domain, size = n_target, type = "random")
-    return(sf::st_sf(geometry = pts))
-  }
-
-  if (nrow(pts_in) >= n_target) {
-    pts_in[sample.int(nrow(pts_in), n_target), , drop = FALSE]
-  } else {
-    idx <- c(seq_len(nrow(pts_in)), sample.int(nrow(pts_in), n_target - nrow(pts_in), replace = TRUE))
-    pts_in[idx, , drop = FALSE]
-  }
 }

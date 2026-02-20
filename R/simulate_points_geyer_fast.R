@@ -4,8 +4,15 @@
 #'
 #' @description
 #' Runs a fixed-n Metropolis–Hastings sampler in the domain bounding box and
-#' then clips points to the polygon. The result is thinned/top-upped to return
-#' exactly `n_target` points.
+#' then clips points to the polygon.
+#'
+#' This implementation is **heuristic but internally consistent** (see C++
+#' header): it targets a saturation potential based on per-point neighbour counts.
+#' It is **not** a drop-in reproduction of the exact 
+#' \pkg{spatstat} Geyer saturation process likelihood.
+#'
+#' The result is thinned to return exactly `n_target` points. If clipping leaves
+#' too few points, we generate additional points (never by duplicating existing ones).
 #'
 #' @param domain sf polygon/multipolygon defining the window.
 #' @param n_target integer, number of points to return.
@@ -33,35 +40,28 @@ simulate_points_geyer_fast <- function(domain, n_target,
   A_D <- as.numeric(sf::st_area(sf::st_union(domain)))
   frac <- as.numeric(A_D / A_B)
   frac <- if (is.finite(frac) && frac > 0) frac else 0.5
-  oversample <- 1.5
-  n_bbox <- as.integer(ceiling((n_target / frac) * oversample))
 
-  out <- rgeyer_bbox_cpp(
-    n_target = as.integer(n_bbox),
-    xmin = unname(bb["xmin"]), xmax = unname(bb["xmax"]),
-    ymin = unname(bb["ymin"]), ymax = unname(bb["ymax"]),
-    r = as.numeric(r), gamma = as.numeric(gamma), sat = as.integer(sat),
-    sweeps = as.integer(sweeps), burnin = as.integer(burnin), thin = as.integer(thin)
-  )
+  gen_bbox <- function(n_bbox) {
+    out <- rgeyer_bbox_cpp(
+      n_target = as.integer(n_bbox),
+      xmin = unname(bb["xmin"]), xmax = unname(bb["xmax"]),
+      ymin = unname(bb["ymin"]), ymax = unname(bb["ymax"]),
+      r = as.numeric(r), gamma = as.numeric(gamma), sat = as.integer(sat),
+      sweeps = as.integer(sweeps), burnin = as.integer(burnin), thin = as.integer(thin)
+    )
 
-  sfc <- sf::st_sfc(
-    lapply(seq_along(out$x), function(i) sf::st_point(c(out$x[i], out$y[i]))),
-    crs = sf::st_crs(domain)
-  )
-  pts_bbox <- sf::st_sf(geometry = sfc)
-
-  inside <- as.logical(sf::st_within(pts_bbox, sf::st_union(domain), sparse = FALSE)[, 1])
-  pts_in <- pts_bbox[inside, , drop = FALSE]
-
-  if (nrow(pts_in) == 0) {
-    pts <- sf::st_sample(domain, size = n_target, type = "random")
-    return(sf::st_sf(geometry = pts))
+    sfc <- sf::st_sfc(
+      lapply(seq_along(out$x), function(i) sf::st_point(c(out$x[i], out$y[i]))),
+      crs = sf::st_crs(domain)
+    )
+    sf::st_sf(geometry = sfc)
   }
 
-  if (nrow(pts_in) >= n_target) {
-    pts_in[sample.int(nrow(pts_in), n_target), , drop = FALSE]
-  } else {
-    idx <- c(seq_len(nrow(pts_in)), sample.int(nrow(pts_in), n_target - nrow(pts_in), replace = TRUE))
-    pts_in[idx, , drop = FALSE]
-  }
+  .spesim_iterative_bbox_then_clip(
+    domain = domain,
+    n_target = n_target,
+    frac = frac,
+    gen_bbox = gen_bbox,
+    oversample = 1.5
+  )
 }

@@ -37,6 +37,13 @@ simulate_points_geyer_fast(
 }
 \description{
 Runs a fixed-n Metropolis–Hastings sampler in the domain bounding box and
-then clips points to the polygon. The result is thinned/top-upped to return
-exactly \code{n_target} points.
+then clips points to the polygon.
+
+This implementation is \strong{heuristic but internally consistent} (see C++
+header): it targets a saturation potential based on per-point neighbour counts.
+It is \strong{not} a drop-in reproduction of the exact
+\pkg{spatstat} Geyer saturation process likelihood.
+
+The result is thinned to return exactly \code{n_target} points. If clipping leaves
+too few points, we generate additional points (never by duplicating existing ones).
 }

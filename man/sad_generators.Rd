@@ -37,11 +37,14 @@ spesim's downstream spatial simulation typically expects exactly
 lognormal; counts are Poisson).}
 \item{\code{"poisson-gamma"}}{Poisson--gamma sampling model (rates are Gamma;
 counts are Poisson). Closely related to negative-binomial mixtures.}
-\item{\code{"zsm"}}{Neutral-theory SAD helper (Ewens / theta-only).
-Currently implemented via a theta-only Ewens sampler (Chinese restaurant).
-This controls the \strong{rank--abundance} curve but does \emph{not} impose any
-spatial structure. (Spatial patterns are controlled separately by the
-point-process settings.)}
+\item{\code{"zsm"}}{Neutral-theory SAD helper. With \code{theta} only, this uses a
+theta-only Ewens sampler (Chinese restaurant) to control the
+\strong{rank--abundance} curve. If an immigration probability
+\eqn{m \in (0,1)} is supplied, spesim uses a simple neutral
+\emph{death--birth with immigration} heuristic (Moran style) to make the
+SAD more uneven as \code{m} decreases. This is a pragmatic SAD helper and
+is not a full neutral dynamics engine (spatial patterns are controlled
+separately by the point-process settings).}
 \item{\code{"custom"}}{User-supplied SAD via a numeric vector or a function
 (\code{sad} argument).}
 }

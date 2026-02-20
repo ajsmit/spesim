@@ -30,8 +30,9 @@ offspring in the bbox so that, after polygon filtering, you still retain
 about \code{n_target}. Default \code{1.3}.}
 }
 \value{
-An \pkg{sf} POINT layer with exactly \code{n_target} rows (if feasible),
-or fewer if \code{kappa}/\code{mu} are too small to generate enough points.
+An \pkg{sf} POINT layer with exactly \code{n_target} rows.
+(If the Thomas generator yields too few points, the function generates additional
+raw points and clips again; as a final fallback it draws uniform points in the polygon.)
 }
 \description{
 Simulate \eqn{n\_target} points from a Thomas (Gaussian Neyman–Scott) process,
@@ -43,8 +44,9 @@ Thomas simulator and is substantially faster for large simulations.
 Let \eqn{A_D} be the polygon area and \eqn{A_B} its bbox area. The expected fraction
 of bbox points that survive the polygon filter is \eqn{f \approx A_D / A_B}. We request roughly
 \code{n_target / f} points from C++ (times \code{oversample}), then filter, and finally
-thin or (if short) resample with replacement to return exactly \code{n_target}. If you prefer
-strict “no replacement”, set \code{oversample} higher or supply a larger \code{kappa}.
+thin to return exactly \code{n_target}. If clipping leaves too few points, the function
+generates additional raw bbox points and clips again (never by duplicating existing points).
+As a final fallback it uses uniform sampling inside the polygon to fill any remaining shortfall.
 }
 \examples{
 \dontrun{

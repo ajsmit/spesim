@@ -173,6 +173,22 @@ generate_fisher_log_series <- function(
 #'           (saturation count; positive integer).
 #'         \item \code{OTHERS_BETA} (baseline intensity/multiplier; optional; used by some engines).
 #'       }
+#'
+#' \strong{OTHERS_* quick reference.} These parameters are shared across several
+#' point-process code paths, so the same name can feed different underlying
+#' samplers depending on \code{SPATIAL_PROCESS_OTHERS}:
+#'
+#' \tabular{lllll}{
+#' \strong{Parameter} \tab \strong{Meaning} \tab \strong{Used when} \tab \strong{Default} \tab \strong{Constraints}\cr
+#' \code{OTHERS_R} \tab interaction radius \tab Strauss, Geyer \tab \code{1} \tab \code{> 0} (map units)\cr
+#' \code{OTHERS_S} \tab Strauss: inhibition strength; Geyer: saturation count \tab Strauss, Geyer \tab \code{2} \tab Strauss: \code{(0,1]}; Geyer: integer \code{>= 0}\cr
+#' \code{OTHERS_GAMMA} \tab Geyer interaction parameter \tab Geyer \tab \code{NA} (falls back to \code{OTHERS_S} in some dispatchers) \tab \code{> 0} (\code{<1} inhibition, \code{>1} clustering)\cr
+#' \code{OTHERS_BETA} \tab baseline intensity / multiplier \tab some engines / wrappers \tab \code{NA} \tab \code{>= 0} (units depend on engine)\cr
+#' }
+#'
+#' \emph{Note:} in internal dispatchers, missing \code{OTHERS_GAMMA} may fall back
+#' to \code{OTHERS_S} for backwards compatibility in some Strauss/Geyer paths.
+#' Prefer setting \code{OTHERS_GAMMA} explicitly for Geyer.
 #'     \item \emph{Local interactions:} \code{INTERACTION_RADIUS} (map units) and
 #'       \code{INTERACTION_MATRIX} (S x S numeric, dimnames = species letters).
 #'   }

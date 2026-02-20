@@ -1,3 +1,9 @@
+# spesim 0.4.6
+
+## Maintenance
+
+- Added `rnaturalearthdata` to `Suggests` to satisfy CRAN dependency declaration (used in vignette via `requireNamespace()`).
+
 # spesim 0.4.5
 
 ## Bug fixes + promised features now active
@@ -7,6 +13,7 @@
 - Fixed Thomas and Strauss/Geyer fast helpers to be polygon-aware (bbox simulate + clip + thin/top-up).
 - Implemented environmental filtering + local interspecific interactions during species assignment as documented.
 - Distance–decay now aligns `site_coords` to `abund_matrix` by site id and uses a robust Sorensen dissimilarity for presence/absence.
+- `ZSM_M` is now active: when supplied as a finite value in `(0, 1)`, `SAD_MODEL = "zsm"` switches from the theta-only Ewens (Chinese restaurant) sampler to a Moran-style death–birth with immigration heuristic; lower `m` produces a more uneven SAD. The NEWS 0.4.2 entry below stating `ZSM_M` is "ignored" is superseded by this release.
 
 # spesim 0.4.2
 

@@ -16,15 +16,17 @@
 #'   offspring in the bbox so that, after polygon filtering, you still retain
 #'   about \code{n_target}. Default \code{1.3}.
 #'
-#' @return An \pkg{sf} POINT layer with exactly \code{n_target} rows (if feasible),
-#'   or fewer if \code{kappa}/\code{mu} are too small to generate enough points.
+#' @return An \pkg{sf} POINT layer with exactly \code{n_target} rows.
+#'   (If the Thomas generator yields too few points, the function generates additional
+#'   raw points and clips again; as a final fallback it draws uniform points in the polygon.)
 #'
 #' @details
 #' Let \eqn{A_D} be the polygon area and \eqn{A_B} its bbox area. The expected fraction
 #' of bbox points that survive the polygon filter is \eqn{f \approx A_D / A_B}. We request roughly
 #' \code{n_target / f} points from C++ (times \code{oversample}), then filter, and finally
-#' thin or (if short) resample with replacement to return exactly \code{n_target}. If you prefer
-#' strict “no replacement”, set \code{oversample} higher or supply a larger \code{kappa}.
+#' thin to return exactly \code{n_target}. If clipping leaves too few points, the function
+#' generates additional raw bbox points and clips again (never by duplicating existing points).
+#' As a final fallback it uses uniform sampling inside the polygon to fill any remaining shortfall.
 #'
 #' @examples
 #' \dontrun{
@@ -60,40 +62,32 @@ rthomas_fast <- function(domain,
   # Ask C++ for enough to cover polygon filtering
   max_points <- ceiling((n_target / frac) * oversample)
 
-  xy <- rthomas_bbox_cpp(
-    kappa = kappa,
-    mu = mu,
-    sigma = sigma,
-    xmin = bb["xmin"],
-    ymin = bb["ymin"],
-    xmax = bb["xmax"],
-    ymax = bb["ymax"],
-    max_points = max_points
+  gen_bbox <- function(n_bbox) {
+    xy <- rthomas_bbox_cpp(
+      kappa = kappa,
+      mu = mu,
+      sigma = sigma,
+      xmin = bb["xmin"],
+      ymin = bb["ymin"],
+      xmax = bb["xmax"],
+      ymax = bb["ymax"],
+      max_points = as.integer(n_bbox)
+    )
+
+    if (nrow(xy) == 0) {
+      return(sf::st_sf(geometry = sf::st_sfc(crs = sf::st_crs(domain))))
+    }
+
+    df <- as.data.frame(xy)
+    if (ncol(df) >= 2) names(df)[1:2] <- c("x", "y")
+    sf::st_as_sf(df, coords = c("x", "y"), crs = sf::st_crs(domain))
+  }
+
+  .spesim_iterative_bbox_then_clip(
+    domain = domain,
+    n_target = as.integer(n_target),
+    frac = frac,
+    gen_bbox = gen_bbox,
+    oversample = oversample
   )
-
-  if (nrow(xy) == 0) {
-    return(sf::st_sf(geometry = sf::st_sfc(crs = sf::st_crs(domain))))
-  }
-
-  df <- as.data.frame(xy)
-  # rthomas_bbox_cpp() returns an unnamed matrix -> data.frame defaults to V1,V2
-  if (ncol(df) >= 2) names(df)[1:2] <- c("x", "y")
-  pts_bbox <- sf::st_as_sf(df, coords = c("x", "y"), crs = sf::st_crs(domain))
-  # Keep only those inside polygon
-  inside <- sf::st_within(pts_bbox, sf::st_union(domain), sparse = TRUE)
-  keep <- lengths(inside) > 0
-  pts_in <- pts_bbox[keep, , drop = FALSE]
-
-  if (nrow(pts_in) == 0) {
-    return(sf::st_sf(geometry = sf::st_sfc(crs = sf::st_crs(domain))))
-  }
-
-  # Thin or top-up to EXACT n_target
-  if (nrow(pts_in) >= n_target) {
-    pts_in[sample.int(nrow(pts_in), n_target), , drop = FALSE]
-  } else {
-    # Not enough — resample with replacement to reach n_target
-    idx <- c(seq_len(nrow(pts_in)), sample.int(nrow(pts_in), n_target - nrow(pts_in), replace = TRUE))
-    pts_in[idx, , drop = FALSE]
-  }
 }
