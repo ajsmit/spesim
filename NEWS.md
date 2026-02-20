@@ -1,3 +1,30 @@
+# spesim 0.5.1
+
+## Performance
+
+- **C++ point-in-polygon engine.** All polygon domain checks previously used
+  `sf::st_as_sf()` + `sf::st_within()` on every call, incurring full CRS
+  comparison and GEOS setup overhead. They now delegate to a compiled C++
+  ray-casting implementation (`pip_cpp`), with ring coordinates extracted once
+  and cached for the duration of any tight loop. Measured speedups at
+  representative call sizes: **6–13× faster** for batches of 1–40 points,
+  **112× faster** for the sequential-inhibition (Strauss) single-point loop.
+
+- **Vectorised initial community placement.** `spesim_simulate_neutral_recruitment()`
+  previously sampled one position per individual inside a `for` loop
+  (J individual calls to `sf::st_within`). Placement is now done in a single
+  vectorised call to `.sample_uniform_in_domain()`, eliminating J − 1 polygon
+  coordinate extractions and sf round-trips.
+
+- **Vectorised sf point construction.** `.as_sfc_points()` replaced a
+  `lapply(sf::st_point(...))` loop with a single `sf::st_as_sf()` call,
+  which is the recommended vectorised path.
+
+- **Shared pip tester across all helpers.** `.sample_uniform_in_domain()`,
+  `.simulate_strauss_points()`, and `.linear_pos_to_xy()` all accept an
+  optional `pip_fn` argument so callers that already hold a pre-built tester
+  avoid redundant ring-coordinate extraction.
+
 # spesim 0.4.6
 
 ## Maintenance

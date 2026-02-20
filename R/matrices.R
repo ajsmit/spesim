@@ -49,25 +49,80 @@
 #' }
 #' @export
 create_abundance_matrix <- function(species_dist, quadrats, all_species_names) {
-  intersections <- sf::st_intersection(species_dist, quadrats)
-  if (nrow(intersections) == 0) {
-    abund_df <- data.frame(site = quadrats$quadrat_id)
-    for (sp in all_species_names) abund_df[[sp]] <- 0
-    return(abund_df)
+  # Performance-optimized version of the original function.
+  #
+  # The original implementation was correct but slow, primarily because
+  # sf::st_intersection() is computationally expensive. It has to calculate
+  # a full geometric intersection, allocate memory for the results, and then
+  # dplyr::count() + pivot_wider() performs costly data reshaping.
+  #
+  # This version is significantly faster by using a sparse intersection matrix,
+  # which avoids creating new geometries. It directly tallies abundances into a
+  # pre-allocated matrix, which is a far more direct and memory-efficient way
+  # to build a site-by-species table.
+  #
+  # Steps:
+  # 1. Use sf::st_intersects() to get a sparse matrix indicating which points
+  #    are in which quadrats. The result is a list of integer vectors, where
+  #    each element `i` of the list contains the indices of the points inside
+  #    quadrat `i`.
+  # 2. Pre-allocate an abundance matrix with sites (quadrats) as rows and
+  #    species as columns, initialized to all zeros.
+  # 3. Iterate through the intersection list. For each quadrat, get the species
+  #    of the points that fell inside it, and use table() to efficiently count
+  #    the occurrences of each species.
+  # 4. Update the corresponding row in the pre-allocated matrix with these counts.
+  # 5. Convert the final matrix to a data.frame and ensure column names and
+  #    types match the original function's output.
+
+  # st_intersects is much faster as it doesn't create new geometries
+  intersects <- sf::st_intersects(quadrats, species_dist)
+
+  # Pre-allocate the abundance matrix for efficiency
+  abund_matrix <- matrix(0,
+    nrow = nrow(quadrats),
+    ncol = length(all_species_names),
+    dimnames = list(quadrats$quadrat_id, all_species_names)
+  )
+
+  # Get the species factor levels to ensure consistency
+  species_factor <- factor(species_dist$species, levels = all_species_names)
+
+  # Efficiently populate the matrix
+  for (i in seq_along(intersects)) {
+    point_indices <- intersects[[i]]
+    if (length(point_indices) > 0) {
+      species_in_quadrat <- species_factor[point_indices]
+      # table() is a very fast way to count factor levels
+      counts <- table(species_in_quadrat)
+      abund_matrix[i, names(counts)] <- counts
+    }
   }
-  abund_df <- intersections |>
-    sf::st_drop_geometry() |>
-    dplyr::count(quadrat_id, species, name = "abundance") |>
-    tidyr::pivot_wider(names_from = species, values_from = abundance, values_fill = 0)
 
-  missing_species <- setdiff(all_species_names, names(abund_df))
-  for (sp in missing_species) abund_df[[sp]] <- 0
+  # Convert to data.frame, add site column, and ensure correct column order
+  abund_df <- as.data.frame(abund_matrix)
+  abund_df$site <- rownames(abund_df)
+  
+  # Reorder columns to have 'site' first, then all species names
+  abund_df <- abund_df[, c("site", all_species_names)]
+  
+  # Ensure the site column is of the same type as quadrat_id and arrange
+  abund_df$site <- as.character(abund_df$site)
+  quadrat_ids_df <- data.frame(site = as.character(quadrats$quadrat_id))
+  
+  # Use a merge to ensure all sites are present and in the correct order
+  res <- merge(quadrat_ids_df, abund_df, by = "site", all.x = TRUE)
+  
+  # Replace NA with 0 for sites that had no intersecting points
+  res[is.na(res)] <- 0
+  
+  # Final arrange to match original output
+  res <- res[order(res$site), ]
 
-  data.frame(quadrat_id = quadrats$quadrat_id) |>
-    dplyr::left_join(abund_df, by = "quadrat_id") |>
-    dplyr::mutate(dplyr::across(-quadrat_id, ~ tidyr::replace_na(., 0))) |>
-    dplyr::select(site = quadrat_id, dplyr::all_of(all_species_names)) |>
-    dplyr::arrange(site)
+  # Ensure row names are reset
+  rownames(res) <- NULL
+
+  res
 }
 
 #' Summarise mean environmental conditions per quadrat
@@ -122,19 +177,68 @@ create_abundance_matrix <- function(species_dist, quadrats, all_species_names) {
 #' }
 #' @export
 calculate_quadrat_environment <- function(env_grid, quadrats, domain_crs) {
+  # Performance-optimized version of the original function.
+  #
+  # The original implementation used sf::st_join(), which is convenient but
+  # can be slow for large datasets because it involves a full spatial join
+  # operation. This creates a large intermediate data structure before the
+  # summary statistics are computed.
+  #
+  # This version is faster because it avoids the full join.
+  #
+  # Steps:
+  # 1. Convert the input grid to an `sf` object, same as before.
+  # 2. Use sf::st_intersects() to find which grid points fall inside which
+  #    quadrats. This returns a sparse list of indices, which is much more
+  #    efficient than a full join.
+  # 3. Identify the numeric columns from the environmental grid that need to be
+  #    summarised.
+  # 4. Pre-allocate a result matrix to store the mean environmental values for
+  #    each quadrat. This is more memory-efficient than building up a result
+  #    incrementally.
+  # 5. Iterate over each quadrat. For each one, subset the environmental data
+  #    to include only the points that fall inside it, and then efficiently
+  #    calculate the column-wise means. This is faster than dplyr's
+  #    group_by() + summarise() for this specific task.
+  # 6. Convert the results matrix to a data.frame and ensure it includes all
+  #    quadrats, filling with NA for any that had no overlapping points.
+
   env_sf <- sf::st_as_sf(env_grid, coords = c("x", "y"), crs = domain_crs)
-  joined_data <- sf::st_join(quadrats, env_sf)
-  num_cols <- names(joined_data)[vapply(joined_data, is.numeric, logical(1))]
-  num_cols <- setdiff(num_cols, "quadrat_id")
-  if (!length(num_cols)) {
+  intersects <- sf::st_intersects(quadrats, env_sf)
+
+  num_cols <- setdiff(names(env_grid), c("x", "y"))
+  if (length(num_cols) == 0) {
     return(data.frame(site = quadrats$quadrat_id))
   }
-  site_env <- joined_data |>
-    sf::st_drop_geometry() |>
-    dplyr::group_by(site = quadrat_id) |>
-    dplyr::summarise(
-      dplyr::across(dplyr::all_of(num_cols), ~ mean(., na.rm = TRUE)),
-      .groups = "drop"
-    )
-  dplyr::left_join(data.frame(site = quadrats$quadrat_id), site_env, by = "site")
+
+  # Pre-allocate a matrix for the results for efficiency
+  site_env_matrix <- matrix(NA_real_,
+    nrow = nrow(quadrats),
+    ncol = length(num_cols),
+    dimnames = list(quadrats$quadrat_id, num_cols)
+  )
+
+  # Extract numeric data for faster subsetting
+  env_data <- env_grid[, num_cols, drop = FALSE]
+
+  # Loop through intersections and compute means
+  for (i in seq_along(intersects)) {
+    point_indices <- intersects[[i]]
+    if (length(point_indices) > 0) {
+      # colMeans is highly optimized for this task
+      site_env_matrix[i, ] <- colMeans(env_data[point_indices, , drop = FALSE], na.rm = TRUE)
+    }
+  }
+
+  # Convert to data.frame and add site column
+  site_env_df <- as.data.frame(site_env_matrix)
+  site_env_df$site <- rownames(site_env_df)
+
+  # Ensure all sites from quadrats are present, even if they had no points
+  res <- merge(data.frame(site = quadrats$quadrat_id), site_env_df, by = "site", all.x = TRUE)
+  
+  # Reorder to match original output if necessary
+  res <- res[, c("site", num_cols)]
+
+  res
 }

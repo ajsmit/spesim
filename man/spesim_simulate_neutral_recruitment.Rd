@@ -38,5 +38,13 @@ dissimilarity is below \code{NEUTRAL_CONVERGENCE_THRESHOLD} for a number of
 consecutive checks equal to \code{NEUTRAL_CONVERGENCE_PATIENCE}, the community
 is considered to have reached a stationary state, and the simulation stops.
 A \code{NEUTRAL_MAX_STEPS} parameter prevents infinite loops.
+
+\strong{Performance:}
+All polygon domain checks use a compiled C++ ray-casting point-in-polygon
+test (see \code{pip_cpp}), with the polygon ring coordinates extracted once and
+cached for the duration of the simulation. The initial community placement
+is performed with a single vectorised rejection-sample call rather than
+J individual calls, and the same pre-built tester is threaded through every
+candidate-location filter in the main loop.
 }
 \keyword{internal}

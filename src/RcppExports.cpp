@@ -31,6 +31,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// pip_cpp
+LogicalVector pip_cpp(NumericVector px, NumericVector py, NumericVector rx, NumericVector ry);
+RcppExport SEXP _spesim_pip_cpp(SEXP pxSEXP, SEXP pySEXP, SEXP rxSEXP, SEXP rySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type px(pxSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type py(pySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type rx(rxSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type ry(rySEXP);
+    rcpp_result_gen = Rcpp::wrap(pip_cpp(px, py, rx, ry));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rstrauss_bbox_cpp
 NumericMatrix rstrauss_bbox_cpp(int n, double xmin, double xmax, double ymin, double ymax, double r, double gamma, int sweeps, int burnin, int thin, double step0, double target_acc, int tune_every);
 RcppExport SEXP _spesim_rstrauss_bbox_cpp(SEXP nSEXP, SEXP xminSEXP, SEXP xmaxSEXP, SEXP yminSEXP, SEXP ymaxSEXP, SEXP rSEXP, SEXP gammaSEXP, SEXP sweepsSEXP, SEXP burninSEXP, SEXP thinSEXP, SEXP step0SEXP, SEXP target_accSEXP, SEXP tune_everySEXP) {
@@ -75,6 +89,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_spesim_rgeyer_bbox_cpp", (DL_FUNC) &_spesim_rgeyer_bbox_cpp, 11},
+    {"_spesim_pip_cpp", (DL_FUNC) &_spesim_pip_cpp, 4},
     {"_spesim_rstrauss_bbox_cpp", (DL_FUNC) &_spesim_rstrauss_bbox_cpp, 13},
     {"_spesim_rthomas_bbox_cpp", (DL_FUNC) &_spesim_rthomas_bbox_cpp, 8},
     {NULL, NULL, 0}

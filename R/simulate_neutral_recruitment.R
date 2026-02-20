@@ -22,6 +22,14 @@
 #' is considered to have reached a stationary state, and the simulation stops.
 #' A `NEUTRAL_MAX_STEPS` parameter prevents infinite loops.
 #'
+#' **Performance:**
+#' All polygon domain checks use a compiled C++ ray-casting point-in-polygon
+#' test (see `pip_cpp`), with the polygon ring coordinates extracted once and
+#' cached for the duration of the simulation. The initial community placement
+#' is performed with a single vectorised rejection-sample call rather than
+#' J individual calls, and the same pre-built tester is threaded through every
+#' candidate-location filter in the main loop.
+#'
 #' @param poly An `sf` polygon defining the sampling domain.
 #' @param P A fully materialized parameter list from `load_config()`. It must
 #'   also contain convergence parameters: `NEUTRAL_MAX_STEPS`,
@@ -182,20 +190,20 @@ spesim_simulate_neutral_recruitment <- function(poly, P) {
     max(0, min(1, w^lambda_env))
   }
 
-  # --- Simulation State ---
-  xy <- matrix(NA_real_, nrow = J, ncol = 2)
-  linear_pos <- rep(NA_real_, J)
-  spp_out <- rep(NA_character_, J)
+  # Pre-build PIP tester once from the fixed polygon; shared by all domain
+  # checks in the initialisation and simulation loop.
+  pip_fn <- .build_pip_tester(poly)
 
-  # Initial community from metacommunity
-  for(i in 1:J) {
-      spp_out[i] <- .sample_immigrant_species()
-      if(isTRUE(linear_st$enabled)) {
-          linear_pos[i] <- stats::runif(1)
-          xy[i,] <- .linear_pos_to_xy(linear_pos[i], linear_st, poly)[1,]
-      } else {
-          xy[i,] <- .sample_uniform_in_domain(1L, poly)[1,]
-      }
+  # --- Simulation State ---
+  # Vectorised initialisation: sample all J positions in one call rather than
+  # J individual calls to .sample_uniform_in_domain(1, poly).
+  spp_out <- sample(spp, J, replace = TRUE, prob = meta_prob)
+  linear_pos <- rep(NA_real_, J)
+  if (isTRUE(linear_st$enabled)) {
+    linear_pos <- stats::runif(J)
+    xy <- .linear_pos_to_xy(linear_pos, linear_st, poly, pip_fn = pip_fn)
+  } else {
+    xy <- .sample_uniform_in_domain(J, poly, pip_fn = pip_fn)
   }
 
   patience_counter <- 0
@@ -221,24 +229,44 @@ spesim_simulate_neutral_recruitment <- function(poly, P) {
 
     # Propose new location and accept/reject
     accepted <- FALSE
-    for (att in seq_len(40L)) {
-      if(is_immigrant || is.na(parent_idx)) {
-        new_xy <- if(isTRUE(linear_st$enabled)) .linear_pos_to_xy(stats::runif(1), linear_st, poly) else .sample_uniform_in_domain(1L, poly)
+    batch_size <- 40 # Propose 40 candidates at once
+
+    # Generate a batch of candidate locations
+    if (is_immigrant || is.na(parent_idx)) {
+      cand_xy <- if(isTRUE(linear_st$enabled)) .linear_pos_to_xy(stats::runif(batch_size), linear_st, poly, pip_fn = pip_fn) else .sample_uniform_in_domain(batch_size, poly, pip_fn = pip_fn)
+    } else {
+      if(isTRUE(linear_st$enabled)) {
+        cand_pos <- vapply(rep(linear_pos[parent_idx], batch_size), .propose_linear_pos, numeric(1))
+        cand_xy <- .linear_pos_to_xy(cand_pos, linear_st, poly, pip_fn = pip_fn)
       } else {
-        new_xy <- if(isTRUE(linear_st$enabled)) .linear_pos_to_xy(.propose_linear_pos(linear_pos[parent_idx]), linear_st, poly) else matrix(.propose_displacement(xy[parent_idx,]), ncol=2)
+        cand_xy <- t(vapply(rep(list(xy[parent_idx,]), batch_size), .propose_displacement, numeric(2)))
       }
-      
-      if (NROW(new_xy) > 0 && .in_domain(new_xy, poly)) {
-        p_acc <- .env_accept_prob(birth_sp, new_xy)
-        if (stats::runif(1L) <= p_acc) {
+    }
+
+    # Filter candidates to those inside the domain
+    if (NROW(cand_xy) > 0) {
+      in_domain_idx <- which(pip_fn(cand_xy))
+      cand_xy <- cand_xy[in_domain_idx, , drop = FALSE]
+
+      if (NROW(cand_xy) > 0) {
+        # Check environmental acceptance for valid candidates
+        p_acc_vec <- vapply(seq_len(nrow(cand_xy)), function(i) .env_accept_prob(birth_sp, cand_xy[i,]), numeric(1))
+        
+        successful_idx <- which(stats::runif(nrow(cand_xy)) <= p_acc_vec)
+        
+        if (length(successful_idx) > 0) {
+            # Select one of the successful candidates
+            chosen_idx <- if (length(successful_idx) == 1) successful_idx else sample(successful_idx, 1)
+            new_xy <- cand_xy[chosen_idx, , drop = FALSE]
+
             xy[dead_idx, ] <- new_xy[1,]
             spp_out[dead_idx] <- birth_sp
             if(isTRUE(linear_st$enabled)) linear_pos[dead_idx] <- .xy_to_linear_pos(new_xy, linear_st)
             accepted <- TRUE
-            break
         }
       }
     }
+
     if (!accepted) { # Fallback: if no valid spot found, keep species but location is unchanged.
       spp_out[dead_idx] <- birth_sp
     }

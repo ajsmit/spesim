@@ -43,6 +43,10 @@ Thumbs\.db
 ^spesim\.code-workspace$
 ^out($|/)
 
+# Profiling artefacts
+^profile\.R$
+^profile_report\.html$
+
 # Local tarballs
 ^.*\.tar\.gz$
 

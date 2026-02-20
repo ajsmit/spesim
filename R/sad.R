@@ -41,12 +41,13 @@
 #'     SAD more uneven as \code{m} decreases. This is a pragmatic SAD helper and
 #'     is not a full neutral dynamics engine (spatial patterns are controlled
 #'     separately by the point-process settings). \strong{Important notes:}
-#'     (1) The immigration-modulated model runs for a fixed number of steps
-#'     (heuristic: `max(1000, 20 * n_individuals)`) and may not reach a
-#'     stationary distribution. (2) The simulation may produce more species
-#'     than `n_species`; in this case, the tail of the abundance distribution
-#'     is truncated and its sum is assigned to the last species, which can
-#'     create an artificially large abundance for that species.}
+#'     (1) The immigration-modulated model runs until convergence is detected
+#'     (monitoring the abundance vector) or `max_steps` is reached.
+#'     (2) The simulation may produce more or fewer species than `n_species`;
+#'     the resulting list is truncated or padded with zeros, and the total
+#'     number of individuals is adjusted to match `n_individuals` using a
+#'     proportional allocation method, which avoids lumping tail-end abundances
+#'     into a single species.}
 #'   \item{`"custom"`}{User-supplied SAD via a numeric vector or a function
 #'     (`sad` argument).}
 #' }
@@ -367,50 +368,72 @@ generate_sad <- function(n_species, n_individuals, model = "fisher", sad = NULL,
         }
         counts <- sort(counts, decreasing = TRUE)
       } else {
-        # --- Immigration-modulated heuristic ---------------------------------
+        # --- Immigration-modulated heuristic with convergence check ---
         if (!is.finite(m) || m <= 0 || m > 1) stop("m must be in (0,1] or NA")
 
         S <- length(spp)
         J <- as.integer(n_individuals)
 
-        # Metacommunity weights: symmetric Dirichlet with total concentration theta.
+        # Metacommunity weights
         alpha <- rep(theta / S, S)
         w <- stats::rgamma(S, shape = alpha, rate = 1)
         p <- w / sum(w)
 
-        # Initial local community.
+        # Initial local community
         counts <- as.integer(stats::rmultinom(1, size = J, prob = p)[, 1])
 
-        # Moran-style death--birth with immigration.
-        steps <- as.integer(dots$steps %||% max(1000L, 20L * J))
-        for (t in seq_len(steps)) {
+        # Moran-style death--birth with immigration until convergence
+        max_steps <- as.integer(dots$max_steps %||% 1e6)
+        burn_in <- as.integer(dots$burn_in %||% max(1000L, 20L * J))
+        check_every <- as.integer(dots$check_every %||% 100L)
+        tolerance <- as.numeric(dots$tolerance %||% 1e-4)
+
+        last_counts <- counts
+
+        for (t in 1:max_steps) {
           # death
-          d <- sample.int(S, size = 1L, prob = counts)
+          d_prob <- counts / sum(counts)
+          if (any(is.na(d_prob)) || sum(d_prob) == 0) d_prob <- rep(1 / S, S)
+          d <- sample.int(S, size = 1L, prob = d_prob)
           counts[d] <- counts[d] - 1L
 
           # birth
           if (stats::runif(1) < m) {
             b <- sample.int(S, size = 1L, prob = p)
           } else {
-            if (sum(counts) <= 0) {
+            b_prob <- counts / sum(counts)
+            if (any(is.na(b_prob)) || sum(b_prob) == 0) {
               b <- sample.int(S, size = 1L, prob = p)
             } else {
-              b <- sample.int(S, size = 1L, prob = counts)
+              b <- sample.int(S, size = 1L, prob = b_prob)
             }
           }
           counts[b] <- counts[b] + 1L
+
+          if (t > burn_in && t %% check_every == 0) {
+            # Check for convergence: relative change in abundance vector norm
+            norm_diff <- sqrt(sum((counts - last_counts)^2)) / J
+            if (norm_diff < tolerance) {
+              break
+            }
+            last_counts <- counts
+          }
+        }
+
+        if (t == max_steps) {
+          warning("ZSM simulation reached max_steps without converging.")
         }
 
         counts <- sort(counts, decreasing = TRUE)
       }
 
-      # Map to a fixed label set of size n_species by truncating and lumping tail.
-      if (length(counts) < length(spp)) {
+      # Map to a fixed label set of size n_species by truncating.
+      # The previous method of lumping tail abundances created artifacts.
+      # Truncating and then adjusting to N is a less biased approach.
+      if (length(counts) > length(spp)) {
+        counts <- counts[seq_len(length(spp))]
+      } else if (length(counts) < length(spp)) {
         counts <- c(counts, rep(0L, length(spp) - length(counts)))
-      } else if (length(counts) > length(spp)) {
-        head_counts <- counts[seq_len(length(spp) - 1L)]
-        tail_sum <- sum(counts[seq.int(length(spp), length(counts))])
-        counts <- c(head_counts, tail_sum)
       }
       counts <- .sad_counts_adjust_to_n(counts, n_individuals)
       stats::setNames(as.integer(counts), spp)

@@ -3,19 +3,36 @@
 
 `%||%` <- function(a, b) if (!is.null(a)) a else b
 
-.in_domain <- function(xy, poly) {
-  if (NROW(xy) == 0) {
-    return(logical(0))
+# Build a fast point-in-polygon tester by pre-extracting ring coordinates from
+# the sf polygon once.  Returns a closure that accepts an nx2 matrix of (x, y)
+# points and returns a logical vector.  Use this in tight loops where `poly`
+# is fixed to avoid repeated sf/GEOS overhead.
+.build_pip_tester <- function(poly) {
+  coords <- sf::st_coordinates(poly)
+  rx <- coords[, "X"]
+  ry <- coords[, "Y"]
+  function(xy) {
+    if (NROW(xy) == 0L) return(logical(0L))
+    pip_cpp(as.numeric(xy[, 1L]), as.numeric(xy[, 2L]), rx, ry)
   }
-  pts <- sf::st_as_sf(
-    data.frame(x = xy[, 1], y = xy[, 2]),
-    coords = c("x", "y"),
-    crs = sf::st_crs(poly)
-  )
-  as.logical(sf::st_within(pts, poly, sparse = FALSE)[, 1])
 }
 
-.sample_uniform_in_domain <- function(n, poly, max_tries = n * 50) {
+# Replaces the old sf::st_as_sf + sf::st_within implementation.  Extracts ring
+# coordinates from `poly` on each call and delegates to the C++ ray-caster.
+# For repeated calls with the same polygon, prefer .build_pip_tester() to
+# amortise the coordinate extraction cost.
+.in_domain <- function(xy, poly) {
+  if (NROW(xy) == 0L) return(logical(0L))
+  coords <- sf::st_coordinates(poly)
+  pip_cpp(as.numeric(xy[, 1L]), as.numeric(xy[, 2L]),
+          coords[, "X"], coords[, "Y"])
+}
+
+# Accept an optional pre-built pip_fn to avoid re-extracting ring coords on
+# every call when sampling many batches from the same polygon.
+.sample_uniform_in_domain <- function(n, poly, max_tries = n * 50,
+                                      pip_fn = NULL) {
+  if (is.null(pip_fn)) pip_fn <- .build_pip_tester(poly)
   bb <- sf::st_bbox(poly)
   res <- matrix(NA_real_, 0, 2)
   tries <- 0L
@@ -25,7 +42,7 @@
       stats::runif(need, bb["xmin"], bb["xmax"]),
       stats::runif(need, bb["ymin"], bb["ymax"])
     )
-    keep <- .in_domain(cand, poly)
+    keep <- pip_fn(cand)
     if (any(keep)) {
       res <- rbind(res, cand[keep, , drop = FALSE])
     }
@@ -90,6 +107,8 @@
   s <- max(1e-6, min(1, s))
   # Map s -> r_eff such that s=1 gives r_eff=r, and s->0 increases r_eff up to ~1.5*r.
   r_eff <- max(1e-6, as.numeric(r) * (1.5 - 0.5 * s))
+  # Pre-build pip tester once to avoid per-call sf/CRS overhead in the loop.
+  pip_fn <- .build_pip_tester(poly)
   out <- matrix(NA_real_, 0, 2)
   tries <- 0L
   max_tries <- 2000L + 50L * n
@@ -98,7 +117,7 @@
       stats::runif(1, bb["xmin"], bb["xmax"]),
       stats::runif(1, bb["ymin"], bb["ymax"])
     )
-    if (.in_domain(cand, poly)) {
+    if (pip_fn(cand)) {
       ok <- TRUE
       if (nrow(out) > 0) {
         d2 <- colSums((t(out) - as.numeric(cand))^2)
@@ -111,7 +130,7 @@
   if (nrow(out) < n) {
     # top up with uniform if infeasible
     need <- n - nrow(out)
-    out <- rbind(out, .sample_uniform_in_domain(need, poly))
+    out <- rbind(out, .sample_uniform_in_domain(need, poly, pip_fn = pip_fn))
   }
   out
 }
@@ -148,15 +167,12 @@
 }
 
 .as_sfc_points <- function(xy, crs) {
-  if (NROW(xy) == 0) {
-    return(sf::st_sfc(crs = crs))
-  }
-  sf::st_sfc(
-    lapply(seq_len(NROW(xy)), function(i) {
-      sf::st_point(as.numeric(xy[i, 1:2]))
-    }),
-    crs = crs
-  )
+  if (NROW(xy) == 0L) return(sf::st_sfc(crs = crs))
+  # Vectorised path: much faster than lapply(st_point(...)) for large xy.
+  sf::st_as_sf(
+    data.frame(x = xy[, 1L], y = xy[, 2L]),
+    coords = c("x", "y"), crs = crs
+  )$geometry
 }
 
 .resolve_env_col <- function(gname, cols) {
@@ -217,7 +233,7 @@
   }
 }
 
-.linear_pos_to_xy <- function(pos, st, poly) {
+.linear_pos_to_xy <- function(pos, st, poly, pip_fn = NULL) {
   if (length(pos) == 0L) return(matrix(numeric(0), ncol = 2))
   p <- as.numeric(pos)
   p[!is.finite(p)] <- 0.5
@@ -238,9 +254,10 @@
     out[, 1] <- xmid + stats::rnorm(n, 0, st$jitter_sd)
   }
   # ensure points remain inside polygonal domain
-  bad <- which(!.in_domain(out, poly))
+  if (is.null(pip_fn)) pip_fn <- .build_pip_tester(poly)
+  bad <- which(!pip_fn(out))
   if (length(bad) > 0) {
-    out[bad, ] <- .sample_uniform_in_domain(length(bad), poly)
+    out[bad, ] <- .sample_uniform_in_domain(length(bad), poly, pip_fn = pip_fn)
   }
   out
 }

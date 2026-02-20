@@ -5,6 +5,18 @@ rgeyer_bbox_cpp <- function(n_target, xmin, xmax, ymin, ymax, r, gamma, sat, swe
     .Call(`_spesim_rgeyer_bbox_cpp`, n_target, xmin, xmax, ymin, ymax, r, gamma, sat, sweeps, burnin, thin)
 }
 
+#' Fast vectorised point-in-polygon test (ray casting)
+#'
+#' @param px Numeric vector of query x-coordinates.
+#' @param py Numeric vector of query y-coordinates.
+#' @param rx Numeric vector of polygon ring x-coordinates (closed ring: first equals last).
+#' @param ry Numeric vector of polygon ring y-coordinates (closed ring: first equals last).
+#' @return LogicalVector; TRUE if the corresponding point is inside the ring.
+#' @keywords internal
+pip_cpp <- function(px, py, rx, ry) {
+    .Call(`_spesim_pip_cpp`, px, py, rx, ry)
+}
+
 rstrauss_bbox_cpp <- function(n, xmin, xmax, ymin, ymax, r, gamma, sweeps = 2000L, burnin = 200L, thin = 1L, step0 = NA_real_, target_acc = 0.35, tune_every = 200L) {
     .Call(`_spesim_rstrauss_bbox_cpp`, n, xmin, xmax, ymin, ymax, r, gamma, sweeps, burnin, thin, step0, target_acc, tune_every)
 }
