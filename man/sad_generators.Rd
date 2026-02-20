@@ -44,7 +44,13 @@ theta-only Ewens sampler (Chinese restaurant) to control the
 \emph{death--birth with immigration} heuristic (Moran style) to make the
 SAD more uneven as \code{m} decreases. This is a pragmatic SAD helper and
 is not a full neutral dynamics engine (spatial patterns are controlled
-separately by the point-process settings).}
+separately by the point-process settings). \strong{Important notes:}
+(1) The immigration-modulated model runs for a fixed number of steps
+(heuristic: \code{max(1000, 20 * n_individuals)}) and may not reach a
+stationary distribution. (2) The simulation may produce more species
+than \code{n_species}; in this case, the tail of the abundance distribution
+is truncated and its sum is assigned to the last species, which can
+create an artificially large abundance for that species.}
 \item{\code{"custom"}}{User-supplied SAD via a numeric vector or a function
 (\code{sad} argument).}
 }

@@ -296,9 +296,16 @@ load_config <- function(init_file) {
     A_CLUSTER_SCALE = 1,
     SPATIAL_PROCESS_OTHERS = "poisson", # "poisson" | "strauss" | "geyer"
     OTHERS_BETA = NA_real_,
-    OTHERS_GAMMA = NA_real_,
+    OTHERS_GAMMA = NA_real_, # For Geyer
+    OTHERS_STRAUSS_GAMMA = 0.2, # For Strauss
     OTHERS_R = 1,
-    OTHERS_S = 2
+    OTHERS_S = 2, # For Geyer saturation
+
+    # Neutral model convergence
+    NEUTRAL_MAX_STEPS = NULL,
+    NEUTRAL_CONVERGENCE_INTERVAL = NULL,
+    NEUTRAL_CONVERGENCE_THRESHOLD = NULL,
+    NEUTRAL_CONVERGENCE_PATIENCE = NULL
   )
 
   # Parse file (internal helper)
@@ -413,7 +420,9 @@ load_config <- function(init_file) {
     "VORONOI_SEED_FACTOR",
     "POINT_SIZE", "POINT_ALPHA", "QUADRAT_ALPHA",
     "A_PARENT_INTENSITY", "A_MEAN_OFFSPRING", "A_CLUSTER_SCALE",
-    "OTHERS_BETA", "OTHERS_GAMMA", "OTHERS_R", "OTHERS_S"
+    "OTHERS_BETA", "OTHERS_GAMMA", "OTHERS_STRAUSS_GAMMA", "OTHERS_R", "OTHERS_S",
+    "NEUTRAL_MAX_STEPS", "NEUTRAL_CONVERGENCE_INTERVAL",
+    "NEUTRAL_CONVERGENCE_THRESHOLD", "NEUTRAL_CONVERGENCE_PATIENCE"
   )
   for (f in intersect(names(P), num_fields)) {
     # only coerce if not already numeric (avoid warnings)

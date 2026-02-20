@@ -55,9 +55,9 @@ pkg_file <- function(subpath, folder = c("extdata", "examples")) {
 
 P0 <- load_config(pkg_file("spesim_init_basic.txt", "examples"))
 P0$N_SPECIES <- 12
-P0$N_INDIVIDUALS <- 1400
+P0$N_INDIVIDUALS <- 400
 P0$SAMPLING_SCHEME <- "tiled"
-P0$N_QUADRATS <- 30
+P0$N_QUADRATS <- 15
 P0$QUADRAT_SIZE_OPTION <- "medium"
 P0$INTERACTION_RADIUS <- 0
 P0$INTERACTIONS_FILE <- NULL

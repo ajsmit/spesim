@@ -40,7 +40,13 @@
 #'     \emph{death--birth with immigration} heuristic (Moran style) to make the
 #'     SAD more uneven as \code{m} decreases. This is a pragmatic SAD helper and
 #'     is not a full neutral dynamics engine (spatial patterns are controlled
-#'     separately by the point-process settings).}
+#'     separately by the point-process settings). \strong{Important notes:}
+#'     (1) The immigration-modulated model runs for a fixed number of steps
+#'     (heuristic: `max(1000, 20 * n_individuals)`) and may not reach a
+#'     stationary distribution. (2) The simulation may produce more species
+#'     than `n_species`; in this case, the tail of the abundance distribution
+#'     is truncated and its sum is assigned to the last species, which can
+#'     create an artificially large abundance for that species.}
 #'   \item{`"custom"`}{User-supplied SAD via a numeric vector or a function
 #'     (`sad` argument).}
 #' }
@@ -79,37 +85,47 @@ NULL
     x <- rep(1, length(x))
   }
 
-  # proportional allocation with remainder distribution by fractional parts
+  # proportional allocation with remainder distribution
   scaled <- x / sum(x) * n
   base <- floor(scaled)
   rem <- n - sum(base)
 
   if (rem > 0L) {
+    # add remainder to species with largest fractional parts
     frac <- scaled - base
     o <- order(frac, decreasing = TRUE)
     base[o[seq_len(rem)]] <- base[o[seq_len(rem)]] + 1L
   } else if (rem < 0L) {
-    # remove individuals from the smallest fractional parts where base > 0
-    frac <- scaled - base
-    o <- order(frac, decreasing = FALSE)
+    # remove excess from most abundant species to be less biased
     k <- -rem
-    idx <- o[base[o] > 0]
-    if (length(idx) > 0L) {
-      take <- idx[seq_len(min(k, length(idx)))]
-      base[take] <- base[take] - 1L
-      # If still too many, keep subtracting from any positive cells.
-      while (sum(base) > n) {
-        j <- which(base > 0)[1]
-        base[j] <- base[j] - 1L
+    while (k > 0) {
+      # find max abundances, break ties by picking first one
+      idx_max <- which.max(base)
+      if (base[idx_max] > 0) {
+        base[idx_max] <- base[idx_max] - 1L
+        k <- k - 1L
+      } else {
+        # This should not happen if sum(base) > n and there are items.
+        # If it does, we must take from another cell.
+        other_positives <- which(base > 0)
+        if (length(other_positives) > 0) {
+          base[other_positives[1]] <- base[other_positives[1]] - 1L
+          k <- k - 1L
+        } else {
+          # All are zero, can't remove any more.
+          break
+        }
       }
     }
   }
 
   base <- as.integer(base)
-  # final guard
-  if (sum(base) != n) {
-    diff <- n - sum(base)
-    if (length(base) >= 1L) base[1] <- base[1] + diff
+  # final guard: if there is still a mismatch, adjust the most abundant species.
+  # This is less biased than always adjusting the first.
+  diff <- n - sum(base)
+  if (diff != 0 && length(base) >= 1L) {
+    idx_max <- which.max(base)
+    base[idx_max] <- base[idx_max] + diff
   }
   base
 }

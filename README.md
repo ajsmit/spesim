@@ -1,7 +1,7 @@
 spesim: Spatial Ecological Simulation in R
 ================
 AJ Smit and contributors
-2026-02-17
+2026-02-20
 
 # spesim <img src="man/figures/logo.png" alt="spesim logo" align="right" width="120" />
 
@@ -18,12 +18,13 @@ It’s built for teaching, methods testing, and exploratory research in
 **biogeography** and **community ecology**.
 
 - Generate individuals for multiple species under realistic
-  **species–abundance distributions** (e.g., Fisher’s log-series with a
-  dominant species).
+  **species–abundance distributions** (e.g., Fisher’s log-series,
+  neutral ZSM).
 - Impose **environmental filtering** (per‑species optima/tolerances on
   named gradients).
-- Add **spatial structure** (dominant clustering + optional
-  interspecific neighbourhood effects).
+- Add **spatial structure** using canonical point processes (Poisson,
+  Thomas, and fast MCMC-based Strauss/Geyer models) or an optional
+  neutral simulation engine with dispersal limitation.
 - Sample with flexible **quadrat schemes** (random, systematic, tiled,
   transect, Voronoi).
 - Produce **site × species** matrices, per‑site **environment

@@ -54,8 +54,6 @@ generate_fisher_log_series <- function(
   x
 ) {
   stopifnot(n_species >= 1L, n_individuals >= 1L)
-  n_dominant <- round(n_individuals * dominant_fraction)
-  n_remaining <- n_individuals - n_dominant
 
   if (n_species == 1L) {
     # With a single species, all individuals are assigned to A.
@@ -64,20 +62,47 @@ generate_fisher_log_series <- function(
     return(out)
   }
 
+  n_dominant <- round(n_individuals * dominant_fraction)
+  n_remaining <- n_individuals - n_dominant
+
   ranks <- 2:n_species
   rel <- alpha * (x^ranks) / ranks
-  abund <- if (sum(rel) > 0) {
-    round(rel / sum(rel) * n_remaining)
-  } else {
-    rep(0L, length(rel))
+
+  # a) Distribute n_remaining among non-dominants using largest remainder method
+  abund_others <- integer(length(rel))
+  if (n_remaining > 0) {
+    if (sum(rel) > 0) {
+      scaled <- rel / sum(rel) * n_remaining
+      base <- floor(scaled)
+      rem <- n_remaining - sum(base)
+
+      if (rem > 0L) {
+        frac <- scaled - base
+        o <- order(frac, decreasing = TRUE)
+        base[o[seq_len(rem)]] <- base[o[seq_len(rem)]] + 1L
+      }
+      abund_others <- as.integer(base)
+    } else {
+      # if rel is all zero, distribute uniformly
+      abund_others <- rep(0L, length(rel))
+      if (length(abund_others) > 0) {
+        distrib <- as.integer(stats::rmultinom(1, size = n_remaining, prob = rep(1, length(rel)))[, 1])
+        abund_others <- distrib
+      }
+    }
   }
 
-  all_abund <- c(n_dominant, abund)
-  adj <- n_individuals - sum(all_abund)
-  if (length(all_abund) >= 2L) {
-    all_abund[2L] <- all_abund[2L] + adj
-  } else {
-    all_abund[1L] <- all_abund[1L] + adj
+  # b) Combine and ensure total sum is correct
+  all_abund <- c(n_dominant, abund_others)
+
+  # The sum should be correct now because `abund_others` sums to `n_remaining`
+  # and `n_dominant + n_remaining` is `n_individuals`.
+  # A final guard for floating point issues is still good practice.
+  current_sum <- sum(all_abund)
+  if (current_sum != n_individuals) {
+    diff <- n_individuals - current_sum
+    # Add to dominant species, as its count was the only one simply rounded.
+    all_abund[1L] <- all_abund[1L] + diff
   }
 
   names(all_abund) <- LETTERS[seq_len(n_species)]
@@ -111,15 +136,13 @@ generate_fisher_log_series <- function(
 #' \strong{Baseline locations (point processes).} Locations are simulated using
 #' the process names in \code{P}. Supported values (case-insensitive):
 #' \describe{
-#'   \item{\code{"poisson"}}{Homogeneous Poisson inside \code{domain}.}
-#'   \item{\code{"thomas"}}{Thomas (Neyman-Scott) cluster process; uses parent intensity
-#'   (derived if missing), mean offspring, and Gaussian cluster scale. Implemented internally.}
-#'   \item{\code{"strauss"}}{Inhibition via a sequential-inhibition surrogate using
-#'   interaction radius \code{OTHERS_R} and inhibition strength \code{OTHERS_S} in \eqn{(0,1]}.
-#'   Lower \code{OTHERS_S} increases inhibition (a larger effective hard-core distance).}
-#'   \item{\code{"geyer"}}{Geyer saturation surrogate: acceptance probability proportional to
-#'   \eqn{\gamma^{\min(m, s)}} where \eqn{m} neighbours fall within \code{OTHERS_R} and
-#'   saturation count \code{OTHERS_S}. Implemented internally.}
+#'   \item{\code{"poisson"}}{Homogeneous Poisson process (Complete Spatial Randomness).}
+#'   \item{\code{"thomas"}}{Thomas (Neyman-Scott) cluster process. A fast C++ implementation
+#'   is used if available.}
+#'   \item{\code{"strauss"}}{Strauss process for inhibition. A fast C++ MCMC implementation
+#'   is used if available.}
+#'   \item{\code{"geyer"}}{Geyer saturation process. A fast C++ MCMC implementation
+#'   is used if available.}
 #' }
 #'
 #' \strong{Environmental filtering.} For species listed in \code{P$GRADIENT},
@@ -239,484 +262,10 @@ generate_fisher_log_series <- function(
 generate_heterogeneous_distribution <- function(domain, P) {
   `%||%` <- function(a, b) if (!is.null(a)) a else b
 
-  # --- small helpers ---------------------------------------------------
-  .in_domain <- function(xy, poly) {
-    if (NROW(xy) == 0) {
-      return(logical(0))
-    }
-    pts <- sf::st_as_sf(
-      data.frame(x = xy[, 1], y = xy[, 2]),
-      coords = c("x", "y"),
-      crs = sf::st_crs(poly)
-    )
-    as.logical(sf::st_within(pts, poly, sparse = FALSE)[, 1])
-  }
-  .sample_uniform_in_domain <- function(n, poly, max_tries = n * 50) {
-    bb <- sf::st_bbox(poly)
-    res <- matrix(NA_real_, 0, 2)
-    tries <- 0L
-    while (nrow(res) < n && tries < max_tries) {
-      need <- n - nrow(res)
-      cand <- cbind(
-        stats::runif(need, bb["xmin"], bb["xmax"]),
-        stats::runif(need, bb["ymin"], bb["ymax"])
-      )
-      keep <- .in_domain(cand, poly)
-      if (any(keep)) {
-        res <- rbind(res, cand[keep, , drop = FALSE])
-      }
-      tries <- tries + 1L
-    }
-    if (nrow(res) > n) {
-      res <- res[seq_len(n), , drop = FALSE]
-    }
-    res
-  }
-  .simulate_thomas_points <- function(
-    n,
-    poly,
-    mu = 10,
-    sigma = 1,
-    kappa = NA_real_
-  ) {
-    if (n <= 0) {
-      return(matrix(numeric(0), ncol = 2))
-    }
-    area <- as.numeric(sf::st_area(sf::st_as_sf(poly)[1, ]))
-    if (!is.finite(kappa) || kappa <= 0) {
-      kappa <- max(1e-6, n / (mu * area))
-    }
-    # parents
-    n_par <- stats::rpois(1L, lambda = kappa * area)
-    par_xy <- .sample_uniform_in_domain(max(1L, n_par), poly)
-    # offspring
-    out <- matrix(numeric(0), ncol = 2)
-    if (nrow(par_xy) > 0) {
-      # Poisson(mu) per parent
-      k_vec <- stats::rpois(nrow(par_xy), mu)
-      if (sum(k_vec) > 0) {
-        ox <- rep(par_xy[, 1], times = k_vec) +
-          stats::rnorm(sum(k_vec), 0, sigma)
-        oy <- rep(par_xy[, 2], times = k_vec) +
-          stats::rnorm(sum(k_vec), 0, sigma)
-        off <- cbind(ox, oy)
-        keep <- .in_domain(off, poly)
-        if (any(keep)) out <- off[keep, , drop = FALSE]
-      }
-    }
-    if (nrow(out) == 0) {
-      out <- .sample_uniform_in_domain(n, poly)
-    }
-    if (nrow(out) > n) {
-      out <- out[sample.int(nrow(out), n), , drop = FALSE]
-    }
-    out
-  }
-  .simulate_strauss_points <- function(n, poly, r, s = 0.7) {
-    # Sequential inhibition surrogate with an effective hard-core radius r_eff.
-    # We treat s in (0,1] as an *inhibition strength* parameter: smaller s => stronger inhibition.
-    if (n <= 0) {
-      return(matrix(numeric(0), ncol = 2))
-    }
-    bb <- sf::st_bbox(poly)
-    s <- as.numeric(s)
-    if (!is.finite(s)) s <- 0.7
-    s <- max(1e-6, min(1, s))
-    # Map s -> r_eff such that s=1 gives r_eff=r, and s->0 increases r_eff up to ~1.5*r.
-    r_eff <- max(1e-6, as.numeric(r) * (1.5 - 0.5 * s))
-    out <- matrix(NA_real_, 0, 2)
-    tries <- 0L
-    max_tries <- 2000L + 50L * n
-    while (nrow(out) < n && tries < max_tries) {
-      cand <- cbind(
-        stats::runif(1, bb["xmin"], bb["xmax"]),
-        stats::runif(1, bb["ymin"], bb["ymax"])
-      )
-      if (.in_domain(cand, poly)) {
-        ok <- TRUE
-        if (nrow(out) > 0) {
-          d2 <- colSums((t(out) - as.numeric(cand))^2)
-          ok <- min(d2) >= r_eff^2
-        }
-        if (ok) out <- rbind(out, cand)
-      }
-      tries <- tries + 1L
-    }
-    if (nrow(out) < n) {
-      # top up with uniform if infeasible
-      need <- n - nrow(out)
-      out <- rbind(out, .sample_uniform_in_domain(need, poly))
-    }
-    out
-  }
-  .simulate_geyer_points <- function(n, poly, r, gamma = 1.5, s = 2) {
-    if (n <= 0) {
-      return(matrix(numeric(0), ncol = 2))
-    }
-    # start from Poisson candidates; accept with prob ~ gamma^{min(m, s)}
-    cand <- .sample_uniform_in_domain(3L * n, poly)
-    if (nrow(cand) == 0) {
-      return(cand)
-    }
-    out <- matrix(NA_real_, 0, 2)
-    for (i in seq_len(nrow(cand))) {
-      xy <- cand[i, , drop = FALSE]
-      m <- 0L
-      if (nrow(out) > 0) {
-        d2 <- colSums((t(out) - as.numeric(xy))^2)
-        m <- sum(d2 <= (as.numeric(r)^2))
-      }
-      acc_prob <- (as.numeric(gamma))^(min(m, as.integer(s)))
-      acc_prob <- max(0, min(1, acc_prob / (1 + acc_prob))) # squash to (0,1)
-      if (stats::runif(1) < acc_prob) {
-        out <- rbind(out, xy)
-      }
-      if (nrow(out) >= n) break
-    }
-    if (nrow(out) < n) {
-      top <- .sample_uniform_in_domain(n - nrow(out), poly)
-      out <- rbind(out, top)
-    }
-    out
-  }
-  .as_sfc_points <- function(xy, crs) {
-    if (NROW(xy) == 0) {
-      return(sf::st_sfc(crs = crs))
-    }
-    sf::st_sfc(
-      lapply(seq_len(NROW(xy)), function(i) {
-        sf::st_point(as.numeric(xy[i, 1:2]))
-      }),
-      crs = crs
-    )
-  }
-  .resolve_env_col <- function(gname, cols) {
-    g <- as.character(gname %||% "")
-    if (!nzchar(g)) return(NA_character_)
-    if (g %in% cols) return(g)
-    legacy <- switch(g,
-      temperature = "temperature_C",
-      elevation = "elevation_m",
-      rainfall = "rainfall_mm",
-      NA_character_
-    )
-    if (!is.na(legacy) && legacy %in% cols) return(legacy)
-    cand <- grep(paste0("^", g, "(_|$)"), cols, value = TRUE)
-    if (length(cand)) return(cand[1])
-    NA_character_
-  }
-  .linear_domain_state <- function(poly, P) {
-    d_type <- tolower(as.character(P$DOMAIN_TYPE %||% "polygon"))
-    d_type <- gsub("-", "_", d_type)
-    enabled <- d_type %in% c("network", "coastline")
-    bb <- sf::st_bbox(poly)
-    axis <- tolower(as.character(P$LINEAR_AXIS %||% "x"))
-    if (!axis %in% c("x", "y")) axis <- "x"
-    wrap <- isTRUE(P$LINEAR_WRAP)
-    jitter_sd <- as.numeric(P$LINEAR_JITTER_SD %||% 0)
-    if (!is.finite(jitter_sd) || jitter_sd < 0) jitter_sd <- 0
-    list(
-      enabled = enabled,
-      type = d_type,
-      axis = axis,
-      wrap = wrap,
-      jitter_sd = jitter_sd,
-      xmin = as.numeric(bb["xmin"]),
-      xmax = as.numeric(bb["xmax"]),
-      ymin = as.numeric(bb["ymin"]),
-      ymax = as.numeric(bb["ymax"])
-    )
-  }
-  .xy_to_linear_pos <- function(xy, st) {
-    if (NROW(xy) == 0) return(numeric(0))
-    if (!isTRUE(st$enabled)) return(rep(NA_real_, NROW(xy)))
-    if (identical(st$axis, "x")) {
-      den <- st$xmax - st$xmin
-      if (!is.finite(den) || den == 0) den <- 1
-      p <- (xy[, 1] - st$xmin) / den
-    } else {
-      den <- st$ymax - st$ymin
-      if (!is.finite(den) || den == 0) den <- 1
-      p <- (xy[, 2] - st$ymin) / den
-    }
-    if (isTRUE(st$wrap)) {
-      p %% 1
-    } else {
-      pmax(0, pmin(1, p))
-    }
-  }
-  .linear_pos_to_xy <- function(pos, st, poly) {
-    if (length(pos) == 0L) return(matrix(numeric(0), ncol = 2))
-    p <- as.numeric(pos)
-    p[!is.finite(p)] <- 0.5
-    if (isTRUE(st$wrap)) {
-      p <- p %% 1
-    } else {
-      p <- pmax(0, pmin(1, p))
-    }
-    n <- length(p)
-    out <- matrix(NA_real_, nrow = n, ncol = 2)
-    ymid <- (st$ymin + st$ymax) / 2
-    xmid <- (st$xmin + st$xmax) / 2
-    if (identical(st$axis, "x")) {
-      out[, 1] <- st$xmin + p * (st$xmax - st$xmin)
-      out[, 2] <- ymid + stats::rnorm(n, 0, st$jitter_sd)
-    } else {
-      out[, 2] <- st$ymin + p * (st$ymax - st$ymin)
-      out[, 1] <- xmid + stats::rnorm(n, 0, st$jitter_sd)
-    }
-    # ensure points remain inside polygonal domain
-    bad <- which(!.in_domain(out, poly))
-    if (length(bad) > 0) {
-      out[bad, ] <- .sample_uniform_in_domain(length(bad), poly)
-    }
-    out
-  }
-  .constrain_xy_to_linear <- function(xy, st, poly) {
-    if (!isTRUE(st$enabled) || NROW(xy) == 0) return(xy)
-    p <- .xy_to_linear_pos(xy, st)
-    .linear_pos_to_xy(p, st, poly)
-  }
-  .simulate_neutral_recruitment <- function(poly, P) {
-    J <- as.integer(P$N_INDIVIDUALS %||% 0L)
-    S <- as.integer(P$N_SPECIES %||% 1L)
-    spp <- LETTERS[seq_len(max(1L, S))]
-    crs_dom <- sf::st_crs(poly)
-
-    if (!is.finite(J) || J < 0L) J <- 0L
-    if (J == 0L) {
-      return(sf::st_sf(species = character(0), geometry = sf::st_sfc(crs = crs_dom)))
-    }
-
-    family <- tolower(as.character(P$MODEL_FAMILY %||% "manual"))
-    family <- gsub("-", "_", family)
-    hybrid_mode <- identical(family, "hybrid")
-    linear_st <- .linear_domain_state(poly, P)
-
-    m <- as.numeric(P$NEUTRAL_M %||% 0.1)
-    nu <- as.numeric(P$NEUTRAL_NU %||% 0.0)
-    m <- min(1, max(0, ifelse(is.finite(m), m, 0.1)))
-    nu <- min(1, max(0, ifelse(is.finite(nu), nu, 0.0)))
-
-    kernel <- tolower(as.character(P$DISPERSAL_KERNEL %||% "gaussian"))
-    kernel <- gsub("-", "_", kernel)
-    if (!kernel %in% c("gaussian", "exponential", "power_law")) kernel <- "gaussian"
-    scale <- as.numeric(P$DISPERSAL_SCALE %||% 0.5)
-    if (!is.finite(scale) || scale <= 0) scale <- 0.5
-    alpha <- as.numeric(P$DISPERSAL_ALPHA %||% 2)
-    if (!is.finite(alpha) || alpha <= 0) alpha <- 2
-    dir_bias <- as.numeric(P$DISPERSAL_DIRECTION_BIAS %||% 0)
-    if (!is.finite(dir_bias)) dir_bias <- 0
-    dir_bias <- max(-1, min(1, dir_bias))
-    lambda_env <- as.numeric(P$HYBRID_ENV_WEIGHT %||% 1)
-    if (!is.finite(lambda_env) || lambda_env < 0) lambda_env <- 1
-
-    meta_model <- as.character(P$NEUTRAL_META_MODEL %||% P$SAD_MODEL %||% "zsm")
-    meta_counts <- generate_sad(
-      n_species = length(spp),
-      n_individuals = max(J, length(spp)),
-      model = meta_model,
-      dominant_fraction = P$DOMINANT_FRACTION,
-      alpha = P$FISHER_ALPHA,
-      x = P$FISHER_X,
-      k = P$GEOMETRIC_K,
-      exponent = P$ZIPF_EXPONENT,
-      q = P$ZIPF_Q,
-      meanlog = P$LOGNORMAL_MEANLOG,
-      sdlog = P$LOGNORMAL_SDLOG,
-      shape = P$POIGAMMA_SHAPE,
-      rate = P$POIGAMMA_RATE,
-      theta = P$ZSM_THETA,
-      m = P$ZSM_M,
-      sad = P$SAD_VECTOR
-    )
-    meta_prob <- as.numeric(meta_counts)
-    if (!all(is.finite(meta_prob)) || sum(meta_prob) <= 0) {
-      meta_prob <- rep(1 / length(spp), length(spp))
-    } else {
-      meta_prob <- meta_prob / sum(meta_prob)
-    }
-
-    drv <- unique(c(as.character(P$ENV_DRIVERS %||% character(0)),
-                    as.character(P$GRADIENT$gradient %||% character(0))))
-    env_grid <- create_environmental_gradients(
-      poly,
-      P$SAMPLING_RESOLUTION,
-      P$ENVIRONMENTAL_NOISE,
-      covariates = P$ENV_COVARIATES %||% NULL,
-      drivers = drv
-    )
-    env_sf <- sf::st_as_sf(env_grid, coords = c("x", "y"), crs = crs_dom)
-    gx <- sort(unique(env_grid$x))
-    gy <- sort(unique(env_grid$y))
-    ix <- match(env_grid$x, gx)
-    iy <- match(env_grid$y, gy)
-    .to_grid_index <- function(v, grid_vals) {
-      if (length(grid_vals) <= 1L) return(1L)
-      mids <- (grid_vals[-1L] + grid_vals[-length(grid_vals)]) / 2
-      findInterval(v, mids) + 1L
-    }
-    .build_grid <- function(colname) {
-      mat <- matrix(NA_real_, nrow = length(gy), ncol = length(gx))
-      mat[cbind(iy, ix)] <- as.numeric(env_grid[[colname]])
-      mat
-    }
-    temp_mat <- .build_grid("temperature")
-    elev_mat <- .build_grid("elevation")
-    rain_mat <- .build_grid("rainfall")
-
-    grad_lookup <- list()
-    if (hybrid_mode && !is.null(P$GRADIENT) && NROW(P$GRADIENT) > 0) {
-      for (i in seq_len(NROW(P$GRADIENT))) {
-        row <- P$GRADIENT[i, , drop = FALSE]
-        grad_lookup[[as.character(row$species)]] <- list(
-          gradient = as.character(row$gradient),
-          optimum = as.numeric(row$optimum),
-          tol = as.numeric(row$tol)
-        )
-      }
-    }
-
-    .sample_immigrant_species <- function() {
-      sample(spp, size = 1L, prob = meta_prob)
-    }
-    .step_magnitude <- function() {
-      if (kernel == "gaussian") {
-        abs(stats::rnorm(1L, 0, scale))
-      } else if (kernel == "exponential") {
-        stats::rexp(1L, rate = 1 / scale)
-      } else {
-        u <- stats::runif(1L)
-        scale * ((1 - u)^(-1 / alpha) - 1)
-      }
-    }
-    .propose_displacement <- function(parent_xy) {
-      ang <- stats::runif(1L, 0, 2 * pi)
-      r <- .step_magnitude()
-      dx <- r * cos(ang)
-      dy <- r * sin(ang)
-      c(parent_xy[1] + dx, parent_xy[2] + dy)
-    }
-    .propose_linear_pos <- function(parent_pos) {
-      mag <- .step_magnitude()
-      axis_range <- if (identical(linear_st$axis, "x")) linear_st$xmax - linear_st$xmin else linear_st$ymax - linear_st$ymin
-      if (!is.finite(axis_range) || axis_range <= 0) axis_range <- 1
-      step <- mag / axis_range
-      p_plus <- (1 + dir_bias) / 2
-      sgn <- if (stats::runif(1) < p_plus) 1 else -1
-      out <- parent_pos + sgn * step
-      if (isTRUE(linear_st$wrap)) {
-        out %% 1
-      } else {
-        max(0, min(1, out))
-      }
-    }
-    .is_in_domain <- function(xy) {
-      .in_domain(matrix(as.numeric(xy), ncol = 2), poly)[1]
-    }
-    .env_accept_prob <- function(sp, xy) {
-      if (!hybrid_mode || lambda_env == 0 || is.null(grad_lookup[[sp]])) return(1)
-      g <- grad_lookup[[sp]]
-      env_col <- .resolve_env_col(g$gradient, names(env_grid))
-      if (is.na(env_col)) return(1)
-      ixx <- .to_grid_index(as.numeric(xy[1]), gx)
-      iyy <- .to_grid_index(as.numeric(xy[2]), gy)
-      val <- if (env_col == "temperature") {
-        temp_mat[iyy, ixx]
-      } else if (env_col == "elevation") {
-        elev_mat[iyy, ixx]
-      } else if (env_col == "rainfall") {
-        rain_mat[iyy, ixx]
-      } else {
-        pt <- sf::st_as_sf(
-          data.frame(x = as.numeric(xy[1]), y = as.numeric(xy[2])),
-          coords = c("x", "y"),
-          crs = crs_dom
-        )
-        j <- sf::st_nearest_feature(pt, env_sf)
-        as.numeric(env_sf[[env_col]][j])
-      }
-      if (!is.finite(val) || !is.finite(g$tol) || g$tol <= 0) return(1)
-      w <- exp(-((val - g$optimum)^2) / (2 * g$tol^2))
-      w <- max(0, min(1, w^lambda_env))
-      w
-    }
-
-    xy <- matrix(NA_real_, nrow = J, ncol = 2)
-    linear_pos <- rep(NA_real_, J)
-    spp_out <- character(J)
-
-    for (i in seq_len(J)) {
-      is_immigrant <- (i == 1L) || (stats::runif(1L) < m)
-      parent_idx <- NA_integer_
-      sp_i <- NA_character_
-      if (is_immigrant) {
-        sp_i <- .sample_immigrant_species()
-      } else {
-        parent_idx <- sample.int(i - 1L, 1L)
-        sp_i <- spp_out[parent_idx]
-        if (stats::runif(1L) < nu) {
-          sp_i <- .sample_immigrant_species()
-        }
-      }
-
-      accepted <- FALSE
-      for (att in seq_len(40L)) {
-        cand_xy <- if (is_immigrant || !is.finite(parent_idx)) {
-          if (isTRUE(linear_st$enabled)) {
-            p_i <- stats::runif(1)
-            linear_pos[i] <- p_i
-            .linear_pos_to_xy(p_i, linear_st, poly)
-          } else {
-            .sample_uniform_in_domain(1L, poly)
-          }
-        } else {
-          if (isTRUE(linear_st$enabled)) {
-            p_i <- .propose_linear_pos(linear_pos[parent_idx])
-            linear_pos[i] <- p_i
-            .linear_pos_to_xy(p_i, linear_st, poly)
-          } else {
-            cxy <- .propose_displacement(xy[parent_idx, ])
-            if (.is_in_domain(cxy)) matrix(cxy, ncol = 2) else matrix(numeric(0), ncol = 2)
-          }
-        }
-        if (NROW(cand_xy) == 0L) next
-        p_acc <- .env_accept_prob(sp_i, cand_xy[1, ])
-        if (stats::runif(1L) <= p_acc) {
-          xy[i, ] <- cand_xy[1, ]
-          spp_out[i] <- sp_i
-          accepted <- TRUE
-          break
-        }
-      }
-
-      if (!accepted) {
-        fallback <- if (isTRUE(linear_st$enabled)) {
-          p_i <- stats::runif(1)
-          linear_pos[i] <- p_i
-          .linear_pos_to_xy(p_i, linear_st, poly)
-        } else {
-          .sample_uniform_in_domain(1L, poly)
-        }
-        xy[i, ] <- fallback[1, ]
-        spp_out[i] <- sp_i
-      }
-    }
-
-    out <- sf::st_sf(
-      species = as.character(spp_out),
-      geometry = .as_sfc_points(xy, crs_dom)
-    )
-    if (isTRUE(linear_st$enabled)) {
-      out$linear_pos <- linear_pos
-    }
-    sf::st_join(out, env_sf, join = sf::st_nearest_feature)
-  }
-
   family <- tolower(as.character(P$MODEL_FAMILY %||% "manual"))
   family <- gsub("-", "_", family)
   if (family %in% c("neutral_hubbell_like", "hybrid")) {
-    return(.simulate_neutral_recruitment(domain, P))
+    return(spesim_simulate_neutral_recruitment(domain, P))
   }
 
   # --- 1) Target abundances --------------------------------------------
@@ -770,19 +319,14 @@ generate_heterogeneous_distribution <- function(domain, P) {
 
   # Dominant A
   proc_A <- tolower(P$SPATIAL_PROCESS_A %||% "poisson")
-  xy_A <- switch(
-    proc_A,
-    "poisson" = .sample_uniform_in_domain(n_A, domain),
-    "thomas" = .simulate_thomas_points(
-      n_A,
-      domain,
-      mu = as.numeric(P$A_MEAN_OFFSPRING %||% 10),
-      sigma = as.numeric(P$A_CLUSTER_SCALE %||% 1),
-      kappa = as.numeric(P$A_PARENT_INTENSITY %||% NA_real_)
-    ),
-    # fallback
-    .sample_uniform_in_domain(n_A, domain)
+  args_A <- list(
+    A_PARENT_INTENSITY = P$A_PARENT_INTENSITY,
+    A_MEAN_OFFSPRING = P$A_MEAN_OFFSPRING,
+    A_CLUSTER_SCALE = P$A_CLUSTER_SCALE
   )
+
+  # Base points for species A
+  pts_A_sf <- simulate_points_dispatch(proc_A, domain, n_A, args = args_A)
 
   # Optional environmental filtering for A: resample A locations from an
   # oversampled candidate set with weights proportional to Gaussian suitability.
@@ -796,63 +340,44 @@ generate_heterogeneous_distribution <- function(domain, P) {
 
     if (!is.na(env_col)) {
       n_cand <- as.integer(max(n_A, n_A * os))
-      xy_cand <- switch(proc_A,
-        "poisson" = .sample_uniform_in_domain(n_cand, domain),
-        "thomas" = .simulate_thomas_points(n_cand, domain,
-          mu    = as.numeric(P$A_MEAN_OFFSPRING %||% 10),
-          sigma = as.numeric(P$A_CLUSTER_SCALE %||% 1),
-          kappa = as.numeric(P$A_PARENT_INTENSITY %||% NA_real_)
-        ),
-        .sample_uniform_in_domain(n_cand, domain)
-      )
-      if (NROW(xy_cand) < n_cand) {
-        xy_cand <- rbind(xy_cand, .sample_uniform_in_domain(n_cand - NROW(xy_cand), domain))
+
+      # Generate a larger pool of points to sample from
+      cand_sf <- simulate_points_dispatch(proc_A, domain, n_cand, args = args_A)
+
+      if (nrow(cand_sf) < n_cand) {
+        # top up if dispatcher returned fewer than requested
+        cand_sf <- rbind(cand_sf, sf::st_sample(domain, size = n_cand - nrow(cand_sf), type = "random"))
       }
 
-      cand_sf <- sf::st_sf(species = "A", geometry = .as_sfc_points(xy_cand, crs_dom))
       cand_sf <- sf::st_join(cand_sf, env_sf, join = sf::st_nearest_feature)
       vals <- cand_sf[[env_col]]
 
       w <- exp(-((vals - rowA$optimum)^2) / (2 * rowA$tol^2))
       if (!all(is.finite(w)) || all(w <= 0)) w <- rep(1, length(w))
 
-      sel <- sample.int(length(w), size = n_A, replace = FALSE, prob = w)
-      xy_A <- sf::st_coordinates(cand_sf)[sel, , drop = FALSE]
+      sel <- sample.int(nrow(cand_sf), size = n_A, replace = FALSE, prob = w)
+
+      # Overwrite pts_A_sf with the filtered sample
+      pts_A_sf <- cand_sf[sel, ]
     }
   }
 
   # Others as one pool of points; species assigned later by counts
   n_all_others <- length(other_species)
   proc_O <- tolower(P$SPATIAL_PROCESS_OTHERS %||% "poisson")
-  xy_O <- switch(
-    proc_O,
-    "poisson" = .sample_uniform_in_domain(n_all_others, domain),
-    "thomas" = .simulate_thomas_points(
-      n_all_others,
-      domain,
-      mu = as.numeric(P$OTHERS_MU %||% 10),
-      sigma = as.numeric(P$OTHERS_SIGMA %||% 1),
-      kappa = as.numeric(P$OTHERS_BETA %||% NA_real_)
-    ), # treat as kappa if given
-    "strauss" = .simulate_strauss_points(
-      n_all_others,
-      domain,
-      r = as.numeric(P$OTHERS_R %||% 1),
-      s = as.numeric(P$OTHERS_S %||% 0.7)
-    ),
-    "geyer" = .simulate_geyer_points(
-      n_all_others,
-      domain,
-      r = as.numeric(P$OTHERS_R %||% 1),
-      gamma = as.numeric(P$OTHERS_GAMMA %||% 1.5),
-      s = as.numeric(P$OTHERS_S %||% 2)
-    ),
-    .sample_uniform_in_domain(n_all_others, domain)
+  args_O <- list(
+      OTHERS_MU = P$OTHERS_MU,
+      OTHERS_SIGMA = P$OTHERS_SIGMA,
+      OTHERS_BETA = P$OTHERS_BETA,
+      OTHERS_R = P$OTHERS_R,
+      OTHERS_S = P$OTHERS_S,
+      OTHERS_GAMMA = P$OTHERS_GAMMA
   )
+  pts_O_sf <- simulate_points_dispatch(proc_O, domain, n_all_others, args = args_O)
 
-  # --- 4) Build sf with consistent schema ------------------------------
-  sfc_A <- .as_sfc_points(xy_A, crs_dom)
-  sfc_O <- .as_sfc_points(xy_O, crs_dom)
+  # Extract sfc for the next step, which expects it.
+  sfc_A <- sf::st_geometry(pts_A_sf)
+  sfc_O <- sf::st_geometry(pts_O_sf)
 
   pts_A <- if (length(sfc_A) > 0) {
     sf::st_sf(species = rep("A", length(sfc_A)), geometry = sfc_A)

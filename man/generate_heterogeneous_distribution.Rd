@@ -92,15 +92,13 @@ models generate a full \code{A..} vector directly.
 \strong{Baseline locations (point processes).} Locations are simulated using
 the process names in \code{P}. Supported values (case-insensitive):
 \describe{
-\item{\code{"poisson"}}{Homogeneous Poisson inside \code{domain}.}
-\item{\code{"thomas"}}{Thomas (Neyman-Scott) cluster process; uses parent intensity
-(derived if missing), mean offspring, and Gaussian cluster scale. Implemented internally.}
-\item{\code{"strauss"}}{Inhibition via a sequential-inhibition surrogate using
-interaction radius \code{OTHERS_R} and inhibition strength \code{OTHERS_S} in \eqn{(0,1]}.
-Lower \code{OTHERS_S} increases inhibition (a larger effective hard-core distance).}
-\item{\code{"geyer"}}{Geyer saturation surrogate: acceptance probability proportional to
-\eqn{\gamma^{\min(m, s)}} where \eqn{m} neighbours fall within \code{OTHERS_R} and
-saturation count \code{OTHERS_S}. Implemented internally.}
+\item{\code{"poisson"}}{Homogeneous Poisson process (Complete Spatial Randomness).}
+\item{\code{"thomas"}}{Thomas (Neyman-Scott) cluster process. A fast C++ implementation
+is used if available.}
+\item{\code{"strauss"}}{Strauss process for inhibition. A fast C++ MCMC implementation
+is used if available.}
+\item{\code{"geyer"}}{Geyer saturation process. A fast C++ MCMC implementation
+is used if available.}
 }
 
 \strong{Environmental filtering.} For species listed in \code{P$GRADIENT},

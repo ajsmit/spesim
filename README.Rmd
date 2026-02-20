@@ -20,9 +20,9 @@ vignette: >
 **spesim** is an R package for simulating, sampling, and analysing *spatially heterogeneous ecological communities* in irregular landscapes.  
 It’s built for teaching, methods testing, and exploratory research in **biogeography** and **community ecology**.
 
-- Generate individuals for multiple species under realistic **species–abundance distributions** (e.g., Fisher’s log-series with a dominant species).
+- Generate individuals for multiple species under realistic **species–abundance distributions** (e.g., Fisher’s log-series, neutral ZSM).
 - Impose **environmental filtering** (per‑species optima/tolerances on named gradients).
-- Add **spatial structure** (dominant clustering + optional interspecific neighbourhood effects).
+- Add **spatial structure** using canonical point processes (Poisson, Thomas, and fast MCMC-based Strauss/Geyer models) or an optional neutral simulation engine with dispersal limitation.
 - Sample with flexible **quadrat schemes** (random, systematic, tiled, transect, Voronoi).
 - Produce **site × species** matrices, per‑site **environment summaries**, and **diversity partitions** (α, β, γ).
 - Save publication‑quality **maps** and an optional **advanced analysis panel** (rank–abundance, occupancy–abundance, species–area, distance–decay, rarefaction).

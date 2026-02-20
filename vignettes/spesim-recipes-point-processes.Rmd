@@ -42,12 +42,12 @@ library(ggplot2)
 P0 <- load_config(system.file("examples/spesim_init_complete.txt", package = "spesim"))
 
 # Keep the vignette fast but still visually clear.
-P0$N_SPECIES <- 22
-P0$N_INDIVIDUALS <- 2400
+P0$N_SPECIES <- 12
+P0$N_INDIVIDUALS <- 500
 
 # Make distance–decay curves more interpretable by using a regular quadrat layout.
 P0$SAMPLING_SCHEME <- "tiled"
-P0$N_QUADRATS <- 36
+P0$N_QUADRATS <- 16
 P0$QUADRAT_SIZE_OPTION <- "medium"
 
 # Turn off environmental filtering to keep this vignette focused on
@@ -199,7 +199,7 @@ P_neutral_struct$A_CLUSTER_SCALE <- 0.45
 
 P_neutral_struct$SPATIAL_PROCESS_OTHERS <- "strauss"
 P_neutral_struct$OTHERS_R <- 1.2
-P_neutral_struct$OTHERS_S <- 0.15
+P_neutral_struct$OTHERS_STRAUSS_GAMMA <- 0.15
 
 case_neutral_pois   <- run_case(P_neutral_pois,   "ZSM (theta=10) + Poisson (CSR)")
 case_neutral_struct <- run_case(P_neutral_struct, "ZSM (theta=10) + Thomas (A) + Strauss (others)")
@@ -241,7 +241,7 @@ Here we switch from point-process assembly to the high-level family layer.
 
 ```{r}
 P_family <- P0
-P_family$N_INDIVIDUALS <- 1800
+P_family$N_INDIVIDUALS <- 400
 P_family$SAD_MODEL <- "zsm"
 P_family$ZSM_THETA <- 12
 

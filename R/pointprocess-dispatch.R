@@ -314,13 +314,13 @@ simulate_points_dispatch <- function(kind, domain, n_target, args = list()) {
         simulate_points_strauss_fast(
           domain, n_target,
           r = .nz(args$OTHERS_R, .nz(args$r, 1)),
-          gamma = .nz(args$OTHERS_GAMMA, .nz(args$OTHERS_S, .nz(args$gamma, 0.2)))
+          gamma = .nz(args$OTHERS_STRAUSS_GAMMA, .nz(args$gamma, 0.2))
         )
       } else {
         simulate_points_strauss( # your existing slow fallback (spatstat or R)
           domain, n_target,
           beta = .nz(args$OTHERS_BETA, args$beta),
-          gamma = .nz(args$OTHERS_GAMMA, .nz(args$OTHERS_S, .nz(args$gamma, 0.2))),
+          gamma = .nz(args$OTHERS_STRAUSS_GAMMA, .nz(args$gamma, 0.2)),
           r = .nz(args$OTHERS_R, .nz(args$r, 1))
         )
       }
