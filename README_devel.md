@@ -4,14 +4,40 @@ This file is a lightweight developer-facing log of what has been done **since Cl
 
 ---
 
-## Current status (as of 2026-02-09)
+## Current status (as of 2026-02-21)
 
-- Package loads and compiles successfully on macOS Tahoe 26.2 (arm64).
+- Package version: **0.5.2**
+- All CRAN checks pass: `0 errors | 0 warnings | 0 notes` (R 4.5.2, macOS Tahoe 26.3, arm64).
+- Full vignette rebuild succeeds under `R CMD check`.
 - `devtools::document()` runs successfully.
-- `R CMD build` works (vignettes rebuild).
-- `_R_CHECK_FORCE_SUGGESTS_=false R CMD check spesim_0.2.0.tar.gz --no-manual` returns **Status: OK**.
-- pkgdown site builds to `docs/` and renders locally.
 - Changes committed and pushed to GitHub (`main`).
+
+## Profiling history (benchmark: N=1,500, S=15, hybrid model, `profvis` 10 ms interval)
+
+| Version | Change | Wall time | Speedup vs v0.5.1 |
+|---------|--------|-----------|-------------------|
+| v0.5.1 | C++ PIP engine + vectorised domain checks | 17,690 ms | 1× (baseline) |
+| v0.5.2 r1 | Vectorised env-acceptance step | 6,010 ms | 2.9× |
+| v0.5.2 r2 | Vectorised candidate displacement sampling | **2,600 ms** | **6.8×** |
+
+## Current profile (v0.5.2, self time)
+
+| Rank | Self | % | Function | Notes |
+|------|------|---|----------|-------|
+| 1 | 480 ms | 18.5% | `pip_cpp` | C++ PIP engine — already optimal |
+| 2 | 310 ms | 11.9% | `spesim_simulate_neutral_recruitment` | R interpreter overhead of the loop body |
+| 3 | 170 ms | 6.5% | `.env_accept_prob_vec` | Residual: `findInterval` + matrix lookup |
+| 4 | 150 ms | 5.8% | `<GC>` | Heap pressure from small per-step allocations |
+| 5 | 120 ms | 4.6% | `cbind` | Candidate matrix construction |
+
+## Next frontier
+
+The hot path is now dominated by `pip_cpp` (the C++ PIP engine, already compiled) and
+the R interpreter overhead of the simulation loop itself. Meaningful further gains would
+require porting the inner loop to Rcpp/C++, or reducing `batch_size` adaptively when the
+inside-domain acceptance rate is high. The `cbind()` call inside `.propose_displacement_batch()`
+is a minor candidate (pre-allocating a matrix and filling it would avoid the copy), but
+the gain would be small relative to the remaining R-loop overhead.
 
 ---
 

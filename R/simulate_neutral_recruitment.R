@@ -111,11 +111,9 @@ spesim_simulate_neutral_recruitment <- function(poly, P) {
   gy <- sort(unique(env_grid$y))
   ix <- match(env_grid$x, gx)
   iy <- match(env_grid$y, gy)
-  .to_grid_index <- function(v, grid_vals) {
-    if (length(grid_vals) <= 1L) return(1L)
-    mids <- (grid_vals[-1L] + grid_vals[-length(grid_vals)]) / 2
-    findInterval(v, mids) + 1L
-  }
+  # Precompute midpoints once; reused by the vectorised env-acceptance step.
+  mids_gx <- if (length(gx) <= 1L) numeric(0L) else (gx[-1L] + gx[-length(gx)]) / 2
+  mids_gy <- if (length(gy) <= 1L) numeric(0L) else (gy[-1L] + gy[-length(gy)]) / 2
   .build_grid <- function(colname) {
     mat <- matrix(NA_real_, nrow = length(gy), ncol = length(gx))
     if(colname %in% names(env_grid)) {
@@ -131,63 +129,73 @@ spesim_simulate_neutral_recruitment <- function(poly, P) {
   if (hybrid_mode && !is.null(P$GRADIENT) && NROW(P$GRADIENT) > 0) {
     for (i in seq_len(NROW(P$GRADIENT))) {
       row <- P$GRADIENT[i, , drop = FALSE]
+      g_name <- as.character(row$gradient)
       grad_lookup[[as.character(row$species)]] <- list(
-        gradient = as.character(row$gradient),
-        optimum = as.numeric(row$optimum),
-        tol = as.numeric(row$tol)
+        gradient = g_name,
+        env_col  = .resolve_env_col(g_name, names(env_grid)),
+        optimum  = as.numeric(row$optimum),
+        tol      = as.numeric(row$tol)
       )
     }
   }
 
   # --- Dispersal & Environment helpers ---
   .sample_immigrant_species <- function() sample(spp, size = 1L, prob = meta_prob)
-  .step_magnitude <- function() {
+  # Vectorised step magnitudes: one RNG call for n candidates instead of n×1.
+  .step_magnitude_batch <- function(n) {
     if (kernel == "gaussian") {
-      abs(stats::rnorm(1L, 0, scale))
+      abs(stats::rnorm(n, 0, scale))
     } else if (kernel == "exponential") {
-      stats::rexp(1L, rate = 1 / scale)
+      stats::rexp(n, rate = 1 / scale)
     } else { # power_law
-      u <- stats::runif(1L)
+      u <- stats::runif(n)
       scale * ((1 - u)^(-1 / alpha) - 1)
     }
   }
-  .propose_displacement <- function(parent_xy) {
-    ang <- stats::runif(1L, 0, 2 * pi)
-    r <- .step_magnitude()
-    dx <- r * cos(ang); dy <- r * sin(ang)
-    c(parent_xy[1] + dx, parent_xy[2] + dy)
+  # Returns an n×2 matrix of proposed (x, y) positions from a single parent.
+  .propose_displacement_batch <- function(parent_xy, n) {
+    angs <- stats::runif(n, 0, 2 * pi)
+    r    <- .step_magnitude_batch(n)
+    cbind(parent_xy[1] + r * cos(angs),
+          parent_xy[2] + r * sin(angs))
   }
-  .propose_linear_pos <- function(parent_pos) {
-    mag <- .step_magnitude()
+  # Returns a length-n vector of proposed linear positions from a single parent.
+  .propose_linear_pos_batch <- function(parent_pos, n) {
+    mag        <- .step_magnitude_batch(n)
     axis_range <- if (identical(linear_st$axis, "x")) linear_st$xmax - linear_st$xmin else linear_st$ymax - linear_st$ymin
     if (!is.finite(axis_range) || axis_range <= 0) axis_range <- 1
-    step <- mag / axis_range
+    step  <- mag / axis_range
     p_plus <- (1 + dir_bias) / 2
-    sgn <- if (stats::runif(1) < p_plus) 1 else -1
-    out <- parent_pos + sgn * step
-    if (isTRUE(linear_st$wrap)) out %% 1 else max(0, min(1, out))
+    sgn   <- ifelse(stats::runif(n) < p_plus, 1, -1)
+    out   <- parent_pos + sgn * step
+    if (isTRUE(linear_st$wrap)) out %% 1 else pmax(0, pmin(1, out))
   }
-  .env_accept_prob <- function(sp, xy) {
-    if (!hybrid_mode || lambda_env == 0 || is.null(grad_lookup[[sp]])) return(1)
+  # Vectorised over all candidate points at once: avoids per-point closure
+  # overhead, repeated .resolve_env_col calls, and repeated mids recomputation.
+  .env_accept_prob_vec <- function(sp, xy_mat) {
+    n <- nrow(xy_mat)
+    if (!hybrid_mode || lambda_env == 0 || is.null(grad_lookup[[sp]])) return(rep(1, n))
     g <- grad_lookup[[sp]]
-    env_col <- .resolve_env_col(g$gradient, names(env_grid))
-    if (is.na(env_col)) return(1)
-    ixx <- .to_grid_index(as.numeric(xy[1]), gx)
-    iyy <- .to_grid_index(as.numeric(xy[2]), gy)
+    env_col <- g$env_col   # resolved once at setup, not per-call
+    if (is.na(env_col)) return(rep(1, n))
+    ixx <- if (length(mids_gx) == 0L) rep(1L, n) else findInterval(xy_mat[, 1], mids_gx) + 1L
+    iyy <- if (length(mids_gy) == 0L) rep(1L, n) else findInterval(xy_mat[, 2], mids_gy) + 1L
     val <- if (env_col == "temperature") {
-      temp_mat[iyy, ixx]
+      temp_mat[cbind(iyy, ixx)]
     } else if (env_col == "elevation") {
-      elev_mat[iyy, ixx]
+      elev_mat[cbind(iyy, ixx)]
     } else if (env_col == "rainfall") {
-      rain_mat[iyy, ixx]
+      rain_mat[cbind(iyy, ixx)]
     } else {
-      pt <- sf::st_as_sf(data.frame(x=xy[1], y=xy[2]), coords=c("x","y"), crs=crs_dom)
-      j <- sf::st_nearest_feature(pt, env_sf)
+      pts <- sf::st_as_sf(data.frame(x = xy_mat[, 1], y = xy_mat[, 2]),
+                          coords = c("x", "y"), crs = crs_dom)
+      j <- sf::st_nearest_feature(pts, env_sf)
       as.numeric(env_sf[[env_col]][j])
     }
-    if (!is.finite(val) || !is.finite(g$tol) || g$tol <= 0) return(1)
-    w <- exp(-((val - g$optimum)^2) / (2 * g$tol^2))
-    max(0, min(1, w^lambda_env))
+    w <- rep(1, n)
+    fin <- is.finite(val) & is.finite(g$tol) & g$tol > 0
+    if (any(fin)) w[fin] <- exp(-((val[fin] - g$optimum)^2) / (2 * g$tol^2))
+    pmax(0, pmin(1, w^lambda_env))
   }
 
   # Pre-build PIP tester once from the fixed polygon; shared by all domain
@@ -236,10 +244,10 @@ spesim_simulate_neutral_recruitment <- function(poly, P) {
       cand_xy <- if(isTRUE(linear_st$enabled)) .linear_pos_to_xy(stats::runif(batch_size), linear_st, poly, pip_fn = pip_fn) else .sample_uniform_in_domain(batch_size, poly, pip_fn = pip_fn)
     } else {
       if(isTRUE(linear_st$enabled)) {
-        cand_pos <- vapply(rep(linear_pos[parent_idx], batch_size), .propose_linear_pos, numeric(1))
+        cand_pos <- .propose_linear_pos_batch(linear_pos[parent_idx], batch_size)
         cand_xy <- .linear_pos_to_xy(cand_pos, linear_st, poly, pip_fn = pip_fn)
       } else {
-        cand_xy <- t(vapply(rep(list(xy[parent_idx,]), batch_size), .propose_displacement, numeric(2)))
+        cand_xy <- .propose_displacement_batch(xy[parent_idx,], batch_size)
       }
     }
 
@@ -250,7 +258,7 @@ spesim_simulate_neutral_recruitment <- function(poly, P) {
 
       if (NROW(cand_xy) > 0) {
         # Check environmental acceptance for valid candidates
-        p_acc_vec <- vapply(seq_len(nrow(cand_xy)), function(i) .env_accept_prob(birth_sp, cand_xy[i,]), numeric(1))
+        p_acc_vec <- .env_accept_prob_vec(birth_sp, cand_xy)
         
         successful_idx <- which(stats::runif(nrow(cand_xy)) <= p_acc_vec)
         

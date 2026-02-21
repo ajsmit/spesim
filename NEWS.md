@@ -1,3 +1,50 @@
+# spesim 0.5.2
+
+## Performance
+
+- **Vectorised environment-acceptance step.**
+  `spesim_simulate_neutral_recruitment()` previously called `.env_accept_prob()`
+  once per candidate point via `vapply` (40 calls per simulation step), with two
+  redundant costs inside every call:
+  - `.to_grid_index()` recomputed the grid midpoints vector
+    (`(grid_vals[-1] + grid_vals[-length(grid_vals)]) / 2`) on every invocation.
+  - `.resolve_env_col()` re-ran its column-name matching on every invocation.
+
+  Both costs are now eliminated. Grid midpoints (`mids_gx` / `mids_gy`) are
+  precomputed once at setup; the resolved column name (`env_col`) is stored
+  directly in `grad_lookup` at setup time. The scalar helper is replaced by a
+  single vectorised function, `.env_accept_prob_vec()`, that accepts the whole
+  candidate matrix and returns a probability vector via one `findInterval` call
+  and one `cbind`-indexed matrix lookup over all candidates at once. Self-time
+  of the acceptance step at the benchmark configuration (N = 1,500, S = 15,
+  hybrid model, `profvis` at 10 ms interval) dropped from ≈ 2,740 ms to ≈ 100
+  ms — a **27× reduction**.
+
+- **Vectorised candidate displacement sampling.**
+  The candidate-position proposal loop — `vapply` over 40 displacements per
+  step, each calling `.propose_displacement()` → `.step_magnitude()` → a scalar
+  `rnorm`/`rexp`/`runif` — is replaced by two batch functions:
+  `.propose_displacement_batch()` and `.propose_linear_pos_batch()`. Each
+  samples all `batch_size` step magnitudes and angles in a single RNG call
+  (e.g. `stats::rnorm(40)` instead of 40 × `stats::rnorm(1)`), then computes
+  candidate positions with vectorised arithmetic. The `vapply` closure overhead
+  and 40 individual R-level dispatches to `.step_magnitude()` disappear
+  entirely. Combined with the acceptance-step improvement above, total
+  profiled wall time for the benchmark configuration fell from 17,690 ms
+  (v0.5.1) to 2,600 ms — a **6.8× overall speedup**.
+
+## Bug fixes
+
+- **`calculate_quadrat_environment()` now always returns a character `site`
+  column.** When `quadrats$quadrat_id` was integer the resulting `site` column
+  inherited that type, causing `dplyr::left_join()` to error with
+  *"Can't join `x$site` <integer> with `y$site` <character>"* when joined
+  against the always-character `site` produced by `create_abundance_matrix()`.
+  The merge argument is now `as.character(quadrats$quadrat_id)`, making the two
+  functions type-consistent in all cases. This silently prevented the
+  `spesim-method-testing` and `spesim-ordination-dbrda` vignettes from
+  rebuilding under `R CMD check`.
+
 # spesim 0.5.1
 
 ## Performance

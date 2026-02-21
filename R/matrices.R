@@ -234,8 +234,9 @@ calculate_quadrat_environment <- function(env_grid, quadrats, domain_crs) {
   site_env_df <- as.data.frame(site_env_matrix)
   site_env_df$site <- rownames(site_env_df)
 
-  # Ensure all sites from quadrats are present, even if they had no points
-  res <- merge(data.frame(site = quadrats$quadrat_id), site_env_df, by = "site", all.x = TRUE)
+  # Ensure all sites from quadrats are present, even if they had no points.
+  # quadrat_id may be integer; coerce to character to match create_abundance_matrix.
+  res <- merge(data.frame(site = as.character(quadrats$quadrat_id)), site_env_df, by = "site", all.x = TRUE)
   
   # Reorder to match original output if necessary
   res <- res[, c("site", num_cols)]
