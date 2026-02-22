@@ -40,7 +40,7 @@ loader resolves them automatically as documented below.
 
 ---
 
-# General settings
+# General Settings & Workflow
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
@@ -48,253 +48,346 @@ loader resolves them automatically as documented below.
 | `OUTPUT_PREFIX` | character | `"output"` | Base path/prefix for outputs (timestamp appended). |
 | `N_INDIVIDUALS` | integer | `2000` | Total number of individuals in the simulated community. |
 | `N_SPECIES` | integer | `10` | Number of species (labels `A..`). |
-| `MODEL_FAMILY` | character | `"manual"` | High-level preset: `manual`, `niche_filtering`, `neutral_csr`, `neutral_hubbell_like`, `hybrid`. |
+
+---
+
+# Model Families & Spatial Configuration
+
+`spesim` supports high-level presets that configure multiple underlying parameters
+for common ecological scenarios. Using a `MODEL_FAMILY` is a great way to get started, as it ensures that the core parameters for SAD generation, spatial patterns, and community assembly are consistent with a particular ecological theory.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `MODEL_FAMILY` | character | `"manual"` | High-level preset: `manual`, `niche_filtering`, `neutral_csr`, `neutral_hubbell_like`, `hybrid`. Setting a family will configure `SAD_MODEL`, `SPATIAL_PROCESS_*`, and `NEUTRAL_*` parameters, but any explicitly set parameter in the init file will take precedence. |
+
+### Model Family Descriptions
+
+*   **`manual`**: This is the default, "do-it-yourself" mode. No parameters are set automatically. You must specify all core simulation settings, such as the `SAD_MODEL` and spatial processes. This provides maximum flexibility but requires a deeper understanding of the init parameters.
+
+*   **`niche_filtering`**: This preset simulates a community where species' distributions are primarily determined by their environmental tolerances (their niche).
+    *   **SAD Model**: `zsm` (a neutral model) to generate initial abundances.
+    *   **Spatial Pattern**: `poisson` (Complete Spatial Randomness). Individuals are placed randomly, and then the environment "filters" them out based on their niche suitability.
+    *   **Use Case**: Ideal for exploring questions related to niche theory, species-environment relationships, and how environmental gradients shape community structure.
+
+*   **`neutral_csr`**: This preset simulates a simple neutral community where all individuals of all species are ecologically equivalent.
+    *   **SAD Model**: `zsm` (Zero-Sum Multinomial, from neutral theory).
+    *   **Spatial Pattern**: `poisson` (Complete Spatial Randomness).
+    *   **Use Case**: A baseline or null model for community structure. It helps you test whether observed patterns can be explained by random demographic processes alone, without invoking niche differences.
+
+*   **`neutral_hubbell_like`**: This preset simulates a more complex neutral community based on Hubbell's Unified Neutral Theory of Biodiversity and Biogeography. It incorporates dispersal limitation, which creates spatial clustering.
+    *   **Community Assembly**: Uses the `neutral` recruitment engine, where new individuals are recruited based on the local abundance of species, subject to dispersal from a parent.
+    *   **SAD Model**: `zsm` for the metacommunity.
+    *   **Dispersal**: The `DISPERSAL_KERNEL` is used to simulate how far offspring can travel from a parent.
+    *   **Use Case**: Simulating communities where both stochasticity and dispersal limitation are believed to be major structuring forces. It often produces more realistic, spatially clustered patterns than a simple CSR model.
+
+*   **`hybrid`**: This preset combines elements of both niche filtering and neutral, dispersal-limited processes. It uses the same recruitment engine as `neutral_hubbell_like`, but the probability of a recruit surviving at a location is weighted by its environmental suitability.
+    *   **Community Assembly**: Uses the `hybrid` recruitment engine.
+    *   **Key Parameter**: `HYBRID_ENV_WEIGHT` controls the relative importance of environmental filtering versus neutral processes. A weight of `0` makes it a purely neutral model, while a high weight means the environment is the dominant factor.
+    *   **Use Case**: Represents a more synthetic view of community assembly, where both niche-based (deterministic) and neutral (stochastic) processes interact to shape the community. This is often considered a more realistic representation of real-world ecosystems.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
 | `DOMAIN_TYPE` | character | `"polygon"` | Spatial support: `polygon`, `network`, or `coastline` (linearized landscape modes). |
 | `LINEAR_AXIS` | character | `"x"` | Axis used for linearized domains when no explicit network polyline is supplied. |
 | `LINEAR_WRAP` | logical | `FALSE` | Use wrapped/circular distances for coastline-like domains. |
 | `LINEAR_JITTER_SD` | numeric | `0.0` | Perpendicular jitter around the linear axis (map units). |
-| `DISTANCE_METRIC` | character | `"auto"` | Distance-decay metric: `auto`, `euclidean`, `along_path`. |
-| `ENV_COVARIATES_FILE` | character | `NULL` | Optional CSV with `x,y` and environmental columns to replace synthetic rasters. |
-| `ENV_DRIVERS` | character vector | `c("temperature","elevation","rainfall")` | Environmental driver names to generate/use; supports any number of drivers. |
-| `DOMINANT_FRACTION` | numeric | `0.30` | Fraction of all individuals assigned to the dominant species `A`. |
+| `DISTANCE_METRIC` | character | `"auto"` | Distance-decay metric: `auto`, `euclidean`, `along_path`. `along_path` is for linear domains. |
 
-## Species abundance distribution (SAD)
+---
+
+# Species Abundance Distribution (SAD)
+
+This section controls one of the most fundamental patterns in community ecology: the relative abundances of species. The Species Abundance Distribution (SAD) determines how the `N_INDIVIDUALS` are partitioned among the `N_SPECIES`. `spesim` provides a wide range of classic and modern SAD models to choose from.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `SAD_MODEL` | character | `"fisher"` | SAD generator: `fisher`, `geometric`, `brokenstick`, `zipf`, `zipf-mandelbrot`, `lognormal`, `poisson-lognormal`, `poisson-gamma`, `zsm`, `custom`. |
-| `SAD_VECTOR` | numeric vector / NULL | `NULL` | Only for `SAD_MODEL="custom"`: vector of probabilities or counts (will be adjusted to sum to `N_INDIVIDUALS`). |
-| `ZSM_THETA` | numeric | `10.0` | For `SAD_MODEL="zsm"`: biodiversity parameter controlling the rank–abundance curve (larger = more even / more species in the tail). |
-| `ZSM_M` | numeric / NA | `NA` | For `SAD_MODEL="zsm"`: immigration probability `m` in `(0,1]`. If supplied, spesim uses a Moran-style death–birth with immigration heuristic to make the SAD more uneven as `m` decreases. If `NA`, a theta-only Ewens (Chinese restaurant) sampler is used. |
+| `DOMINANT_FRACTION` | numeric | `0.30` | An optional parameter to ensure the first species (`A`) is dominant. This fraction of `N_INDIVIDUALS` is assigned to species `A`, and the remaining individuals are distributed among the other species according to the `SAD_MODEL`. This is useful for creating a clear community structure with a strong foundation species. |
+| `SAD_VECTOR` | numeric vector | `NULL` | Required for `SAD_MODEL="custom"`. This allows you to provide your own abundance vector, either as probabilities or raw counts. `spesim` will scale it to the correct total number of individuals. |
 
-## Fisher parameters (used when `SAD_MODEL = "fisher"`)
+### SAD Model Descriptions
 
+Different SAD models arise from different assumptions about how species share resources and how communities assemble.
+
+*   **Niche-based Models**: These models often assume that species partition resources in some way.
+    *   **`geometric`**: The geometric series, or "niche pre-emption" model, represents a scenario where the most dominant species takes a fraction `k` of the resources, the next species takes fraction `k` of the remainder, and so on. It produces a very steep SAD with high dominance.
+    *   **`brokenstick`**: In this model, a resource pool (the "stick") is randomly broken into `N_SPECIES` pieces. This implies that species have more equitable access to resources and results in a much more even SAD than other models. It is often used as a null model for resource division.
+
+*   **Statistical / Mechanistic Models**: These models are either purely statistical descriptions of observed patterns or are based on more abstract generative processes.
+    *   **`fisher`**: Fisher's log-series is one of the earliest and most famous SAD models. It arises from the assumption that species' abundances follow a gamma distribution and are sampled via a Poisson process. It often fits empirical data well, especially for large, diverse assemblages.
+    *   **`lognormal`**: This model assumes that abundances are log-normally distributed. Following the central limit theorem, this can be expected if many independent factors influence species' population sizes. It typically predicts a few abundant species, many species with intermediate abundance, and many rare species.
+    *   **`poisson-lognormal`** & **`poisson-gamma`**: These are sampling-based extensions of the lognormal and gamma distributions, providing more statistical rigour. They are useful for emulating sampling processes from a latent distribution of species abundances.
+    *   **`zipf`** & **`zipf-mandelbrot`**: These are power-law distributions related to rank-abundance plots. A `zipf` distribution assumes abundance is proportional to `1/rank^s`. They are very general and can arise from a variety of processes. The `zipf-mandelbrot` adds a parameter `q` that can make the distribution less steep for the most abundant species.
+
+*   **Neutral Models**: These models assume that species are ecologically equivalent and that abundance patterns are driven by stochastic birth, death, and migration processes.
+    *   **`zsm`**: The Zero-Sum Multinomial model is derived from Hubbell's neutral theory. It is governed by the fundamental biodiversity parameter `theta`. `spesim` can also use an immigration parameter `m` to simulate a community that is more or less connected to a metacommunity, which can make the SAD more uneven. This is the recommended SAD model when using the `neutral_hubbell_like` or `hybrid` model families.
+
+## SAD Model Parameters
+
+### Fisher (`SAD_MODEL = "fisher"`)
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `FISHER_ALPHA` | numeric | `3.0` | Fisher’s alpha for the non‑dominant tail. |
-| `FISHER_X` | numeric | `0.95` | Log‑series parameter (close to 1). |
+| `FISHER_ALPHA` | numeric | `3.0` | Fisher’s alpha diversity index. |
+| `FISHER_X` | numeric | `0.95` | Log-series parameter related to the number of individuals. Must be close to 1. |
 
-## Neutral / hybrid recruitment controls
-
+### Geometric Series (`SAD_MODEL = "geometric"`)
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `NEUTRAL_M` | numeric | `0.1` | Immigration probability per recruitment step in `neutral_hubbell_like`/`hybrid`. |
-| `NEUTRAL_NU` | numeric | `0.0` | Speciation probability during local recruitment (implemented as species reassignment from metacommunity weights). |
-| `NEUTRAL_META_MODEL` | character | `"zsm"` | SAD model used to define metacommunity species weights. |
-| `DISPERSAL_KERNEL` | character | `"gaussian"` | Recruitment displacement kernel: `gaussian`, `exponential`, `power_law`. |
-| `DISPERSAL_SCALE` | numeric | `0.5` | Scale parameter for dispersal displacement. |
-| `DISPERSAL_ALPHA` | numeric | `2.0` | Shape parameter for `power_law` kernel. |
-| `DISPERSAL_DIRECTION_BIAS` | numeric | `0.0` | Directional bias in linear domains (`-1` to `1`; positive means increasing coordinate). |
-| `HYBRID_ENV_WEIGHT` | numeric | `1.0` | Environmental sorting strength in `hybrid` (`0` = neutral-only). |
+| `GEOMETRIC_K` | numeric | `0.5` | The decay parameter `k` for the geometric series. |
+
+### Zipf Models (`SAD_MODEL = "zipf"` or `"zipf-mandelbrot"`)
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `ZIPF_EXPONENT`| numeric | `1.0` | The `s` exponent in the Zipf distribution. |
+| `ZIPF_Q` | numeric | `0.0` | The `q` parameter for the Zipf-Mandelbrot distribution. `q=0` gives the standard Zipf. |
+
+### Lognormal Models (`SAD_MODEL = "lognormal"` or `"poisson-lognormal"`)
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `LOGNORMAL_MEANLOG` | numeric | `0.0` | Mean of the distribution on the log scale. |
+| `LOGNORMAL_SDLOG` | numeric | `1.0` | Standard deviation of the distribution on the log scale. |
+
+### Poisson-Gamma (`SAD_MODEL = "poisson-gamma"`)
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `POIGAMMA_SHAPE` | numeric | `1.0` | Shape parameter of the Gamma distribution. |
+| `POIGAMMA_RATE` | numeric | `1.0` | Rate parameter of the Gamma distribution. |
+
+### Neutral Model (`SAD_MODEL = "zsm"`)
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `ZSM_THETA` | numeric | `10.0` | The fundamental biodiversity parameter `theta`. |
+| `ZSM_M` | numeric | `NA` | Immigration probability `m`. If `NA`, a standard Ewens sampler is used. If a value is provided, a Moran-style process is used which can create more uneven distributions. |
 
 ---
 
-# Environmental filtering (gradients)
+# Spatial Pattern Generation
 
-Gradients are on a normalized 0–1 scale internally. Legacy built-ins
-(`temperature`, `elevation`, `rainfall`) are additionally reported in
-interpretable units (°C, m, mm). You can now use arbitrary gradient names.
+These settings control *how* individuals are placed in the landscape. They are configured automatically by `MODEL_FAMILY` presets but can be set manually.
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `GRADIENT_SPECIES` | vector (character) | `c()` | Species affected by gradients (e.g., `c(B, C, D)`). |
-| `GRADIENT_ASSIGNMENTS` | vector (character) | `c()` | One entry per `GRADIENT_SPECIES`, naming the environmental driver for each species. |
-| `GRADIENT_OPTIMA` | scalar / per‑species / per‑gradient | `0.5` | Optimum (0–1). May be a single number, a vector named by species, or named by gradient (e.g., `temperature:0.6, elevation:0.4`). |
-| `GRADIENT_TOLERANCE` | scalar / per‑species / per‑gradient | `0.1` | Niche width (>0). Same naming rules as OPTIMA. |
-| `SAMPLING_RESOLUTION` | integer | `50` | Grid resolution for gradient fields. |
-| `ENVIRONMENTAL_NOISE` | numeric | `0.05` | Std. dev. of Gaussian noise added to gradients. |
+## Neutral / Hybrid Recruitment (`MODEL_FAMILY = "neutral_hubbell_like"` or `"hybrid"`)
 
-**Resolution rules for OPTIMA/TOLERANCE** (in priority order): named by species
-→ named by gradient → vector length = |species| → vector length = |unique
-gradients| → scalar (recycled).
+This engine provides a fundamentally different way of simulating a community compared to the static point processes. Instead of placing all individuals at once, it simulates a dynamic process of death and recruitment, one individual at a time. This is inspired by Hubbell's neutral theory and is powerful for creating spatially explicit patterns that arise from dispersal limitation.
 
----
-
-# Dominant species clustering
+The basic algorithm is:
+1. A single individual is removed from the community (a "death").
+2. A new individual is recruited to replace it (a "birth").
+3. The species of the new recruit is chosen based on the local species composition around the death site, mediated by a dispersal kernel. This creates spatial clustering, as species are more likely to recruit near established individuals of the same species.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `MAX_CLUSTERS_DOMINANT` | integer | `5` | Max number of clusters for species `A`. |
-| `CLUSTER_SPREAD_DOMINANT` | numeric | `3.0` | Decay scale for cluster attraction. |
+| `NEUTRAL_M` | numeric | `0.1` | **Immigration probability** per recruitment step. This is the probability that a new recruit is drawn from the regional metacommunity instead of from the local community. Higher `m` values lead to communities that more closely resemble the metacommunity SAD and can prevent rare species from being lost. |
+| `NEUTRAL_NU` | numeric | `0.0` | **Speciation probability**. This is the probability that an immigrant from the metacommunity is a new, previously unseen species. This is a core parameter in theoretical neutral models but is often left at 0 for practical simulations. |
+| `NEUTRAL_META_MODEL`| character | `"zsm"` | The SAD model used to generate the species frequencies in the regional metacommunity, from which immigrants are drawn. |
+| `DISPERSAL_KERNEL` | character | `"gaussian"` | The mathematical function describing the probability of a recruit dispersing a certain distance from its parent: `gaussian`, `exponential`, `power_law`. The choice of kernel can have a significant impact on the resulting spatial pattern. |
+| `DISPERSAL_SCALE` | numeric | `0.5` | The scale parameter for the dispersal kernel. For `gaussian`, this is the standard deviation (`sd`). For `exponential`, it is the rate (where the mean distance is `1/rate`). Larger values mean longer-distance dispersal. |
+| `DISPERSAL_ALPHA` | numeric | `2.0` | The shape parameter `alpha` for the `power_law` kernel. Power-law kernels can produce "fat tails," allowing for occasional long-distance dispersal events, which can be ecologically important. |
+| `HYBRID_ENV_WEIGHT` | numeric | `1.0` | In `hybrid` models, this value controls the strength of environmental sorting during recruitment. A value of `0` means the environment has no effect (a purely neutral process). As the value increases, the probability of a recruit surviving is more strongly determined by its niche suitability at that location. |
 
----
+## Point Process Controls (Advanced)
 
-# Spatial point processes (advanced)
+This engine places individuals using spatial point processes *before* other filters (like environmental filtering) are applied. This allows for the creation of fundamental spatial patterns like clustering or inhibition, which can then be modified by other simulation components.
 
-These settings control how individual locations are generated before environmental filtering and interactions.
+These processes are powerful tools for emulating different ecological scenarios. For example, clustering can arise from dispersal limitation or resource patches, while inhibition (overdispersion) can result from territoriality or competition for space.
+
+### Dominant Species: `SPATIAL_PROCESS_A`
+
+This key controls the spatial pattern for the most abundant species (`A`).
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `SPATIAL_PROCESS_A` | character | `"poisson"` | Point process for the dominant species A. Supported: `poisson`, `thomas`. |
-| `A_PARENT_INTENSITY` | numeric / NA | `NA` | Thomas parent intensity (parents per unit area). If `NA`, derived to hit the target abundance. |
-| `A_MEAN_OFFSPRING` | integer | `10` | Thomas mean offspring per parent. |
-| `A_CLUSTER_SCALE` | numeric | `1` | Thomas cluster scale (Gaussian sd; map units). |
-| `SPATIAL_PROCESS_OTHERS` | character | `"poisson"` | Point process for non-dominant species. Supported: `poisson`, `strauss`, `geyer`. The `geyer` engine is **heuristic but internally consistent** — it is not a reproduction of the exact **spatstat** Geyer saturation likelihood (see `?simulate_points_geyer_fast`). |
-| `OTHERS_R` | numeric | `1` | Interaction radius (map units) for Strauss/Geyer. |
-| `OTHERS_S` | numeric / integer | `2` | Strauss: inhibition strength in `(0,1]` (smaller = stronger inhibition surrogate). Geyer: saturation count (integer `>=0`). |
-| `OTHERS_GAMMA` | numeric / NA | `NA` | Geyer interaction parameter (`<1` inhibition, `>1` clustering). If unset, some internal dispatchers may fall back to `OTHERS_S` for backward compatibility; prefer setting explicitly. |
-| `OTHERS_BETA` | numeric / NA | `NA` | Baseline intensity / multiplier used by some engines or wrappers (units depend on engine). |
+| `SPATIAL_PROCESS_A` | character | `"poisson"` | Point process for the dominant species `A`. Supported: `poisson`, `thomas`. |
 
-**OTHERS_\* parameter quick reference** — same name, different roles depending on `SPATIAL_PROCESS_OTHERS`:
+*   **`poisson`**: This is a Complete Spatial Randomness (CSR) process. Individuals are placed independently and uniformly within the domain. This is often used as a null model in spatial statistics.
+*   **`thomas`**: This is a clustered (or aggregated) point process, also known as a Gaussian Neyman-Scott process. It's a two-stage process:
+    1.  "Parent" points are distributed randomly (CSR).
+    2.  Each parent produces a number of "offspring" points, which are scattered around the parent according to a Gaussian (normal) distribution.
+    This process is excellent for simulating species that are dispersal-limited from a parent plant, or for species that colonize patchy resources.
 
-| Parameter | Meaning | Affects | Used when | Default | Constraints |
-|-----------|---------|---------|-----------|---------|-------------|
-| `OTHERS_R` | Interaction radius | Location placement (acceptance rule) | Strauss, Geyer | `1` | `> 0` (map units) |
-| `OTHERS_S` | Inhibition strength (Strauss) or saturation count (Geyer) | Acceptance probability in MH sampler | Strauss, Geyer | `2` | Strauss: `(0, 1]`; Geyer: integer `>= 0` |
-| `OTHERS_GAMMA` | Geyer interaction parameter | Acceptance probability in MH sampler | Geyer only | `NA` (falls back to `OTHERS_S` in some dispatchers) | `> 0`; `< 1` inhibition, `> 1` clustering |
-| `OTHERS_BETA` | Baseline intensity / multiplier | Abundance assignment in some wrappers | Engine-dependent | `NA` | `>= 0` (units depend on engine) |
+#### Thomas Process Parameters
 
-> **Pipeline stage note.** The OTHERS_\* parameters operate on **location placement only** (the
-> point-process stage). They do not affect abundance totals (controlled by `SAD_MODEL` /
-> `N_INDIVIDUALS`), environmental filtering (controlled by `GRADIENT_*`), or interspecific
-> interactions (controlled by `INTERACTION_RADIUS` / `INTERACTIONS_EDGELIST`).
+These parameters are used when `SPATIAL_PROCESS_A = "thomas"`.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `A_PARENT_INTENSITY`| numeric | `NA` | The intensity of parent points (parents per unit area). If `NA`, a value is automatically calculated to achieve the target number of individuals (`N_INDIVIDUALS`). |
+| `A_MEAN_OFFSPRING` | integer | `10` | The mean number of offspring generated per parent point. This follows a Poisson distribution. |
+| `A_CLUSTER_SCALE` | numeric | `1` | The standard deviation (`sigma`) of the Gaussian dispersal kernel around each parent, in map units. Larger values create more spread-out clusters. |
+
+### Other Species: `SPATIAL_PROCESS_OTHERS`
+
+This key controls the spatial pattern for all non-dominant species.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `SPATIAL_PROCESS_OTHERS` | character | `"poisson"` | Point process for non-dominant species. Supported: `poisson`, `strauss`, `geyer`. |
+
+*   **`poisson`**: Complete Spatial Randomness, as described above.
+*   **`strauss`**: An inhibition process (also called a "soft-core" process). It generates patterns where points are more regularly spaced than a random pattern. A proposed point is accepted with a probability that decreases with the number of existing points within a certain radius. This is useful for modeling territoriality or competition for local resources.
+*   **`geyer`**: A flexible process that can model either inhibition or aggregation up to a saturation point. It's similar to the Strauss process, but the probability of accepting a new point depends on the number of neighbors up to a saturation threshold (`s`).
+    *   If the interaction parameter `gamma` > 1, it creates aggregation.
+    *   If `gamma` < 1, it creates inhibition.
+    This process can simulate, for example, a species that benefits from having a few neighbors (e.g., for defense or pollination) but suffers from competition when the local density becomes too high.
+
+#### Strauss and Geyer Process Parameters
+
+These parameters are used for the `strauss` and `geyer` processes for non-dominant species.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `OTHERS_BETA` | numeric | `NA` | Baseline intensity for the point process. (Currently unused placeholder). |
+| `OTHERS_STRAUSS_GAMMA`| numeric | `0.2` | **For Strauss process:** The inhibition parameter, in the range `(0, 1]`. Values closer to 0 indicate stronger inhibition (a lower chance of accepting points near existing ones). A value of 1 means no inhibition (equivalent to a Poisson process). |
+| `OTHERS_GAMMA` | numeric | `NA` | **For Geyer process:** The interaction parameter. If `> 1`, it causes attraction/clustering. If `< 1`, it causes inhibition. |
+| `OTHERS_R` | numeric | `1` | The interaction radius for both Strauss and Geyer processes, in map units. This defines the "neighborhood" for counting other points. |
+| `OTHERS_S` | numeric | `2` | **For Geyer process:** The saturation parameter. This is the number of neighbors within radius `r` at which the interaction effect stops increasing. |
+
 
 ---
+
+# Environmental Filtering (Gradients)
+
+This section allows you to simulate one of the most important processes in ecology: niche filtering. Here, you can create synthetic environmental gradients (like temperature or rainfall) and define how different species respond to them. Individuals are then "filtered" based on their location—their probability of survival is determined by how well their niche preferences match the environmental conditions at that spot.
+
+`spesim` generates gradients as smooth spatial fields (rasters) across the domain, to which some random noise can be added.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `ENV_DRIVERS` | char vector| `c("temperature", "elevation", "rainfall")` | A list of names for the environmental drivers you want to generate. These names are used to assign species responses. |
+| `ENV_COVARIATES_FILE`| char path | `NULL` | Instead of generating synthetic gradients, you can provide your own environmental data via a CSV file. The file must contain columns `x`, `y`, and columns with names matching your drivers. `spesim` will then interpolate these points into a continuous raster. |
+| `GRADIENT_SPECIES` | char vector| `c()` | A list of the species that will be affected by environmental filtering (e.g., `c(B, C, D)`). Species not on this list will have a uniform survival probability of 1. |
+| `GRADIENT_ASSIGNMENTS` | char vector| `c()` | Assigns each species listed in `GRADIENT_SPECIES` to a specific driver from `ENV_DRIVERS`. This defines which environmental factor affects which species. A species can only be assigned to one gradient. |
+| `GRADIENT_OPTIMA` | scalar / vector | `0.5` | The niche **optimum** for a species along its gradient, on a scale of 0 to 1. This is the environmental condition where the species has its highest survival probability. You can provide a single value for all species or a named vector to give each species a different optimum (e.g., `B:0.2, C:0.8`). |
+| `GRADIENT_TOLERANCE` | scalar / vector | `0.1` | The niche **width** or **tolerance** for a species (>0). This determines how quickly a species' survival probability drops off as conditions move away from its optimum. Smaller values mean the species is a specialist (narrow niche), while larger values mean it is a generalist (broad niche). |
+| `SAMPLING_RESOLUTION` | integer | `50` | The grid resolution (e.g., 50x50) used for generating the underlying synthetic gradient fields. Higher values create smoother, more detailed gradients but increase computation time. |
+| `ENVIRONMENTAL_NOISE` | numeric | `0.05` | The standard deviation of Gaussian noise added to the smooth gradient fields. This adds small-scale, random patchiness to the environment, which can make it more realistic. |
+
+---
+
+# Biotic Interactions & Clustering
+
+This section controls fine-scale spatial patterns that emerge from interactions between individuals. These rules are typically applied *after* an initial placement of points (e.g., from a point process or environmental filtering) and can modify the community structure by promoting clustering or enforcing separation.
+
+## Dominant Species Clustering
+
+This provides a simple way to make the dominant species (`A`) clumped without using a full `thomas` point process. It works by defining a number of cluster centers and making individuals attracted to them.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `MAX_CLUSTERS_DOMINANT` | integer | `5` | The maximum number of cluster centers for species `A`. The actual number will be chosen randomly up to this maximum. |
+| `CLUSTER_SPREAD_DOMINANT` | numeric | `3.0` | A scale parameter that controls how strong the attraction to the cluster centers is. Larger values result in more spread-out, less dense clusters. |
+
+## Interspecific Interactions
+
+These rules allow you to define pairwise interactions (facilitation or competition) between species. `spesim` implements this using a placement-modification algorithm: the probability of an individual being placed at a certain location is multiplied by a factor based on its neighbors.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `INTERACTION_RADIUS` | numeric | `0` | The global distance threshold (in map units) within which neighbor effects are considered. If set to `0`, all interactions are disabled. |
+| `INTERACTIONS_FILE` | char path | – | Path to a CSV file defining the interactions. The file should have three columns: `focal`, `neighbour`, `value`. |
+| `INTERACTIONS_EDGELIST` | char vector| – | A way to define interactions directly in the init file. Each entry should be a string in the format `"focal,neighbour,value"`. For example, `"A,B,0.5"` means that species B is suppressed by species A. This takes precedence over `INTERACTIONS_FILE`. |
+
+### Interaction Values
+
+The `value` in the interaction rules modifies placement probability:
+*   **`value > 1`**: Facilitation. The `focal` species is *more* likely to be found near the `neighbour` species.
+*   **`value < 1`**: Competition/Suppression. The `focal` species is *less* likely to be found near the `neighbour` species.
+*   **`value = 1`**: No interaction.
+
+
+---
+
+# Sampling Design (Quadrats)
+
+After the full community has been simulated, `spesim` can overlay a set of sampling quadrats to generate a sample dataset. This is crucial for testing the effects of different sampling strategies on ecological analyses. This section controls how those quadrats are placed.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `SAMPLING_SCHEME` | character | `"random"` | The geometric arrangement of quadrats: `random`, `tiled`, `systematic`, `transect`, `voronoi`, `route`. |
+| `N_QUADRATS` | integer | `20` | The total number of quadrats to place (used by most schemes). |
+| `QUADRAT_SIZE_OPTION`| character | `"medium"` | A preset for the size of each quadrat: `small` (1x1 map units), `medium` (1.5x1.5), `large` (2x2). |
+
+### Sampling Scheme Descriptions
+
+*   **`random`**: Places `N_QUADRATS` at completely random (CSR) locations within the domain. This is often used as a baseline sampling design.
+*   **`tiled`**: Creates a regular grid of non-overlapping quadrats that covers the entire domain. `N_QUADRATS` is ignored; the number of quadrats is determined by the domain size and quadrat size.
+*   **`systematic`**: Places `N_QUADRATS` in a regular, evenly spaced grid across the domain.
+*   **`transect`**: A classic ecological sampling method. It lays down one or more lines (`N_TRANSECTS`) across the domain and places quadrats at regular intervals along them.
+*   **`voronoi`**: Generates a set of random points and creates Voronoi cells (polygons) around them. The quadrats are then defined by these polygons, clipped to the domain. This creates a pattern of irregular but space-filling polygons.
+*   **`route`**: Places quadrats along a specified path or network, simulating, for example, sampling along a river or a road.
+
+### Scheme-Specific Parameters
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `N_TRANSECTS` | integer | `1` | **For `transect` scheme:** The number of transects to lay across the domain. |
+| `N_QUADRATS_PER_TRANSECT` | integer | `8` | **For `transect` scheme:** The number of quadrats to place along each transect. |
+| `TRANSECT_ANGLE` | numeric | `90` | **For `transect` scheme:** The angle of the transects in degrees (0=North, 90=East). |
+| `VORONOI_SEED_FACTOR` | numeric | `2` | **For `voronoi` scheme:** A multiplier used to generate the initial seed points for the Voronoi cells. |
+| `ROUTE_QUADRAT_MODE`| character | `"equidistant"` | **For `route` scheme:** `equidistant` places quadrats at even intervals along the route; `specified` places them at the exact positions you provide. |
+| `ROUTE_POSITIONS` | numeric vector| `NULL` | **For `route` scheme with `specified` mode:** A vector of positions along the route (from 0.0 to 1.0) where quadrats should be placed. |
+
+---
+
+# Plotting & Output
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `POINT_SIZE` | numeric | `0.2` | Point size for individuals in maps. |
+| `POINT_ALPHA` | numeric | `1.0` | Point transparency (0–1). |
+| `QUADRAT_ALPHA` | numeric | `0.05` | Quadrat fill transparency. |
+| `BACKGROUND_COLOUR` | character | `"white"` | Plot background color. |
+| `FOREGROUND_COLOUR` | character | `"#22223b"`| Color for domain outline, titles. |
+| `QUADRAT_COLOUR` | character | `"black"` | Quadrat outline color. |
+| `ADVANCED_ANALYSIS` | logical | `FALSE` | If `TRUE`, saves a multi-plot diagnostics panel. |
+
+---
+
+# Example Configuration File
+
+This example shows off many of the advanced features.
+
+```r
+# General
+SEED = 42
+OUTPUT_PREFIX = "out/advanced_run"
+N_INDIVIDUALS = 2500
+N_SPECIES = 15
+
+# Use a preset for a neutral model with dispersal limitation
+MODEL_FAMILY = "neutral_hubbell_like"
+
+# Override a few neutral parameters for a custom run
+NEUTRAL_M = 0.05
+DISPERSAL_KERNEL = "exponential"
+DISPERSAL_SCALE = 0.8
+
+# Specify SAD model for the metacommunity
+NEUTRAL_META_MODEL = "zipf"
+ZIPF_EXPONENT = 1.2
+
+# Use a clustered process for the dominant species 'A'
+SPATIAL_PROCESS_A = "thomas"
+A_MEAN_OFFSPRING = 20
+A_CLUSTER_SCALE = 2.5
+
+# Environmental filtering for a few species
+GRADIENT_SPECIES = c(B, C, F)
+GRADIENT_ASSIGNMENTS = c(temperature, temperature, elevation)
+GRADIENT_OPTIMA = B:0.2, C:0.8, F:0.5
+GRADIENT_TOLERANCE = 0.08
 
 # Interspecific interactions
-
-Local neighborhood effects modify placement probabilities via a distance‑limited
-multiplier. You can configure interactions via a separate file **or** inline in
-the init file.
-
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `INTERACTION_RADIUS` | numeric | `0` | Global distance threshold. `0` disables interactions. |
-| `INTERACTIONS_FILE` | character (path) | – | Optional: path to a separate interactions CSV (see the vignette “Using an Interspecific Interactions File”). |
-| `INTERACTIONS_EDGELIST` | character vector | – | Optional: inline rules of the form `"focal,neighbour,value"`. Supports neighbour **ranges** (`B-D`), **lists** (`B,D,G`), and **wildcard** (`*`). |
-
-> If both `INTERACTIONS_FILE` and `INTERACTIONS_EDGELIST` are given, the
-> **inline edgelist takes precedence**. Any missing coefficients default to `1.0`.
-
-**Quick inline example** (inside the init file):
-```r
-INTERACTION_RADIUS = 30
+INTERACTION_RADIUS = 25
 INTERACTIONS_EDGELIST = c(
-  "A,B-D,0.8",    # A suppresses B..D
-  "C,A,1.2",      # C facilitates A
-  "E,*,0.95",     # E suppresses everyone except E
-  "H,B,D,G,0.7",  # H suppresses a non‑contiguous set
-  "J,B-D,H,0.6"   # J suppresses a range plus a single
+  "A,B,0.5",   # A suppresses B
+  "F,A,1.5"    # F is facilitated by A
 )
-```
-
----
-
-# Sampling design (quadrats)
-
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `SAMPLING_SCHEME` | character | `"random"` | One of `random`, `tiled`, `systematic`, `transect`, `voronoi`, `route`. |
-| `ROUTE_QUADRAT_MODE` | character | `"equidistant"` | For `SAMPLING_SCHEME="route"`: `equidistant` or `specified`. |
-| `ROUTE_POSITIONS` | numeric vector | `NULL` | Route positions in `[0,1]` when `ROUTE_QUADRAT_MODE="specified"`. |
-| `N_QUADRATS` | integer | `20` | Total quadrats when applicable. |
-| `QUADRAT_SIZE_OPTION` | character | `"medium"` | One of `small` (=1×1), `medium` (=1.5×1.5), `large` (=2×2). |
-| `N_TRANSECTS` | integer | `1` | Number of parallel transects (for `transect`). |
-| `N_QUADRATS_PER_TRANSECT` | integer | `8` | Quadrats per transect (for `transect`). |
-| `TRANSECT_ANGLE` | numeric | `90` | Bearing in degrees (0 = North, 90 = East). |
-| `VORONOI_SEED_FACTOR` | numeric | `10` | Seeds multiplier for Voronoi candidate cells. |
-
----
-
-# Plotting & aesthetics
-
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `POINT_SIZE` | numeric | `0.2` | Point size for individuals. |
-| `POINT_ALPHA` | numeric | `1.0` | Point transparency (0–1). |
-| `QUADRAT_ALPHA` | numeric | `0.05` | Quadrat fill alpha (maps are mostly outlines). |
-| `BACKGROUND_COLOUR` | character | `"white"` | Plot background. Any R colour string. |
-| `FOREGROUND_COLOUR` | character | `"#22223b"` | Domain outline, titles. |
-| `QUADRAT_COLOUR` | character | `"black"` | Quadrat outline. |
-
----
-
-# Output & diagnostics
-
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `ADVANCED_ANALYSIS` | logical | `FALSE` | If `TRUE`, saves an advanced diagnostics multi‑plot panel. |
-
----
-
-# Obtaining and customising a complete init file
-
-The package ships with example init files. To copy one into your working
-directory for editing:
-
-```r
-example_init <- system.file("examples", "spesim_init_complete.txt", package = "spesim")
-file.copy(example_init, "my_spesim_init.txt")
-```
-
-You can also programmatically tweak a list returned by `load_config()` and then
-write it out if you prefer to keep configs under version control.
-
----
-
-# Minimal and maximal examples
-
-## Minimal (defaults except species and individuals)
-```r
-SEED = 77
-OUTPUT_PREFIX = "out/run_min"
-N_INDIVIDUALS = 1500
-N_SPECIES = 12
-SAMPLING_SCHEME = "random"
-N_QUADRATS = 20
-QUADRAT_SIZE_OPTION = "medium"
-```
-
-## Maximal (showing most knobs)
-```r
-SEED = 123
-OUTPUT_PREFIX = "out/run_max"
-
-# Community size and SAD
-N_INDIVIDUALS = 3000
-N_SPECIES = 14
-DOMINANT_FRACTION = 0.28
-FISHER_ALPHA = 3.5
-FISHER_X = 0.96
-
-# Gradients: B,C,D respond (two temp, one elevation)
-GRADIENT_SPECIES = c(B, C, D)
-GRADIENT_ASSIGNMENTS = c(temperature, temperature, elevation)
-GRADIENT_OPTIMA = temperature:0.60, elevation:0.35
-GRADIENT_TOLERANCE = temperature:0.10, elevation:0.12
-SAMPLING_RESOLUTION = 60
-ENVIRONMENTAL_NOISE = 0.05
-
-# Dominant clustering
-MAX_CLUSTERS_DOMINANT = 6
-CLUSTER_SPREAD_DOMINANT = 3.2
-
-# Interactions (inline or via file; inline takes precedence)
-INTERACTION_RADIUS = 30
-INTERACTIONS_EDGELIST = c(
-  "A,B-D,0.8",
-  "C,A,1.2",
-  "E,*,0.95",
-  "H,B,D,G,0.7",
-  "J,B-D,H,0.6"
-)
-# Alternatively: INTERACTIONS_FILE = "interactions_edges.csv"
 
 # Sampling
 SAMPLING_SCHEME = "transect"
-N_TRANSECTS = 2
-N_QUADRATS_PER_TRANSECT = 10
-QUADRAT_SIZE_OPTION = "large"
-TRANSECT_ANGLE = 60
-VORONOI_SEED_FACTOR = 12
-
-# Aesthetics
-POINT_SIZE = 0.25
-POINT_ALPHA = 0.9
-QUADRAT_ALPHA = 0.07
-BACKGROUND_COLOUR = "white"
-FOREGROUND_COLOUR = "#22223b"
-QUADRAT_COLOUR = "black"
+N_TRANSECTS = 3
+N_QUADRATS_PER_TRANSECT = 8
+QUADRAT_SIZE_OPTION = "medium"
 
 # Output
 ADVANCED_ANALYSIS = TRUE

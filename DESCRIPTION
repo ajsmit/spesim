@@ -10,16 +10,20 @@ Authors@R:
              email = "ajsmit@uwc.ac.za",
              comment = c(ORCID = "0000-0002-3799-6126")))
 Description: Simulate and visualise spatial community sampling within an
-    irregular domain. Species distributions are generated from a Fisher
-    log-series and can include environmental filtering (multiple gradients),
-    dominant-species clustering, and local interspecific interactions. Multiple
-    quadrat placement schemes are provided (random, tiled, systematic, transect,
-    Voronoi) to emulate common field designs. The package writes site-by-species
-    abundance matrices and per-quadrat environmental summaries, and produces
-    publication-quality maps and analysis panels (rank–abundance, occupancy–
-    abundance, species–area, distance–decay, rarefaction). A single high-level
-    runner orchestrates the full workflow from configuration files to figures
-    and a human-readable report.
+    irregular domain. Species distributions can be generated from a wide variety
+    of species abundance distribution (SAD) models (e.g., Fisher's log-series,
+    lognormal, Zipf, ZSM). Spatial patterns are highly configurable, supporting
+    neutral recruitment models with dispersal limitation, clustering, and several
+    point processes (Poisson, Thomas, Strauss, Geyer). Simulations can include
+    environmental filtering across multiple gradients and local interspecific
+    interactions. A range of quadrat placement schemes are provided (random,
+    tiled, systematic, transect, Voronoi, route) to emulate common field
+    designs. The package writes site-by-species abundance matrices and
+    per-quadrat environmental summaries, and produces publication-quality maps
+    and analysis panels (rank–abundance, occupancy–abundance, species–area,
+    distance–decay, rarefaction). A single high-level runner orchestrates the
+    full workflow from configuration files to figures and a human-readable
+    report.
 License: MIT + file LICENSE
 Depends: 
     R (>= 4.1)
