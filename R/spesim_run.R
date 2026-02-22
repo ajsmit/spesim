@@ -13,6 +13,19 @@
   }
 })
 
+# Internal: load and validate config from a file path or an in-memory list.
+# Keeps the type-dispatch and error message in one place so spesim_run() body
+# does not have to branch on the config type.
+.resolve_run_config <- function(config) {
+  if (is.character(config) && length(config) == 1L) {
+    load_config(config)   # handles parsing, defaults, validation, path resolution
+  } else if (is.list(config)) {
+    config
+  } else {
+    stop("`config` must be either a path to an init file, or an in-memory parameter list P.")
+  }
+}
+
 #' Run a complete spesim simulation (recommended)
 #'
 #' @description
@@ -101,34 +114,9 @@ spesim_run <- function(config,
     seed <- as.integer(seed)
   }
 
-  # Resolve config source
-  init_file <- NULL
-  if (is.character(config) && length(config) == 1L) {
-    init_file <- config
-    P <- load_config(init_file)
-
-    # If init refers to a relative interactions file, resolve it relative to the
-    # init file.
-    if (!is.null(P$INTERACTIONS_FILE) && nzchar(P$INTERACTIONS_FILE)) {
-      is_abs <- grepl("^(/|[A-Za-z]:[\\/])", P$INTERACTIONS_FILE)
-      if (!is_abs) {
-        P$INTERACTIONS_FILE <- file.path(dirname(init_file), P$INTERACTIONS_FILE)
-      }
-    }
-    if (!is.null(P$ENV_COVARIATES_FILE) && nzchar(P$ENV_COVARIATES_FILE)) {
-      is_abs <- grepl("^(/|[A-Za-z]:[\\/])", P$ENV_COVARIATES_FILE)
-      if (!is_abs) {
-        P$ENV_COVARIATES_FILE <- file.path(dirname(init_file), P$ENV_COVARIATES_FILE)
-      }
-      if (file.exists(P$ENV_COVARIATES_FILE)) {
-        P$ENV_COVARIATES <- utils::read.csv(P$ENV_COVARIATES_FILE, stringsAsFactors = FALSE)
-      }
-    }
-  } else if (is.list(config)) {
-    P <- config
-  } else {
-    stop("`config` must be either a path to an init file, or an in-memory parameter list P.")
-  }
+  # Resolve config: file path → load_config() (parsing, validation, path
+  # resolution all handled there); list → used as-is.
+  P <- .resolve_run_config(config)
 
   # Seed override: controls both simulation reproducibility and default domain.
   if (!is.null(seed)) {

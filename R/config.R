@@ -140,6 +140,19 @@
   out
 }
 
+# Internal: read and validate an environmental covariates CSV.
+# Shared by load_config() and (indirectly) spesim_run() so error messages and
+# column validation stay consistent in both call paths.
+.read_env_covariates <- function(path) {
+  covs <- tryCatch(
+    utils::read.csv(path, stringsAsFactors = FALSE),
+    error = function(e) stop("Could not read ENV_COVARIATES_FILE '", path, "': ", e$message)
+  )
+  if (!all(c("x", "y") %in% names(covs)))
+    stop("ENV_COVARIATES_FILE must contain columns: x, y")
+  covs
+}
+
 
 #' Load Simulation Configuration (with defaults & validation)
 #'
@@ -451,6 +464,15 @@ load_config <- function(init_file) {
     P$ENV_COVARIATES_FILE <- as.character(P$ENV_COVARIATES_FILE)
     if (!nzchar(P$ENV_COVARIATES_FILE)) P$ENV_COVARIATES_FILE <- NULL
   }
+  # Resolve file pointers that are relative paths: interpret them relative to
+  # the directory that contains the init file, matching shell/script convention.
+  .is_abs_path <- function(p) grepl("^(/|[A-Za-z]:[\\/])", p)
+  base_dir <- dirname(init_file)
+  if (!is.null(P$INTERACTIONS_FILE) && nzchar(P$INTERACTIONS_FILE) &&
+      !.is_abs_path(P$INTERACTIONS_FILE))
+    P$INTERACTIONS_FILE <- file.path(base_dir, P$INTERACTIONS_FILE)
+  if (!is.null(P$ENV_COVARIATES_FILE) && !.is_abs_path(P$ENV_COVARIATES_FILE))
+    P$ENV_COVARIATES_FILE <- file.path(base_dir, P$ENV_COVARIATES_FILE)
   if (!is.null(P$ENV_DRIVERS)) {
     P$ENV_DRIVERS <- as.character(P$ENV_DRIVERS)
     P$ENV_DRIVERS <- trimws(P$ENV_DRIVERS)
@@ -476,19 +498,8 @@ load_config <- function(init_file) {
   P$LINEAR_WRAP <- as.logical(P$LINEAR_WRAP)
 
   # Optional external environmental covariates
-  if (!is.null(P$ENV_COVARIATES_FILE)) {
-    if (file.exists(P$ENV_COVARIATES_FILE)) {
-      covs <- tryCatch(
-        utils::read.csv(P$ENV_COVARIATES_FILE, stringsAsFactors = FALSE),
-        error = function(e) stop("Could not read ENV_COVARIATES_FILE: ", e$message)
-      )
-      req <- c("x", "y")
-      if (!all(req %in% names(covs))) {
-        stop("ENV_COVARIATES_FILE must contain columns: x, y")
-      }
-      P$ENV_COVARIATES <- covs
-    }
-  }
+  if (!is.null(P$ENV_COVARIATES_FILE) && file.exists(P$ENV_COVARIATES_FILE))
+    P$ENV_COVARIATES <- .read_env_covariates(P$ENV_COVARIATES_FILE)
 
   # Colours (validate gracefully)
   .validate_colour <- function(x, default) {
