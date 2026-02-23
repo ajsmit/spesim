@@ -12,6 +12,7 @@ test_that("generate_sad returns correct length, names, and sum", {
     "lognormal",
     "poisson-lognormal",
     "poisson-gamma",
+    "nbd",
     "custom"
   )
 
@@ -31,6 +32,8 @@ test_that("generate_sad returns correct length, names, and sum", {
       x <- generate_sad(S, N, model = m, meanlog = 0, sdlog = 1)
     } else if (m == "poisson-gamma") {
       x <- generate_sad(S, N, model = m, shape = 1.5, rate = 1)
+    } else if (m == "nbd") {
+      x <- generate_sad(S, N, model = m, nbd_mu = 50, nbd_size = 1)
     } else {
       x <- generate_sad(S, N, model = m)
     }

@@ -101,7 +101,7 @@ This section controls one of the most fundamental patterns in community ecology:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `SAD_MODEL` | character | `"fisher"` | SAD generator: `fisher`, `geometric`, `brokenstick`, `zipf`, `zipf-mandelbrot`, `lognormal`, `poisson-lognormal`, `poisson-gamma`, `zsm`, `custom`. |
+| `SAD_MODEL` | character | `"fisher"` | SAD generator: `fisher`, `geometric`, `brokenstick`, `zipf`, `zipf-mandelbrot`, `lognormal`, `poisson-lognormal`, `poisson-gamma`, `nbd`, `zsm`, `custom`. |
 | `DOMINANT_FRACTION` | numeric | `0.30` | An optional parameter to ensure the first species (`A`) is dominant. This fraction of `N_INDIVIDUALS` is assigned to species `A`, and the remaining individuals are distributed among the other species according to the `SAD_MODEL`. This is useful for creating a clear community structure with a strong foundation species. |
 | `SAD_VECTOR` | numeric vector | `NULL` | Required for `SAD_MODEL="custom"`. This allows you to provide your own abundance vector, either as probabilities or raw counts. `spesim` will scale it to the correct total number of individuals. |
 
@@ -117,6 +117,7 @@ Different SAD models arise from different assumptions about how species share re
     *   **`fisher`**: Fisher's log-series is one of the earliest and most famous SAD models. It arises from the assumption that species' abundances follow a gamma distribution and are sampled via a Poisson process. It often fits empirical data well, especially for large, diverse assemblages.
     *   **`lognormal`**: This model assumes that abundances are log-normally distributed. Following the central limit theorem, this can be expected if many independent factors influence species' population sizes. It typically predicts a few abundant species, many species with intermediate abundance, and many rare species.
     *   **`poisson-lognormal`** & **`poisson-gamma`**: These are sampling-based extensions of the lognormal and gamma distributions, providing more statistical rigour. They are useful for emulating sampling processes from a latent distribution of species abundances.
+    *   **`nbd`**: The Negative Binomial Distribution is a flexible model for count data that handles overdispersion (variance > mean), a common feature of ecological data.
     *   **`zipf`** & **`zipf-mandelbrot`**: These are power-law distributions related to rank-abundance plots. A `zipf` distribution assumes abundance is proportional to `1/rank^s`. They are very general and can arise from a variety of processes. The `zipf-mandelbrot` adds a parameter `q` that can make the distribution less steep for the most abundant species.
 
 *   **Neutral Models**: These models assume that species are ecologically equivalent and that abundance patterns are driven by stochastic birth, death, and migration processes.
@@ -152,6 +153,14 @@ Different SAD models arise from different assumptions about how species share re
 |-----|------|---------|-------------|
 | `POIGAMMA_SHAPE` | numeric | `1.0` | Shape parameter of the Gamma distribution. |
 | `POIGAMMA_RATE` | numeric | `1.0` | Rate parameter of the Gamma distribution. |
+
+### Negative Binomial (`SAD_MODEL = "nbd"`)
+This model uses the negative binomial distribution directly, which is very common for ecological count data as it can handle "overdispersion" (variance greater than the mean). It is parameterized by a mean `mu` and a `size` (dispersion) parameter.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `NBD_MU` | numeric | (total individuals / n species) | The mean abundance per species. |
+| `NBD_SIZE` | numeric | `1` | The dispersion parameter (often called `k`). Smaller values lead to higher variance and more overdispersion (i.e., a more clumped or aggregated distribution of abundances). |
 
 ### Neutral Model (`SAD_MODEL = "zsm"`)
 | Key | Type | Default | Description |

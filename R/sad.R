@@ -33,6 +33,8 @@
 #'     lognormal; counts are Poisson).}
 #'   \item{`"poisson-gamma"`}{Poisson--gamma sampling model (rates are Gamma;
 #'     counts are Poisson). Closely related to negative-binomial mixtures.}
+#'   \item{`"nbd"`}{Negative Binomial Distribution. A flexible model for count
+#'     data that can handle high variance (overdispersion).}
 #'   \item{`"zsm"`}{Neutral-theory SAD helper. With \code{theta} only, this uses a
 #'     theta-only Ewens sampler (Chinese restaurant) to control the
 #'     \strong{rank--abundance} curve. If an immigration probability
@@ -234,8 +236,8 @@ generate_lognormal_probabilities <- function(n_species, meanlog = 0, sdlog = 1) 
 #'   numeric vector.
 #' @param ... Model-specific parameters. Common arguments include:
 #'   `k` (geometric), `exponent` and `q` (Zipf / Mandelbrot), `meanlog`, `sdlog`
-#'   (lognormal), `shape`, `rate` (Poisson--gamma), and neutral-theory `theta`,
-#'   `m`.
+#'   (lognormal), `shape`, `rate` (Poisson--gamma), `nbd_mu`, `nbd_size` (NBD),
+#'   and neutral-theory `theta`, `m`.
 #'
 #' For `model = "fisher"`, pass `dominant_fraction`, `alpha`, and `x` (see
 #' [generate_fisher_log_series()]).
@@ -256,6 +258,7 @@ generate_sad <- function(n_species, n_individuals, model = "fisher", sad = NULL,
   if (model %in% c("zipfmandelbrot", "zipf-mandelbrot")) model <- "zipf-mandelbrot"
   if (model %in% c("poissonlognormal", "poisson-lognormal")) model <- "poisson-lognormal"
   if (model %in% c("poissongamma", "poisson-gamma")) model <- "poisson-gamma"
+  if (model %in% c("negbin", "nbd")) model <- "nbd"
 
   dots <- list(...)
 
@@ -325,9 +328,7 @@ generate_sad <- function(n_species, n_individuals, model = "fisher", sad = NULL,
 
     `poisson-gamma` =,
     poisson_gamma =,
-    poigamma =,
-    nbinom =,
-    negbin = {
+    poigamma = {
       shape <- as.numeric(dots$shape %||% dots$k %||% 1)
       rate <- as.numeric(dots$rate %||% 1)
       if (!is.finite(shape) || shape <= 0) stop("shape must be > 0")
@@ -335,6 +336,16 @@ generate_sad <- function(n_species, n_individuals, model = "fisher", sad = NULL,
       lambda <- stats::rgamma(length(spp), shape = shape, rate = rate)
       lambda <- lambda / sum(lambda) * n_individuals
       raw <- stats::rpois(length(spp), lambda)
+      counts <- .sad_counts_adjust_to_n(raw, n_individuals)
+      stats::setNames(counts, spp)
+    },
+
+    nbd = {
+      mu <- as.numeric(dots$nbd_mu %||% (n_individuals / length(spp)))
+      size <- as.numeric(dots$nbd_size %||% 1)
+      if (!is.finite(mu) || mu <= 0) stop("nbd_mu must be > 0")
+      if (!is.finite(size) || size <= 0) stop("nbd_size must be > 0")
+      raw <- stats::rnbinom(length(spp), size = size, mu = mu)
       counts <- .sad_counts_adjust_to_n(raw, n_individuals)
       stats::setNames(counts, spp)
     },
