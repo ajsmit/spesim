@@ -209,11 +209,13 @@ whereas in Community B one colour (species A) dominates the canvas and the
 other 19 appear as scattered dots.
 
 ```{r map-A, fig.height=5}
-plot_quadrats(res_A$domain, res_A$quadrats, title = "Community A — even (20 species × 5%)")
+plot_spatial_sampling(res_A$domain, res_A$species_dist, res_A$quadrats, res_A$P) +
+  ggplot2::ggtitle("Community A \u2014 even (20 species \u00d7 5%)")
 ```
 
 ```{r map-B, fig.height=5}
-plot_quadrats(res_B$domain, res_B$quadrats, title = "Community B — uneven (1 × 81%, 19 × 1%)")
+plot_spatial_sampling(res_B$domain, res_B$species_dist, res_B$quadrats, res_B$P) +
+  ggplot2::ggtitle("Community B \u2014 uneven (1 \u00d7 81%, 19 \u00d7 1%)")
 ```
 
 ---
