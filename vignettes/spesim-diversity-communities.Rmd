@@ -1,0 +1,373 @@
+---
+title: "Even and uneven communities: a study in species diversity"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+    highlight: null
+vignette: >
+  %\VignetteIndexEntry{Even and uneven communities: a study in species diversity}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  fig.align = "center",
+  message = FALSE,
+  warning = FALSE
+)
+library(spesim)
+```
+
+## Motivation
+
+One of the clearest illustrations of what diversity metrics actually measure
+comes from two contrasting communities described by David Zelený in his
+[Analysis of Community Ecology Data in R](https://www.davidzeleny.net/anadat-r/doku.php/en:diversity_analysis)
+course materials:
+
+- **Community A** — 20 species, each represented by exactly the same number
+  of individuals (perfectly even).
+- **Community B** — 20 species, but one dominant species holds 81% of all
+  individuals while the remaining 19 species each hold 1%.
+
+Both communities have the same *species richness* (S = 20), yet they are
+ecologically very different. Community A has high **evenness**: if you sample
+one individual at random, every species is equally likely to appear. Community
+B has near-zero evenness: almost every individual you pick will be the
+dominant species.
+
+Zelény uses these communities to motivate the need for diversity metrics
+beyond richness — Shannon H', Simpson D, and the concept of
+**encounterability** (the probability that the next individual you encounter
+belongs to a species you have not yet seen).
+
+Here we use **spesim** to simulate both communities in a spatial setting and
+compare them through rank–abundance curves, occupancy–abundance plots,
+species–area curves, distance–decay, and rarefaction.
+
+---
+
+## Ecological rationale
+
+### Community A — perfectly even
+
+In ecological theory, the **broken-stick model** (MacArthur 1957) describes a
+community where S species divide a fixed resource axis into S segments by
+placing S − 1 random "breaks". Each species occupies one segment, so segment
+lengths — and thus species abundances — are as evenly distributed as a random
+partition allows.
+
+A perfectly even community pushes this further: all species have *exactly* the
+same proportion. This can arise when:
+
+- Niche differentiation is complete (each species occupies a distinct,
+  equally-sized niche),
+- Competition is symmetric (no species has a competitive advantage),
+- Demographic stochasticity has had time to average out across a large
+  community.
+
+In practice, such perfect evenness is rare, but it serves as a useful null
+model and a teaching benchmark.
+
+### Community B — highly uneven
+
+At the opposite extreme, a community can be dominated by a single species
+that monopolises most of the available resource or physical space. This
+pattern is common in systems shaped by:
+
+- Competitive exclusion (one superior competitor suppresses others),
+- Priority effects (the species that arrived first pre-empts resources),
+- Stress or disturbance (only the most tolerant species thrives),
+- Allelopathy or other asymmetric biotic interactions.
+
+Species B through T persist as rare species — present, but contributing
+negligibly to total abundance. In sampling, rare species are easily missed
+unless sample sizes are very large, which is why rarefaction and occupancy–
+abundance relationships look so different from Community A.
+
+---
+
+## Specifying communities in spesim
+
+The key decision is the **SAD model** (`SAD_MODEL`) and its parameters. spesim
+ships several built-in SAD generators (Fisher log-series, geometric series,
+broken-stick, Zipf, lognormal, Poisson–lognormal, ZSM/neutral), but for exact
+control we use `SAD_MODEL = custom` together with an explicit probability
+vector (`SAD_VECTOR`).
+
+Both communities share the same structural choices that isolate the SAD as the
+only variable:
+
+| Setting | Value | Rationale |
+|---------|-------|-----------|
+| `MODEL_FAMILY` | `manual` | Abundances from SAD, placed by point process |
+| `SPATIAL_PROCESS_A` | `poisson` | Complete Spatial Randomness for all species |
+| `SPATIAL_PROCESS_OTHERS` | `poisson` | As above |
+| `INTERACTION_RADIUS` | `0` | No local biotic interactions |
+| No `GRADIENT_SPECIES` | — | No environmental filtering |
+
+By removing spatial structure and environmental gradients we ensure that
+**any observed differences between the two communities come purely from their
+species abundance distributions**, not from space.
+
+### Init file for Community A
+
+```
+SEED = 42
+OUTPUT_PREFIX = out/community_a
+
+N_INDIVIDUALS = 2000
+N_SPECIES     = 20
+MODEL_FAMILY  = manual
+
+DOMAIN_TYPE = polygon
+
+SAD_MODEL  = custom
+SAD_VECTOR = c(rep(0.05, 20))   # all 20 species at 5% each
+
+INTERACTION_RADIUS = 0
+
+SPATIAL_PROCESS_A      = poisson
+SPATIAL_PROCESS_OTHERS = poisson
+
+SAMPLING_SCHEME     = random
+N_QUADRATS          = 20
+QUADRAT_SIZE_OPTION = medium
+
+ADVANCED_ANALYSIS = FALSE
+```
+
+`c(rep(0.05, 20))` is valid R syntax; the config parser evaluates it directly
+to a 20-element numeric vector summing to 1.0. Because the vector sums to 1,
+spesim interprets it as species probabilities and draws integer abundances via
+`stats::rmultinom()`.
+
+### Init file for Community B
+
+```
+SEED = 42
+OUTPUT_PREFIX = out/community_b
+
+N_INDIVIDUALS = 2000
+N_SPECIES     = 20
+MODEL_FAMILY  = manual
+
+DOMAIN_TYPE = polygon
+
+SAD_MODEL  = custom
+SAD_VECTOR = c(0.81, rep(0.01, 19))  # species A at 81%; B–T at 1% each
+
+INTERACTION_RADIUS = 0
+
+SPATIAL_PROCESS_A      = poisson
+SPATIAL_PROCESS_OTHERS = poisson
+
+SAMPLING_SCHEME     = random
+N_QUADRATS          = 20
+QUADRAT_SIZE_OPTION = medium
+
+ADVANCED_ANALYSIS = FALSE
+```
+
+`c(0.81, rep(0.01, 19))` sums to exactly 1.0. The first element maps to
+species A (the "dominant" slot in spesim's internal labelling); elements 2–20
+map to species B through T.
+
+---
+
+## Simulation
+
+```{r load-configs}
+init_A <- system.file("examples/spesim_init_community_a.txt", package = "spesim")
+init_B <- system.file("examples/spesim_init_community_b.txt", package = "spesim")
+
+P_A <- load_config(init_A)
+P_B <- load_config(init_B)
+```
+
+```{r run-A}
+res_A <- spesim_run(P_A, write_outputs = FALSE, seed = P_A$SEED)
+```
+
+```{r run-B}
+res_B <- spesim_run(P_B, write_outputs = FALSE, seed = P_B$SEED)
+```
+
+---
+
+## Community maps
+
+The maps below show all 2,000 simulated individuals coloured by species.
+Notice that in Community A every species colour is roughly equally visible,
+whereas in Community B one colour (species A) dominates the canvas and the
+other 19 appear as scattered dots.
+
+```{r map-A, fig.height=5}
+plot_quadrats(res_A$domain, res_A$quadrats, title = "Community A — even (20 species × 5%)")
+```
+
+```{r map-B, fig.height=5}
+plot_quadrats(res_B$domain, res_B$quadrats, title = "Community B — uneven (1 × 81%, 19 × 1%)")
+```
+
+---
+
+## Advanced analysis panels
+
+`generate_advanced_panel()` assembles five diagnostic plots from a single
+simulation result.
+
+### Community A
+
+```{r panel-A, fig.height=9, fig.width=9}
+set.seed(P_A$SEED)
+generate_advanced_panel(res_A)
+```
+
+### Community B
+
+```{r panel-B, fig.height=9, fig.width=9}
+set.seed(P_B$SEED)
+generate_advanced_panel(res_B)
+```
+
+---
+
+## Interpreting the panels
+
+### 1) Rank–abundance (SAD)
+
+**Community A** — the curve is nearly flat. All 20 species have similar
+counts; the rank ordering is an artefact of the random multinomial draw rather
+than a systematic dominance gradient.
+
+**Community B** — a steep cliff followed by a plateau. Species A sits far
+above the rest; species B–T cluster near the bottom, essentially
+indistinguishable from one another on the log scale.
+
+### 2) Occupancy–abundance
+
+Occupancy (number of quadrats in which a species is present) is plotted
+against total abundance.
+
+**Community A** — points form a loose positive cloud near the top-right: all
+species are both abundant and widely distributed. High encounterability means
+that even a small quadrat is likely to contain most species.
+
+**Community B** — a bimodal scatter. Species A occupies essentially every
+quadrat (high occupancy, high abundance), while species B–T cluster at the
+bottom-left (low abundance, low and variable occupancy). Many rare species
+will be missed by any individual quadrat.
+
+### 3) Species–area (specaccum)
+
+**Community A** — the accumulation curve rises steeply from the first
+quadrat. Because all species are common, most species are detected in the
+first few sampling units and the curve quickly levels off near S = 20.
+
+**Community B** — the curve rises initially (picking up species A quickly),
+then climbs more slowly as additional quadrats begin to capture the rare
+species. The curve may not level off fully even at 20 quadrats: very rare
+species (1% each, 20 individuals out of 2,000) may be absent from some
+quadrats by chance.
+
+### 4) Distance–decay
+
+Both communities use Poisson (CSR) spatial processes, so there is no spatial
+structure: community composition does not change systematically with distance.
+Expect a flat, low-dissimilarity scatter in Community A (most quadrats share
+most species) and a high-but-flat scatter in Community B (most quadrats share
+only species A and miss the rarest species, producing high Sørensen
+dissimilarity that does not increase with distance).
+
+### 5) Rarefaction
+
+The rarefaction curves reveal how quickly species accumulate as a function of
+the number of *individuals* sampled.
+
+**Community A** — all species-level curves rise sharply. Because every
+species is at 5% of abundance, you encounter a new species frequently. The
+expected richness at even a small subsample size is high.
+
+**Community B** — the per-quadrat curves reflect sampling dominated by species
+A. Most of the curve represents adding more individuals of the same species.
+The curve flattens early for the dominant and only picks up rare species at
+very high individual counts. The expected richness at a standard rarefaction
+depth (e.g. 50 individuals) will be much lower than for Community A.
+
+---
+
+## Quantitative diversity summary
+
+We can compute a brief diversity summary directly from the abundance matrix.
+
+```{r diversity-summary}
+# Drop the 'site' label column; keep only numeric species columns
+num_cols_A <- sapply(res_A$abund_matrix, is.numeric)
+num_cols_B <- sapply(res_B$abund_matrix, is.numeric)
+
+abund_A <- as.matrix(res_A$abund_matrix[, num_cols_A])
+abund_B <- as.matrix(res_B$abund_matrix[, num_cols_B])
+
+shannon_A <- vegan::diversity(abund_A, index = "shannon")
+shannon_B <- vegan::diversity(abund_B, index = "shannon")
+
+pielou_J <- function(H, S) H / log(S)
+
+S_A <- vegan::specnumber(abund_A)
+S_B <- vegan::specnumber(abund_B)
+
+cat(sprintf(
+  "Community A — mean Shannon H': %.3f | mean Pielou J: %.3f | mean richness: %.1f\n",
+  mean(shannon_A), mean(pielou_J(shannon_A, S_A)), mean(S_A)
+))
+cat(sprintf(
+  "Community B — mean Shannon H': %.3f | mean Pielou J: %.3f | mean richness: %.1f\n",
+  mean(shannon_B), mean(pielou_J(shannon_B, S_B)), mean(S_B)
+))
+```
+
+Despite identical species richness in the pool (S = 20), the two communities
+differ dramatically in Shannon H' and Pielou's J — exactly as Zelény's
+examples predict. Even the *observed* richness per quadrat differs, because
+the rare species in Community B are frequently absent from individual sampling
+units.
+
+---
+
+## Key take-aways
+
+1. **Richness alone is insufficient.** Both communities have 20 species
+   in the pool, but their ecological properties are completely different.
+
+2. **Evenness structures the entire detection process.** In Community A,
+   a handful of individuals is enough to encounter most species; in Community
+   B you need many more individuals to move beyond the dominant.
+
+3. **The SAD model is the primary lever.** By fixing all spatial and
+   environmental settings and changing only `SAD_VECTOR`, spesim isolates
+   the effect of the abundance distribution on every downstream metric.
+
+4. **Distance–decay is spatial, not SAD-driven.** With Poisson processes,
+   both communities show no systematic distance–decay — any dissimilarity
+   between quadrats is random and does not increase with distance. Introducing
+   spatial clustering (Thomas process) or environmental filtering would add a
+   distance–decay signal on top of the SAD effect.
+
+---
+
+## Further reading
+
+- Zelený D. (n.d.). *Analysis of Community Ecology Data in R*.
+  <https://www.davidzeleny.net/anadat-r/doku.php/en:diversity_analysis>
+- MacArthur R.H. (1957). On the relative abundance of bird species.
+  *Proceedings of the National Academy of Sciences*, **43**(3), 293–295.
+- Magurran A.E. (2004). *Measuring Biological Diversity*. Blackwell.
+- Chao A. & Chiu C.-H. (2016). Nonparametric estimation and comparison of
+  species richness. In: *eLS*. Wiley.

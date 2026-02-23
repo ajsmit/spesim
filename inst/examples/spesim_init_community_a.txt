@@ -1,0 +1,62 @@
+# =====================================================================
+# spesim_init_community_a.txt — Community A: perfectly even
+# ---------------------------------------------------------------------
+# 20 species, each contributing exactly 5% of all individuals.
+# No environmental filtering, no spatial clustering, no interactions.
+# This community represents the theoretical maximum of evenness:
+# resources are partitioned into equal, non-overlapping segments.
+# =====================================================================
+
+# --- Reproducibility --------------------------------------------------
+SEED = 42
+
+# --- Output prefix ----------------------------------------------------
+OUTPUT_PREFIX = out/community_a
+
+# --- Community size and composition ----------------------------------
+N_INDIVIDUALS = 2000
+N_SPECIES     = 20
+
+# --- Domain type (convex polygon, default) ---------------------------
+DOMAIN_TYPE = polygon
+LINEAR_AXIS = x
+LINEAR_WRAP = FALSE
+LINEAR_JITTER_SD = 0.0
+DISTANCE_METRIC = auto
+ENV_COVARIATES_FILE = ""
+ENV_DRIVERS = temperature, elevation, rainfall
+
+# --- High-level model family -----------------------------------------
+# manual: abundances are drawn directly from the SAD, then placed in
+# space via the chosen point process (no neutral dynamics).
+MODEL_FAMILY = manual
+
+# --- SAD: custom equal-proportion vector ------------------------------
+# SAD_MODEL custom lets you supply an explicit probability vector.
+# SAD_VECTOR c(rep(0.05, 20)) sets all 20 species to 5% each.
+# The vector sums to 1.0 so it is interpreted as probabilities.
+SAD_MODEL  = custom
+SAD_VECTOR = c(rep(0.05, 20))
+
+# --- No environmental filtering ---------------------------------------
+# Omitting GRADIENT_SPECIES (or setting it empty) means no species are
+# assigned to respond to a gradient; placement is purely spatial.
+
+# --- No local interactions --------------------------------------------
+INTERACTION_RADIUS = 0
+
+# --- Spatial point processes ------------------------------------------
+# Poisson (CSR) for both the most-abundant species (A) and all others.
+# With an even SAD there is no single dominant, but spesim still uses
+# the A/OTHERS split internally; both are Poisson here.
+SPATIAL_PROCESS_A      = poisson
+SPATIAL_PROCESS_OTHERS = poisson
+
+# --- Quadrat sampling -------------------------------------------------
+SAMPLING_SCHEME     = random
+N_QUADRATS          = 20
+QUADRAT_SIZE_OPTION = medium
+
+# --- Advanced analysis panel ------------------------------------------
+# Set to FALSE here; the vignette calls generate_advanced_panel() directly.
+ADVANCED_ANALYSIS = FALSE

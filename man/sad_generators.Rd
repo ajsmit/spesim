@@ -37,6 +37,8 @@ spesim's downstream spatial simulation typically expects exactly
 lognormal; counts are Poisson).}
 \item{\code{"poisson-gamma"}}{Poisson--gamma sampling model (rates are Gamma;
 counts are Poisson). Closely related to negative-binomial mixtures.}
+\item{\code{"nbd"}}{Negative Binomial Distribution. A flexible model for count
+data that can handle high variance (overdispersion).}
 \item{\code{"zsm"}}{Neutral-theory SAD helper. With \code{theta} only, this uses a
 theta-only Ewens sampler (Chinese restaurant) to control the
 \strong{rank--abundance} curve. If an immigration probability

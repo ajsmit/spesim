@@ -20,8 +20,8 @@ numeric vector.}
 
 \item{...}{Model-specific parameters. Common arguments include:
 \code{k} (geometric), \code{exponent} and \code{q} (Zipf / Mandelbrot), \code{meanlog}, \code{sdlog}
-(lognormal), \code{shape}, \code{rate} (Poisson--gamma), and neutral-theory \code{theta},
-\code{m}.
+(lognormal), \code{shape}, \code{rate} (Poisson--gamma), \code{nbd_mu}, \code{nbd_size} (NBD),
+and neutral-theory \code{theta}, \code{m}.
 
 For \code{model = "fisher"}, pass \code{dominant_fraction}, \code{alpha}, and \code{x} (see
 \code{\link[=generate_fisher_log_series]{generate_fisher_log_series()}}).}
